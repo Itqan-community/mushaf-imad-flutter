@@ -1,14 +1,15 @@
 # imad_flutter — TODO
 
 ## Phase 1: Hive Database Implementation
-- [ ] Add `hive` and `hive_flutter` to `pubspec.yaml`
-- [ ] Create `HiveDatabaseService` implementing `DatabaseService`
-  - [ ] Load bundled Quran metadata (chapters, verses, pages, parts, quarters) from assets into Hive
-  - [ ] Implement all query methods (search, filtering, page-based lookups)
-- [ ] Create `HiveBookmarkDao` implementing `BookmarkDao`
-- [ ] Create `HiveReadingHistoryDao` implementing `ReadingHistoryDao`
-- [ ] Create `HiveSearchHistoryDao` implementing `SearchHistoryDao`
-- [ ] Wire Hive implementations into `core_module.dart`
+- [x] Add `hive` and `hive_flutter` to `pubspec.yaml`
+- [x] Create `HiveDatabaseService` implementing `DatabaseService`
+  - [x] Load bundled Quran metadata (chapters, verses, pages, parts, quarters) from assets into Hive
+  - [ ] Implement all query methods (search, filtering, page-based lookups) — verse ops stubbed pending Realm export
+- [x] Create `HiveBookmarkDao` implementing `BookmarkDao`
+- [x] Create `HiveReadingHistoryDao` implementing `ReadingHistoryDao`
+- [x] Create `HiveSearchHistoryDao` implementing `SearchHistoryDao`
+- [x] Wire Hive implementations into `core_module.dart`
+- [x] Add `setupMushafWithHive()` convenience function
 
 ## Phase 2: Audio Playback
 - [ ] Add `just_audio` and `audio_service` to `pubspec.yaml`
@@ -19,9 +20,13 @@
 - [ ] Implement verse-level highlighting sync via `AyahTimingService`
 
 ## Phase 3: Flutter UI Widgets
-- [ ] Create `MushafPageView` widget (PageView with Quran page images)
-- [ ] Create `VerseTextWidget` (Arabic text with tashkil)
-- [ ] Create `ChapterListWidget` (surah index)
+- [x] Create `MushafPageView` widget (PageView with 604 Quran pages)
+- [x] Create `QuranLineImage` widget (line PNG renderer with highlight)
+- [x] Create `QuranPageWidget` (15 lines + page header)
+- [x] Create `VerseFasel` widget (verse number marker circle)
+- [x] Create `ChapterIndexDrawer` (surah index with quick jump)
+- [x] Create `QuranDataProvider` (page→chapter/juz lookups)
+- [x] Create `quran_metadata.dart` (114 chapters + 30 juz boundaries)
 - [ ] Create `AudioPlayerBar` widget (bottom player controls)
 - [ ] Create `BookmarkListWidget`
 - [ ] Create `SearchPage` widget
@@ -55,3 +60,10 @@
 - [ ] Performance optimization for page pre-caching
 - [ ] RTL layout support for Arabic text
 - [ ] Accessibility labels
+
+## Phase 8: Realm Data Extraction (Verse-Level Highlighting)
+- [ ] Write a script to export `quran.realm` to JSON (verse markers + highlight coordinates)
+- [ ] Create `quran_data.json` bundled asset with per-verse marker/highlight data
+- [ ] Update `QuranDataProvider` to load verse-level highlight/marker data
+- [ ] Update `QuranLineImage` to render per-verse highlight overlays
+- [ ] Update `QuranLineImage` to show `VerseFasel` markers at correct positions

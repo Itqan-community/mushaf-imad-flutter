@@ -94,3 +94,9 @@ export 'src/ui/mushaf/chapter_index_drawer.dart';
 // Quran Data
 export 'src/data/quran/quran_data_provider.dart';
 export 'src/data/quran/quran_metadata.dart';
+
+// Hive Database Implementations
+export 'src/data/local/hive_database_service.dart';
+export 'src/data/local/dao/hive/hive_bookmark_dao.dart';
+export 'src/data/local/dao/hive/hive_reading_history_dao.dart';
+export 'src/data/local/dao/hive/hive_search_history_dao.dart';

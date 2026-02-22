@@ -1,9 +1,14 @@
 import 'package:get_it/get_it.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import '../data/audio/ayah_timing_service.dart';
 import '../data/audio/reciter_service.dart';
 import '../data/cache/chapters_data_cache.dart';
 import '../data/cache/quran_data_cache_service.dart';
+import '../data/local/hive_database_service.dart';
+import '../data/local/dao/hive/hive_bookmark_dao.dart';
+import '../data/local/dao/hive/hive_reading_history_dao.dart';
+import '../data/local/dao/hive/hive_search_history_dao.dart';
 import '../data/repository/database_service.dart';
 import '../data/repository/default_audio_repository.dart';
 import '../data/repository/default_bookmark_repository.dart';
@@ -137,5 +142,31 @@ void setupMushafDependencies({
       mushafGetIt<SearchHistoryRepository>(),
       mushafGetIt<PreferencesRepository>(),
     ),
+  );
+}
+
+/// Convenience method: set up all dependencies using default Hive backends.
+///
+/// Call this for the simplest possible setup using the built-in Hive
+/// implementations for database, bookmarks, reading history, and search.
+///
+/// Example:
+/// ```dart
+/// await setupMushafWithHive();
+/// ```
+Future<void> setupMushafWithHive({MushafLogger? logger}) async {
+  // Initialize Hive
+  await Hive.initFlutter();
+
+  // Create and initialize the database
+  final db = HiveDatabaseService();
+  await db.initialize();
+
+  setupMushafDependencies(
+    databaseService: db,
+    bookmarkDao: HiveBookmarkDao(),
+    readingHistoryDao: HiveReadingHistoryDao(),
+    searchHistoryDao: HiveSearchHistoryDao(),
+    logger: logger,
   );
 }
