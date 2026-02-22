@@ -1,9 +1,5 @@
 # imad_flutter — TODO
 
-## Bugs / High Priority
-- [ ] Verse separators (VerseFasel) not showing on Mushaf pages — need marker position data from Realm
-- [ ] Highlight should be per-verse region, not per line — need highlight coordinate data from Realm
-
 ## Phase 1: Hive Database Implementation
 - [x] Add `hive` and `hive_flutter` to `pubspec.yaml`
 - [x] Create `HiveDatabaseService` implementing `DatabaseService`
@@ -31,7 +27,7 @@
 - [x] Create `ChapterIndexDrawer` (surah index with quick jump)
 - [x] Create `QuranDataProvider` (page→chapter/juz lookups)
 - [x] Create `quran_metadata.dart` (114 chapters + 30 juz boundaries)
-- [ ] Create `AudioPlayerBar` widget (bottom player controls)
+- [x] Create `AudioPlayerBar` widget (bottom player controls)
 - [ ] Create `BookmarkListWidget`
 - [ ] Create `SearchPage` widget
 - [ ] Create `SettingsPage` widget

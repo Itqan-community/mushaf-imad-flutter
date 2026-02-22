@@ -7,6 +7,7 @@ class AudioPlayerState {
   final int currentPositionMs;
   final int durationMs;
   final int? currentChapter;
+  final int? currentVerse;
   final int? currentReciterId;
   final bool isBuffering;
   final bool isRepeatEnabled;
@@ -17,6 +18,7 @@ class AudioPlayerState {
     this.currentPositionMs = 0,
     this.durationMs = 0,
     this.currentChapter,
+    this.currentVerse,
     this.currentReciterId,
     this.isBuffering = false,
     this.isRepeatEnabled = false,
@@ -40,6 +42,7 @@ class AudioPlayerState {
     int? currentPositionMs,
     int? durationMs,
     int? currentChapter,
+    int? currentVerse,
     int? currentReciterId,
     bool? isBuffering,
     bool? isRepeatEnabled,
@@ -50,6 +53,7 @@ class AudioPlayerState {
       currentPositionMs: currentPositionMs ?? this.currentPositionMs,
       durationMs: durationMs ?? this.durationMs,
       currentChapter: currentChapter ?? this.currentChapter,
+      currentVerse: currentVerse ?? this.currentVerse,
       currentReciterId: currentReciterId ?? this.currentReciterId,
       isBuffering: isBuffering ?? this.isBuffering,
       isRepeatEnabled: isRepeatEnabled ?? this.isRepeatEnabled,

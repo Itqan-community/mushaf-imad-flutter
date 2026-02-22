@@ -9,8 +9,10 @@ import '../data/local/hive_database_service.dart';
 import '../data/local/dao/hive/hive_bookmark_dao.dart';
 import '../data/local/dao/hive/hive_reading_history_dao.dart';
 import '../data/local/dao/hive/hive_search_history_dao.dart';
+import '../data/audio/flutter_audio_player.dart';
 import '../data/repository/database_service.dart';
 import '../data/repository/default_audio_repository.dart';
+import 'package:audio_service/audio_service.dart';
 import '../data/repository/default_bookmark_repository.dart';
 import '../data/repository/default_chapter_repository.dart';
 import '../data/repository/default_data_export_repository.dart';
@@ -56,13 +58,13 @@ final GetIt mushafGetIt = GetIt.instance;
 ///   searchHistoryDao: HiveSearchHistoryDao(),
 /// );
 /// ```
-void setupMushafDependencies({
+Future<void> setupMushafDependencies({
   required DatabaseService databaseService,
   required BookmarkDao bookmarkDao,
   required ReadingHistoryDao readingHistoryDao,
   required SearchHistoryDao searchHistoryDao,
   MushafLogger? logger,
-}) {
+}) async {
   // Logger
   mushafGetIt.registerSingleton<MushafLogger>(logger ?? DefaultMushafLogger());
 
@@ -128,10 +130,22 @@ void setupMushafDependencies({
     DefaultPreferencesRepository(),
   );
 
+  // Initialize AudioService for background playback
+  final audioPlayer = await AudioService.init<FlutterAudioPlayer>(
+    builder: () => FlutterAudioPlayer(),
+    config: const AudioServiceConfig(
+      androidNotificationChannelId: 'com.mushafimad.audio',
+      androidNotificationChannelName: 'Mushaf Audio Playback',
+      androidNotificationOngoing: true,
+      androidStopForegroundOnPause: true,
+    ),
+  );
+
   mushafGetIt.registerSingleton<AudioRepository>(
     DefaultAudioRepository(
       mushafGetIt<ReciterService>(),
       mushafGetIt<AyahTimingService>(),
+      audioPlayer,
     ),
   );
 
@@ -162,7 +176,7 @@ Future<void> setupMushafWithHive({MushafLogger? logger}) async {
   final db = HiveDatabaseService();
   await db.initialize();
 
-  setupMushafDependencies(
+  await setupMushafDependencies(
     databaseService: db,
     bookmarkDao: HiveBookmarkDao(),
     readingHistoryDao: HiveReadingHistoryDao(),

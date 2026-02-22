@@ -25,7 +25,8 @@ library;
 export 'src/mushaf_library.dart';
 
 // DI
-export 'src/di/core_module.dart' show setupMushafDependencies, mushafGetIt;
+export 'src/di/core_module.dart'
+    show setupMushafDependencies, setupMushafWithHive, mushafGetIt;
 
 // Domain Models
 export 'src/domain/models/audio_player_state.dart';

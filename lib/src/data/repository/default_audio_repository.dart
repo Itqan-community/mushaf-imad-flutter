@@ -5,19 +5,20 @@ import '../../domain/models/reciter_info.dart';
 import '../../domain/models/reciter_timing.dart';
 import '../../domain/repository/audio_repository.dart';
 import '../audio/ayah_timing_service.dart';
+import '../audio/flutter_audio_player.dart';
 import '../audio/reciter_service.dart';
 
 /// Default implementation of AudioRepository.
 class DefaultAudioRepository implements AudioRepository {
   final ReciterService _reciterService;
   final AyahTimingService _ayahTimingService;
+  final FlutterAudioPlayer _audioPlayer;
 
-  final StreamController<AudioPlayerState> _playerStateController =
-      StreamController<AudioPlayerState>.broadcast();
-  AudioPlayerState _currentState = const AudioPlayerState();
-  bool _repeatEnabled = false;
-
-  DefaultAudioRepository(this._reciterService, this._ayahTimingService);
+  DefaultAudioRepository(
+    this._reciterService,
+    this._ayahTimingService,
+    this._audioPlayer,
+  );
 
   @override
   Future<List<ReciterInfo>> getAllReciters() async =>
@@ -50,71 +51,71 @@ class DefaultAudioRepository implements AudioRepository {
       _reciterService.selectedReciterStream;
 
   @override
-  Stream<AudioPlayerState> getPlayerStateStream() =>
-      _playerStateController.stream;
-
-  @override
-  void loadChapter(int chapterNumber, int reciterId, {bool autoPlay = false}) {
-    _currentState = _currentState.copyWith(
-      currentChapter: chapterNumber,
-      currentReciterId: reciterId,
-      playbackState: autoPlay ? PlaybackState.loading : PlaybackState.idle,
-    );
-    _playerStateController.add(_currentState);
-    // TODO: Integrate with actual audio player (just_audio)
+  Stream<AudioPlayerState> getPlayerStateStream() async* {
+    await for (final state in _audioPlayer.domainStateStream) {
+      int? verse;
+      if (state.currentReciterId != null && state.currentChapter != null) {
+        verse = await _ayahTimingService.getCurrentVerse(
+          state.currentReciterId!,
+          state.currentChapter!,
+          state.currentPositionMs,
+        );
+      }
+      yield state.copyWith(currentVerse: verse);
+    }
   }
 
   @override
-  void play() {
-    _currentState = _currentState.copyWith(
-      playbackState: PlaybackState.playing,
-    );
-    _playerStateController.add(_currentState);
+  void loadChapter(
+    int chapterNumber,
+    int reciterId, {
+    bool autoPlay = false,
+  }) async {
+    final reciter = await _reciterService.getReciterById(reciterId);
+    if (reciter != null) {
+      await _audioPlayer.loadChapter(
+        chapterNumber,
+        reciter,
+        autoPlay: autoPlay,
+      );
+    }
   }
 
   @override
-  void pause() {
-    _currentState = _currentState.copyWith(playbackState: PlaybackState.paused);
-    _playerStateController.add(_currentState);
-  }
+  void play() => _audioPlayer.play();
 
   @override
-  void stop() {
-    _currentState = _currentState.copyWith(
-      playbackState: PlaybackState.stopped,
-    );
-    _playerStateController.add(_currentState);
-  }
+  void pause() => _audioPlayer.pause();
 
   @override
-  void seekTo(int positionMs) {
-    _currentState = _currentState.copyWith(currentPositionMs: positionMs);
-    _playerStateController.add(_currentState);
-  }
+  void stop() => _audioPlayer.stop();
 
   @override
-  void setPlaybackSpeed(double speed) {
-    // TODO: Integrate with actual audio player
-  }
+  void seekTo(int positionMs) =>
+      _audioPlayer.seek(Duration(milliseconds: positionMs));
 
   @override
-  void setRepeatMode(bool enabled) {
-    _repeatEnabled = enabled;
-    _currentState = _currentState.copyWith(isRepeatEnabled: enabled);
-    _playerStateController.add(_currentState);
-  }
+  void setPlaybackSpeed(double speed) => _audioPlayer.setSpeed(speed);
 
   @override
-  bool isRepeatEnabled() => _repeatEnabled;
+  void setRepeatMode(bool enabled) => _audioPlayer.setRepeatModeBool(enabled);
 
   @override
-  int getCurrentPosition() => _currentState.currentPositionMs;
+  bool isRepeatEnabled() => _audioPlayer.isRepeatMode();
+
+  // These synchronous getters might need an async await if audio_service is isolated,
+  // but just_audio within BaseAudioHandler holds synchronous state if in same isolate.
+  // For now, these are not strictly available synchronously from base handler, so we can stub
+  // or return default if we don't store them locally anymore. We'll return 0 for now since
+  // UI mostly relies on the Stream<AudioPlayerState>.
+  @override
+  int getCurrentPosition() => 0;
 
   @override
-  int getDuration() => _currentState.durationMs;
+  int getDuration() => 0;
 
   @override
-  bool isCurrentlyPlaying() => _currentState.isPlaying;
+  bool isCurrentlyPlaying() => false;
 
   @override
   Future<AyahTiming?> getAyahTiming(
@@ -150,7 +151,7 @@ class DefaultAudioRepository implements AudioRepository {
 
   @override
   void release() {
-    _playerStateController.close();
+    _audioPlayer.stop();
     _reciterService.dispose();
   }
 }

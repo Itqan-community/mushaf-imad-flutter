@@ -13,14 +13,14 @@ class ReciterDataProvider {
       nameArabic: 'عبد الباسط عبد الصمد',
       nameEnglish: 'Abdul Basit Abdul Samad',
       rewaya: 'حفص عن عاصم',
-      folderUrl: 'https://server6.mp3quran.net/abas_64/',
+      folderUrl: 'https://server7.mp3quran.net/basit/Almusshaf-Al-Mojawwad/',
     ),
     ReciterInfo(
       id: 5,
       nameArabic: 'محمد صديق المنشاوي',
       nameEnglish: 'Mohamed Siddiq Al-Minshawi',
       rewaya: 'حفص عن عاصم',
-      folderUrl: 'https://server10.mp3quran.net/minsh/Rewayat-Hafs-A-n-Assem/',
+      folderUrl: 'https://server10.mp3quran.net/minsh/',
     ),
     ReciterInfo(
       id: 9,

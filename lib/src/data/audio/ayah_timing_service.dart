@@ -18,7 +18,7 @@ class AyahTimingService {
 
     try {
       final jsonString = await rootBundle.loadString(
-        'packages/imad_flutter/assets/ayah_timing/$reciterId.json',
+        'packages/imad_flutter/assets/ayah_timing/read_$reciterId.json',
       );
       final json = jsonDecode(jsonString) as Map<String, dynamic>;
       final timing = ReciterTiming.fromJson(json);

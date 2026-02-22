@@ -1,6 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../di/core_module.dart';
+import '../../domain/repository/audio_repository.dart';
 import '../../data/quran/quran_data_provider.dart';
 import '../../data/quran/verse_data_provider.dart';
+import '../player/audio_player_bar.dart';
 import 'quran_page_widget.dart';
 
 /// MushafPageView — the main Mushaf reader screen.
@@ -23,6 +27,9 @@ class MushafPageView extends StatefulWidget {
   /// Whether to show the page info badge.
   final bool showPageInfo;
 
+  /// Whether to show the audio player controls.
+  final bool showAudioPlayer;
+
   /// Callback for opening chapter index.
   final VoidCallback? onOpenChapterIndex;
 
@@ -32,6 +39,7 @@ class MushafPageView extends StatefulWidget {
     this.onPageChanged,
     this.showNavigationControls = true,
     this.showPageInfo = true,
+    this.showAudioPlayer = true,
     this.onOpenChapterIndex,
   });
 
@@ -44,6 +52,7 @@ class MushafPageViewState extends State<MushafPageView> {
   int _currentPage = 1;
   int? _selectedVerseKey; // chapterNumber * 1000 + verseNumber
   bool _showControls = true;
+  StreamSubscription? _audioSubscription;
 
   @override
   void initState() {
@@ -57,6 +66,25 @@ class MushafPageViewState extends State<MushafPageView> {
 
   Future<void> _loadVerseData() async {
     await VerseDataProvider.instance.initialize();
+
+    _audioSubscription = mushafGetIt<AudioRepository>()
+        .getPlayerStateStream()
+        .listen((state) {
+          if (!mounted) return;
+          if (state.currentChapter != null && state.currentVerse != null) {
+            final key = state.currentChapter! * 1000 + state.currentVerse!;
+            if (_selectedVerseKey != key) {
+              setState(() {
+                _selectedVerseKey = key;
+              });
+            }
+          } else if (state.isPlaying && _selectedVerseKey != null) {
+            setState(() {
+              _selectedVerseKey = null;
+            });
+          }
+        });
+
     if (mounted) {
       setState(() {});
     }
@@ -64,6 +92,7 @@ class MushafPageViewState extends State<MushafPageView> {
 
   @override
   void dispose() {
+    _audioSubscription?.cancel();
     _pageController.dispose();
     super.dispose();
   }
@@ -118,97 +147,112 @@ class MushafPageViewState extends State<MushafPageView> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDF8F0),
-      body: GestureDetector(
-        onTap: _toggleControls,
-        child: Stack(
-          children: [
-            // Main page view (RTL page order)
-            PageView.builder(
-              controller: _pageController,
-              reverse: false,
-              itemCount: QuranDataProvider.totalPages,
-              onPageChanged: _onPageChanged,
-              itemBuilder: (context, index) {
-                final pageNumber = QuranDataProvider.totalPages - index;
-                return QuranPageWidget(
-                  pageNumber: pageNumber,
-                  selectedVerseKey: pageNumber == _currentPage
-                      ? _selectedVerseKey
-                      : null,
-                  onVerseTap: (chapter, verse) {
-                    final key = chapter * 1000 + verse;
-                    setState(() {
-                      _selectedVerseKey = _selectedVerseKey == key ? null : key;
-                    });
-                  },
-                );
-              },
-            ),
-
-            // Navigation controls overlay
-            if (widget.showNavigationControls && _showControls) ...[
-              // Bottom navigation bar
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: _NavigationBar(
-                  currentPage: _currentPage,
-                  totalPages: QuranDataProvider.totalPages,
-                  canGoPrevious: _currentPage > 1,
-                  canGoNext: _currentPage < QuranDataProvider.totalPages,
-                  onPrevious: _goToPreviousPage,
-                  onNext: _goToNextPage,
-                  onOpenChapterIndex: widget.onOpenChapterIndex,
-                ),
-              ),
-
-              // Page info badge (top right)
-              if (widget.showPageInfo)
-                Positioned(
-                  top: MediaQuery.of(context).padding.top + 8,
-                  right: 16,
-                  child: _PageInfoBadge(
-                    pageNumber: _currentPage,
-                    chapterName: chapterName,
-                    juzNumber: juz,
+      body: Column(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: _toggleControls,
+              child: Stack(
+                children: [
+                  // Main page view (RTL page order)
+                  PageView.builder(
+                    controller: _pageController,
+                    reverse: false,
+                    itemCount: QuranDataProvider.totalPages,
+                    onPageChanged: _onPageChanged,
+                    itemBuilder: (context, index) {
+                      final pageNumber = QuranDataProvider.totalPages - index;
+                      return QuranPageWidget(
+                        pageNumber: pageNumber,
+                        selectedVerseKey: pageNumber == _currentPage
+                            ? _selectedVerseKey
+                            : null,
+                        onVerseTap: (chapter, verse) {
+                          final key = chapter * 1000 + verse;
+                          setState(() {
+                            _selectedVerseKey = _selectedVerseKey == key
+                                ? null
+                                : key;
+                          });
+                        },
+                      );
+                    },
                   ),
-                ),
 
-              // Back button (top left)
-              Positioned(
-                top: MediaQuery.of(context).padding.top + 8,
-                left: 12,
-                child: Material(
-                  color: Colors.transparent,
-                  child: IconButton(
-                    onPressed: () => Navigator.of(context).maybePop(),
-                    icon: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF5ECD7).withValues(alpha: 0.95),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 4,
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: Color(0xFF5C4033),
-                        size: 20,
+                  // Navigation controls overlay
+                  if (widget.showNavigationControls && _showControls) ...[
+                    // Bottom navigation bar
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: _NavigationBar(
+                        currentPage: _currentPage,
+                        totalPages: QuranDataProvider.totalPages,
+                        canGoPrevious: _currentPage > 1,
+                        canGoNext: _currentPage < QuranDataProvider.totalPages,
+                        onPrevious: _goToPreviousPage,
+                        onNext: _goToNextPage,
+                        onOpenChapterIndex: widget.onOpenChapterIndex,
                       ),
                     ),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
+
+                    // Page info badge (top right)
+                    if (widget.showPageInfo)
+                      Positioned(
+                        top: MediaQuery.of(context).padding.top + 8,
+                        right: 16,
+                        child: _PageInfoBadge(
+                          pageNumber: _currentPage,
+                          chapterName: chapterName,
+                          juzNumber: juz,
+                        ),
+                      ),
+
+                    // Back button (top left)
+                    Positioned(
+                      top: MediaQuery.of(context).padding.top + 8,
+                      left: 12,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: IconButton(
+                          onPressed: () => Navigator.of(context).maybePop(),
+                          icon: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                0xFFF5ECD7,
+                              ).withValues(alpha: 0.95),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.arrow_back,
+                              color: Color(0xFF5C4033),
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ], // Closes Stack children
+              ), // Closes Stack
+            ), // Closes GestureDetector
+          ), // Closes Expanded
+          if (widget.showAudioPlayer)
+            AudioPlayerBar(
+              chapterNumber: chapters.isNotEmpty ? chapters.first.number : 1,
+              chapterName: chapterName,
+            ),
+        ], // Closes Column children
+      ), // Closes Column
+    ); // Closes Scaffold
   }
 }
 

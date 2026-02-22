@@ -48,7 +48,6 @@ class QuranLineImage extends StatelessWidget {
           // Since we render highlights purely left-to-right based on `h.left` and `h.right`,
           // our tap ratio matches exactly.
           final tapRatio = localPosition.dx / box.size.width;
-          print("onTapUpExact fired! tapRatio: $tapRatio");
           onTapUpExact!(tapRatio);
         } else if (onTap != null) {
           onTap!();

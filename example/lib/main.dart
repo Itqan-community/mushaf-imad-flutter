@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:imad_flutter/imad_flutter.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await setupMushafWithHive();
   runApp(const MushafApp());
 }
 
