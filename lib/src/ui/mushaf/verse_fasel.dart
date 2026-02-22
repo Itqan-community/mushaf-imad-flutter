@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../data/quran/quran_data_provider.dart';
 
 /// VerseFasel — renders a verse number marker (circle with Arabic numeral).
@@ -12,25 +13,38 @@ class VerseFasel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFF8B7355), width: 1.5),
-        color: const Color(0xFFFDF5E6).withValues(alpha: 0.9),
-      ),
-      child: Center(
-        child: Text(
-          QuranDataProvider.toArabicNumerals(number),
-          style: TextStyle(
-            fontSize: size * 0.42,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF5C4033),
-            height: 1.0,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // The fasel SVG graphic (un-tinted, exactly as Android does it)
+          SvgPicture.asset(
+            'assets/fasel.svg',
+            package: 'imad_flutter',
+            width: size,
+            height: size,
           ),
-          textDirection: TextDirection.rtl,
-        ),
+          // The verse number displayed inside the fasel graphic
+          Padding(
+            padding: EdgeInsets.only(
+              top: size * 0.05,
+            ), // Translate the y offset from Android
+            child: Text(
+              QuranDataProvider.toArabicNumerals(number),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: size * 0.45,
+                fontWeight: FontWeight.bold,
+                color: Colors.black, // Android uses pure Color.Black
+                fontFamily:
+                    'QuranNumbers', // Using the custom QuranNumbers font requested
+                height: 1.0,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

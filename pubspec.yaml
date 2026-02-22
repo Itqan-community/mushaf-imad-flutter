@@ -10,6 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_svg: ^2.2.3
   get_it: ^8.0.3
   hive: ^2.2.3
   hive_flutter: ^1.1.0
@@ -24,6 +25,7 @@ flutter:
   assets:
     - assets/ayah_timing/
     - assets/quran_verse_data.json
+    - assets/fasel.svg
     - assets/quran-images/1/
     - assets/quran-images/2/
     - assets/quran-images/3/
@@ -628,3 +630,8 @@ flutter:
     - assets/quran-images/602/
     - assets/quran-images/603/
     - assets/quran-images/604/
+
+  fonts:
+    - family: QuranNumbers
+      fonts:
+        - asset: assets/fonts/QuranNumbers.ttf
