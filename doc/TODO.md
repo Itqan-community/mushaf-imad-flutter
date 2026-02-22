@@ -48,7 +48,7 @@
 - [ ] Replace in-memory `DefaultPreferencesRepository` with Hive/SharedPreferences-backed version
 - [ ] Persist mushaf type, current page, font size, reciter selection, theme config
 - [ ] Restore last-read position on app launch
-- [ ] Create `SettingsPage` widget with working controls that reflect on actual UI
+- [x] Create unified `SettingsPage` widget (consolidated Preferences, Theme Preview, and Settings)
 - [ ] Theme switching (light/dark/sepia/AMOLED) should update Mushaf page background + text color
 - [ ] Font size changes should apply immediately
 - [ ] Add buttons to show/hide `AudioPlayerBar` 

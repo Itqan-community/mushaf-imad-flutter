@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../data/audio/reciter_data_provider.dart';
 import '../../di/core_module.dart';
 import '../../domain/repository/data_export_repository.dart';
 import '../../domain/repository/preferences_repository.dart';
 import '../theme/theme_picker_widget.dart';
 import 'settings_view_model.dart';
 
-/// Settings page with theme selection, audio preferences, and data management.
+/// Unified settings page combining theme, preferences, and data management.
 ///
 /// Uses [SettingsViewModel] and embeds [ThemePickerWidget].
 class SettingsPage extends StatefulWidget {
@@ -55,7 +56,53 @@ class _SettingsPageState extends State<SettingsPage> {
               const ThemePickerWidget(),
               const SizedBox(height: 24),
 
-              // ─── Data Section ───
+              // ─── Preferences Section ───
+              _SectionTitle(title: 'Preferences', icon: Icons.tune_rounded),
+              const SizedBox(height: 8),
+              Card(
+                child: Column(
+                  children: [
+                    _PreferenceTile(
+                      icon: Icons.menu_book_rounded,
+                      label: 'Mushaf Type',
+                      value: _viewModel.mushafType.name.toUpperCase(),
+                    ),
+                    const Divider(height: 1, indent: 56),
+                    _PreferenceTile(
+                      icon: Icons.bookmark_border_rounded,
+                      label: 'Current Page',
+                      value: '${_viewModel.currentPage}',
+                    ),
+                    const Divider(height: 1, indent: 56),
+                    _PreferenceTile(
+                      icon: Icons.mic_rounded,
+                      label: 'Selected Reciter',
+                      value: _reciterName(_viewModel.selectedReciterId),
+                    ),
+                    const Divider(height: 1, indent: 56),
+                    _PreferenceTile(
+                      icon: Icons.speed_rounded,
+                      label: 'Playback Speed',
+                      value: '${_viewModel.playbackSpeed}x',
+                    ),
+                    const Divider(height: 1, indent: 56),
+                    _PreferenceTile(
+                      icon: Icons.repeat_rounded,
+                      label: 'Repeat Mode',
+                      value: _viewModel.repeatMode ? 'On' : 'Off',
+                    ),
+                    const Divider(height: 1, indent: 56),
+                    _PreferenceTile(
+                      icon: Icons.brightness_6_rounded,
+                      label: 'Theme Mode',
+                      value: _viewModel.themeConfig.mode.name,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // ─── Data Management Section ───
               _SectionTitle(
                 title: 'Data Management',
                 icon: Icons.storage_rounded,
@@ -142,7 +189,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       leading: const Icon(Icons.code_rounded),
                       title: const Text('Version'),
                       trailing: Text(
-                        '1.0.0',
+                        '0.0.1',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -157,6 +204,17 @@ class _SettingsPageState extends State<SettingsPage> {
         },
       ),
     );
+  }
+
+  String _reciterName(int reciterId) {
+    try {
+      final reciter = ReciterDataProvider.allReciters.firstWhere(
+        (r) => r.id == reciterId,
+      );
+      return reciter.nameEnglish;
+    } catch (_) {
+      return 'Reciter #$reciterId';
+    }
   }
 
   Future<void> _handleExport(BuildContext context) async {
@@ -178,7 +236,6 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _handleImport(BuildContext context) async {
-    // Show a simple dialog to paste JSON data
     final controller = TextEditingController();
     final result = await showDialog<String>(
       context: context,
@@ -292,6 +349,38 @@ class _SectionTitle extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Preference Tile
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PreferenceTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _PreferenceTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ListTile(
+      leading: Icon(icon),
+      title: Text(label),
+      trailing: Text(
+        value,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
       ),
     );
   }

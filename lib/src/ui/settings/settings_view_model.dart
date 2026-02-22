@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../../domain/models/mushaf_type.dart';
+import '../../domain/models/theme.dart';
 import '../../domain/repository/data_export_repository.dart';
 import '../../domain/repository/preferences_repository.dart';
 
-/// ViewModel for settings.
+/// ViewModel for the unified settings page.
+///
+/// Exposes preference values, data export/import, and theme config.
 class SettingsViewModel extends ChangeNotifier {
-  // ignore: unused_field
   final PreferencesRepository _preferencesRepository;
   final DataExportRepository _dataExportRepository;
 
@@ -13,17 +16,42 @@ class SettingsViewModel extends ChangeNotifier {
     required PreferencesRepository preferencesRepository,
     required DataExportRepository dataExportRepository,
   }) : _preferencesRepository = preferencesRepository,
-       _dataExportRepository = dataExportRepository;
+       _dataExportRepository = dataExportRepository {
+    _loadPreferences();
+  }
 
-  // State
+  // ─── Data export state ───
   bool _isExporting = false;
   bool _isImporting = false;
-  String? _lastExportPath;
 
-  // Getters
   bool get isExporting => _isExporting;
   bool get isImporting => _isImporting;
-  String? get lastExportPath => _lastExportPath;
+
+  // ─── Preferences state ───
+  MushafType _mushafType = MushafType.hafs1441;
+  int _currentPage = 1;
+  int _selectedReciterId = 1;
+  double _playbackSpeed = 1.0;
+  bool _repeatMode = false;
+  ThemeConfig _themeConfig = const ThemeConfig();
+
+  MushafType get mushafType => _mushafType;
+  int get currentPage => _currentPage;
+  int get selectedReciterId => _selectedReciterId;
+  double get playbackSpeed => _playbackSpeed;
+  bool get repeatMode => _repeatMode;
+  ThemeConfig get themeConfig => _themeConfig;
+
+  /// Load current preference values.
+  Future<void> _loadPreferences() async {
+    _mushafType = await _preferencesRepository.getMushafTypeStream().first;
+    _currentPage = await _preferencesRepository.getCurrentPageStream().first;
+    _selectedReciterId = await _preferencesRepository.getSelectedReciterId();
+    _playbackSpeed = await _preferencesRepository.getPlaybackSpeed();
+    _repeatMode = await _preferencesRepository.getRepeatMode();
+    _themeConfig = await _preferencesRepository.getThemeConfig();
+    notifyListeners();
+  }
 
   /// Export user data to JSON.
   Future<String> exportData() async {
@@ -47,10 +75,12 @@ class SettingsViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      return await _dataExportRepository.importFromJson(
+      final result = await _dataExportRepository.importFromJson(
         jsonData,
         mergeWithExisting: mergeWithExisting,
       );
+      await _loadPreferences(); // Refresh after import
+      return result;
     } finally {
       _isImporting = false;
       notifyListeners();
@@ -60,6 +90,7 @@ class SettingsViewModel extends ChangeNotifier {
   /// Clear all user data.
   Future<void> clearAllData() async {
     await _dataExportRepository.clearAllUserData();
+    await _loadPreferences(); // Refresh after clear
     notifyListeners();
   }
 }

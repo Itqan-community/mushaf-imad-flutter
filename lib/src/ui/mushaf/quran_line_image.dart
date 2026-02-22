@@ -106,7 +106,22 @@ class QuranLineImage extends StatelessWidget {
                   color: textColor,
                   colorBlendMode: textColor != null ? BlendMode.srcIn : null,
                   errorBuilder: (context, error, stackTrace) {
-                    return const SizedBox.shrink();
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          '⚠️ Missing quran-images/\n'
+                          'Download from: github.com/Itqan-community/mushaf-imad-flutter',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 9,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.error.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ),
+                    );
                   },
                 ),
 

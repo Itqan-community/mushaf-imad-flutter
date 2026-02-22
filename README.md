@@ -4,9 +4,7 @@ Add mushaf to your Flutter application easily! A fully functional, modular Quran
 
 [![Flutter](https://img.shields.io/badge/Platform-Flutter-02569B?logo=flutter)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.11.0-0175C2?logo=dart)](https://dart.dev)
-[![Version](https://img.shields.io/badge/version-0.0.1-blue.svg)]()
-
-> This is a direct Flutter port of the [mushaf-imad-android](https://github.com/Itqan-community/mushaf-imad-android) library, retaining its clean layout and modular architecture.
+[![Version](https://img.shields.io/badge/version-0.0.2-blue.svg)]()
 
 ---
 
@@ -41,7 +39,24 @@ dependencies:
   imad_flutter: ^0.0.1
 ```
 
-### 2. Initialization & Setup
+### 2. Download Quran Images
+
+> ⚠️ **Important:** The `quran-images/` directory (~9,000+ PNG files) is **not included** in the pub.dev package due to size limitations. You must download it separately from the [GitHub repository](https://github.com/Itqan-community/mushaf-imad-flutter).
+
+```bash
+# Clone or download the quran-images directory from the repo
+git clone https://github.com/Itqan-community/mushaf-imad-flutter.git
+# Copy quran-images into your project's package cache or use a path dependency
+```
+
+If you're using a **path dependency** (recommended during development):
+```yaml
+dependencies:
+  imad_flutter:
+    path: ../mushaf-imad-flutter  # already includes quran-images/
+```
+
+### 3. Initialization & Setup
 
 The library uses `Hive` for its local database and requires initialization before the app runs.
 
@@ -60,7 +75,7 @@ void main() async {
 }
 ```
 
-### 3. Basic Usage (Displaying the Mushaf)
+### 4. Basic Usage (Displaying the Mushaf)
 
 Once initialized, simply instantiate the `MushafPageView`.
 

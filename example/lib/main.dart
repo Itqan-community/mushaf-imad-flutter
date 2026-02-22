@@ -96,13 +96,6 @@ class LibraryHomePage extends StatelessWidget {
             subtitle: 'ReadingHistoryRepository - Stats & tracking',
             onTap: () => _push(context, const ReadingHistoryPage()),
           ),
-          _MenuCard(
-            icon: Icons.settings,
-            title: 'Preferences',
-            subtitle: 'PreferencesRepository - User settings',
-            onTap: () => _push(context, const PreferencesPage()),
-          ),
-
           const SizedBox(height: 24),
 
           // ─── UI Library Section ───
@@ -123,15 +116,9 @@ class LibraryHomePage extends StatelessWidget {
             onTap: () => _push(context, const SearchPageWrapper()),
           ),
           _MenuCard(
-            icon: Icons.palette,
-            title: 'Theme Preview',
-            subtitle: 'Reading theme color schemes',
-            onTap: () => _push(context, const ThemePreviewWrapper()),
-          ),
-          _MenuCard(
             icon: Icons.settings,
             title: 'Settings',
-            subtitle: 'Theme, data, and preferences',
+            subtitle: 'Theme, preferences & data management',
             onTap: () => _push(context, const SettingsPage()),
           ),
           _MenuCard(
@@ -486,55 +473,6 @@ class ReadingHistoryPage extends StatelessWidget {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Preferences Page
-// ──────────────────────────────────────────────────────────────────────────────
-
-class PreferencesPage extends StatelessWidget {
-  const PreferencesPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Preferences')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _infoTile('Mushaf Type', 'HAFS_1441 (default)'),
-          _infoTile('Current Page', '1'),
-          _infoTile('Font Size Multiplier', '1.0x'),
-          _infoTile('Show Translation', 'Off'),
-          _infoTile('Selected Reciter', 'Reciter #1'),
-          _infoTile('Playback Speed', '1.0x'),
-          _infoTile('Repeat Mode', 'Off'),
-          _infoTile('Theme Mode', 'System'),
-          _infoTile('Color Scheme', 'Default'),
-          _infoTile('AMOLED Mode', 'Off'),
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              'Currently using in-memory preferences.\n'
-              'Will be persisted with Hive/SharedPreferences.',
-              style: TextStyle(color: Colors.grey),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _infoTile(String label, String value) {
-    return ListTile(
-      title: Text(label),
-      trailing: Text(
-        value,
-        style: const TextStyle(fontWeight: FontWeight.w600),
-      ),
-    );
-  }
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
 // Search Page — Using SearchPage widget
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -560,34 +498,6 @@ class SearchPageWrapper extends StatelessWidget {
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Theme Preview — Using ThemePickerWidget
-// ──────────────────────────────────────────────────────────────────────────────
-
-class ThemePreviewWrapper extends StatelessWidget {
-  const ThemePreviewWrapper({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Theme Preview')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: ThemePickerWidget(
-          onThemeChanged: (theme) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Selected theme: ${theme.name}'),
-                duration: const Duration(seconds: 1),
-              ),
-            );
-          },
-        ),
       ),
     );
   }
