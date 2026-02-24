@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:imad_flutter/imad_flutter.dart';
+// ignore: depend_on_referenced_packages
+import 'package:collection/collection.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await setupMushafWithHive();
+
+  // Initialize MushafLibrary with actual DAO instances
+  await MushafLibrary.initialize(
+    databaseService: mushafGetIt<DatabaseService>(),
+    bookmarkDao: mushafGetIt<BookmarkDao>(),
+    readingHistoryDao: mushafGetIt<ReadingHistoryDao>(),
+    searchHistoryDao: mushafGetIt<SearchHistoryDao>(),
+  );
   runApp(const MushafApp());
 }
 
@@ -340,16 +350,28 @@ class _MushafAtPageState extends State<_MushafAtPage> {
   final GlobalKey<MushafPageViewState> _mushafKey = GlobalKey();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
 
+  late final BookmarkRepository _bookmarkRepository;
+
   @override
   void initState() {
     super.initState();
     _currentPage = widget.page;
+    _bookmarkRepository = MushafLibrary.getBookmarkRepository();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
+      appBar: AppBar(
+        title: Text(widget.title),
+        actions: [
+          IconButton(
+            icon: _buildBookmarkIcon(),
+            onPressed: _toggleBookmarkForCurrentPage,
+          ),
+        ],
+      ),
       drawer: ChapterIndexDrawer(
         currentPage: _currentPage,
         onChapterSelected: (page) {
@@ -367,6 +389,56 @@ class _MushafAtPageState extends State<_MushafAtPage> {
         },
       ),
     );
+  }
+
+  /// Builds a bookmark icon that updates dynamically based on bookmark state
+  Widget _buildBookmarkIcon() {
+    return FutureBuilder<bool>(
+      future: _isCurrentPageBookmarked(),
+      builder: (context, snapshot) {
+        final isBookmarked = snapshot.data ?? false;
+        return Icon(isBookmarked ? Icons.bookmark : Icons.bookmark_border);
+      },
+    );
+  }
+
+  /// Checks if the current page is already bookmarked
+  Future<bool> _isCurrentPageBookmarked() async {
+    final allBookmarks = await _bookmarkRepository.getAllBookmarks();
+    return allBookmarks.any((b) => b.pageNumber == _currentPage);
+  }
+
+  /// Adds or removes a bookmark for the current page
+
+  Future<void> _toggleBookmarkForCurrentPage() async {
+    final allBookmarks = await _bookmarkRepository.getAllBookmarks();
+
+    // Returns null if no bookmark found
+    final existing = allBookmarks.firstWhereOrNull(
+      (b) => b.pageNumber == _currentPage,
+    );
+
+    if (existing != null) {
+      await _bookmarkRepository.deleteBookmark(existing.id);
+      _showSnackBar('Bookmark removed from page $_currentPage');
+    } else {
+      await _bookmarkRepository.addBookmark(
+        chapterNumber: 0,
+        verseNumber: 0,
+        pageNumber: _currentPage,
+        note: '',
+      );
+      _showSnackBar('Bookmark added for page $_currentPage');
+    }
+
+    setState(() {});
+  }
+
+  /// Shows a snackbar with a message
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -415,18 +487,83 @@ class VersesPage extends StatelessWidget {
 // Bookmarks Page — Using BookmarkListWidget
 // ──────────────────────────────────────────────────────────────────────────────
 
-class BookmarksPageWrapper extends StatelessWidget {
+class BookmarksPageWrapper extends StatefulWidget {
   const BookmarksPageWrapper({super.key});
+
+  @override
+  State<BookmarksPageWrapper> createState() => _BookmarksPageWrapperState();
+}
+
+class _BookmarksPageWrapperState extends State<BookmarksPageWrapper> {
+  late final BookmarkRepository _bookmarkRepository;
+  late Future<List<Bookmark>> _bookmarksFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _bookmarkRepository = MushafLibrary.getBookmarkRepository();
+    _loadBookmarks();
+  }
+
+  void _loadBookmarks() {
+    _bookmarksFuture = _bookmarkRepository.getAllBookmarks();
+  }
+
+  Future<void> _refresh() async {
+    setState(() {
+      _loadBookmarks();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Bookmarks')),
-      body: BookmarkListWidget(
-        onBookmarkTap: (page) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => _MushafAtPage(page: page, title: 'Bookmark'),
+      body: FutureBuilder<List<Bookmark>>(
+        future: _bookmarksFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final bookmarks = snapshot.data ?? [];
+
+          if (bookmarks.isEmpty) {
+            return const Center(child: Text('No bookmarks yet'));
+          }
+
+          return RefreshIndicator(
+            onRefresh: _refresh,
+            child: ListView.builder(
+              itemCount: bookmarks.length,
+              itemBuilder: (context, index) {
+                final b = bookmarks[index];
+
+                return ListTile(
+                  leading: const Icon(Icons.bookmark),
+                  title: Text('Page ${b.pageNumber}'),
+                  subtitle: Text(
+                    'Chapter ${b.chapterNumber} · Verse ${b.verseNumber}',
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete),
+                    onPressed: () async {
+                      await _bookmarkRepository.deleteBookmark(b.id);
+                      _refresh();
+                    },
+                  ),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => _MushafAtPage(
+                          page: b.pageNumber,
+                          title: 'Bookmark',
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
             ),
           );
         },
