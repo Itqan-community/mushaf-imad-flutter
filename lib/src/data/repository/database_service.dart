@@ -1,3 +1,4 @@
+import '../../domain/models/advanced_search.dart';
 import '../../domain/models/chapter.dart';
 import '../../domain/models/mushaf_type.dart';
 import '../../domain/models/page.dart';
@@ -100,6 +101,9 @@ abstract class DatabaseService {
 
   /// Search chapters by query text.
   Future<List<Chapter>> searchChapters(String query);
+
+  /// Advanced verse search with match modes and Arabic processing options.
+  Future<List<Verse>> searchVersesAdvanced(VerseAdvancedSearchQuery query);
 
   /// Dispose resources.
   Future<void> dispose();

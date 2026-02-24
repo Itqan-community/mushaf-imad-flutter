@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../domain/models/advanced_search.dart';
 import '../../domain/models/bookmark.dart';
 import '../../domain/models/chapter.dart';
 import '../../domain/models/verse.dart';
@@ -13,6 +14,7 @@ import '../../domain/repository/search_history_repository.dart';
 ///
 /// Matches Android's `SearchViewModel` — performs unified search across
 /// verses, chapters, and bookmarks with search history and suggestions.
+/// Extended with advanced search options (match modes + Arabic processing).
 class SearchViewModel extends ChangeNotifier {
   final VerseRepository _verseRepository;
   final ChapterRepository _chapterRepository;
@@ -41,6 +43,10 @@ class SearchViewModel extends ChangeNotifier {
   String? _error;
   SearchType _searchType = SearchType.general;
 
+  // Advanced search state
+  TextMatchMode _matchMode = TextMatchMode.contains;
+  ArabicSearchOptions _arabicOptions = const ArabicSearchOptions();
+
   // Getters
   String get query => _query;
   List<Verse> get verseResults => _verseResults;
@@ -52,8 +58,14 @@ class SearchViewModel extends ChangeNotifier {
   bool get hasSearched => _hasSearched;
   String? get error => _error;
   SearchType get searchType => _searchType;
+  TextMatchMode get matchMode => _matchMode;
+  ArabicSearchOptions get arabicOptions => _arabicOptions;
   int get totalResults =>
       _verseResults.length + _chapterResults.length + _bookmarkResults.length;
+
+  /// Whether any advanced option differs from defaults.
+  bool get hasActiveAdvancedFilters =>
+      _matchMode != TextMatchMode.contains || !_arabicOptions.isDefault;
 
   /// Initialize search ViewModel.
   Future<void> initialize() async {
@@ -62,7 +74,24 @@ class SearchViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Update the text match mode and re-run search if active.
+  void setMatchMode(TextMatchMode mode) {
+    if (_matchMode == mode) return;
+    _matchMode = mode;
+    notifyListeners();
+    if (_query.isNotEmpty) search(_query);
+  }
+
+  /// Update Arabic search options and re-run search if active.
+  void setArabicOptions(ArabicSearchOptions options) {
+    if (_arabicOptions == options) return;
+    _arabicOptions = options;
+    notifyListeners();
+    if (_query.isNotEmpty) search(_query);
+  }
+
   /// Perform unified search (matching Android SearchViewModel.search).
+  /// Uses advanced search for verse queries when advanced options are active.
   Future<void> search(String query) async {
     if (query.trim().isEmpty) {
       clearResults();
@@ -77,7 +106,7 @@ class SearchViewModel extends ChangeNotifier {
     try {
       switch (_searchType) {
         case SearchType.verse:
-          _verseResults = await _verseRepository.searchVerses(query);
+          _verseResults = await _searchVerses(query);
           _chapterResults = [];
           _bookmarkResults = [];
           break;
@@ -87,14 +116,12 @@ class SearchViewModel extends ChangeNotifier {
           _bookmarkResults = [];
           break;
         case SearchType.general:
-          // Unified search across all types (matching Android searchAll)
-          _verseResults = await _verseRepository.searchVerses(query);
+          _verseResults = await _searchVerses(query);
           _chapterResults = await _chapterRepository.searchChapters(query);
           _bookmarkResults = await _bookmarkRepository.searchBookmarks(query);
           break;
       }
 
-      // Record search in history
       await _searchHistoryRepository.recordSearch(
         query: query,
         resultCount: totalResults,
@@ -109,6 +136,21 @@ class SearchViewModel extends ChangeNotifier {
       _isSearching = false;
       notifyListeners();
     }
+  }
+
+  /// Route verse search through the advanced API when non-default options are
+  /// active, otherwise fall back to the simple search for backward compat.
+  Future<List<Verse>> _searchVerses(String query) {
+    if (hasActiveAdvancedFilters) {
+      return _verseRepository.searchVersesAdvanced(
+        VerseAdvancedSearchQuery(
+          query: query,
+          mode: _matchMode,
+          options: _arabicOptions,
+        ),
+      );
+    }
+    return _verseRepository.searchVerses(query);
   }
 
   /// Set search type and re-run if active query exists.

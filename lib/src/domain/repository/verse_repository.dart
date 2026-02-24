@@ -1,3 +1,4 @@
+import '../models/advanced_search.dart';
 import '../models/mushaf_type.dart';
 import '../models/verse.dart';
 
@@ -21,6 +22,9 @@ abstract class VerseRepository {
 
   /// Search verses by query text.
   Future<List<Verse>> searchVerses(String query);
+
+  /// Advanced verse search with match modes and Arabic processing options.
+  Future<List<Verse>> searchVersesAdvanced(VerseAdvancedSearchQuery query);
 
   /// Get cached verses for a page (returns null if not cached).
   Future<List<Verse>?> getCachedVersesForPage(int pageNumber);

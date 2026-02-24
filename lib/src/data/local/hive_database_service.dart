@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../../domain/models/advanced_search.dart';
 import '../../domain/models/chapter.dart';
 import '../../domain/models/mushaf_type.dart';
 import '../../domain/models/page.dart';
@@ -7,6 +8,7 @@ import '../../domain/models/page_header_info.dart';
 import '../../domain/models/part.dart';
 import '../../domain/models/quarter.dart';
 import '../../domain/models/verse.dart';
+import '../../search/advanced_verse_search.dart';
 import '../quran/quran_data_provider.dart';
 import '../quran/quran_metadata.dart';
 import '../quran/verse_data_provider.dart';
@@ -26,6 +28,7 @@ class HiveDatabaseService implements DatabaseService {
   late final List<Part> _parts;
   late final List<Quarter> _quarters;
   final QuranDataProvider _dataProvider = QuranDataProvider.instance;
+  final AdvancedVerseSearch _advancedSearch = AdvancedVerseSearch();
 
   @override
   Future<void> initialize() async {
@@ -309,6 +312,11 @@ class HiveDatabaseService implements DatabaseService {
               c.arabicTitle.contains(query),
         )
         .toList();
+  }
+
+  @override
+  Future<List<Verse>> searchVersesAdvanced(VerseAdvancedSearchQuery query) {
+    return _advancedSearch.search(query);
   }
 
   @override

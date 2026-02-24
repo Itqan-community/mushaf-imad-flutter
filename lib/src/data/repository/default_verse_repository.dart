@@ -1,3 +1,4 @@
+import '../../domain/models/advanced_search.dart';
 import '../../domain/models/mushaf_type.dart';
 import '../../domain/models/verse.dart';
 import '../../domain/repository/verse_repository.dart';
@@ -48,6 +49,10 @@ class DefaultVerseRepository implements VerseRepository {
   @override
   Future<List<Verse>> searchVerses(String query) =>
       _databaseService.searchVerses(query);
+
+  @override
+  Future<List<Verse>> searchVersesAdvanced(VerseAdvancedSearchQuery query) =>
+      _databaseService.searchVersesAdvanced(query);
 
   @override
   Future<List<Verse>?> getCachedVersesForPage(int pageNumber) async =>

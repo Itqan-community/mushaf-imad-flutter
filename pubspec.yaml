@@ -28,6 +28,7 @@ flutter:
   assets:
     - assets/ayah_timing/
     - assets/quran_verse_data.json
+    - assets/masaq_morph_index.min.json
     - assets/fasel.svg
     - assets/quran-images/1/
     - assets/quran-images/2/

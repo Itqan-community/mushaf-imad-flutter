@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/quran/quran_data_provider.dart';
 import '../../di/core_module.dart';
+import '../../domain/models/advanced_search.dart';
 import '../../domain/models/bookmark.dart';
 import '../../domain/models/chapter.dart';
 import '../../domain/models/search_history.dart';
@@ -16,6 +17,7 @@ import 'search_view_model.dart';
 ///
 /// Matches Android's `SearchView.kt` — FilterChips for type selection,
 /// search history, results grouped by type, error and empty states.
+/// Extended with advanced search filters (match mode + Arabic options).
 class SearchPage extends StatefulWidget {
   /// Called when user taps a verse result.
   final void Function(int pageNumber)? onVerseSelected;
@@ -73,13 +75,10 @@ class _SearchPageState extends State<SearchPage> {
       builder: (context, _) {
         return Column(
           children: [
-            // Search bar (matching Android SearchBar)
             _buildSearchBar(context),
-
-            // Filter chips (matching Android SearchFilters)
             _buildFilterChips(context),
-
-            // Content
+            if (_viewModel.hasActiveAdvancedFilters)
+              _buildActiveAdvancedChips(context),
             Expanded(child: _buildContent(context)),
           ],
         );
@@ -104,12 +103,26 @@ class _SearchPageState extends State<SearchPage> {
           hintText: 'Search verses or chapters...',
           hintTextDirection: TextDirection.ltr,
           prefixIcon: const Icon(Icons.search_rounded),
-          suffixIcon: _searchController.text.isNotEmpty
-              ? IconButton(
+          suffixIcon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: Icon(
+                  Icons.tune_rounded,
+                  color: _viewModel.hasActiveAdvancedFilters
+                      ? theme.colorScheme.primary
+                      : null,
+                ),
+                tooltip: 'Advanced filters',
+                onPressed: () => _showAdvancedFiltersSheet(context),
+              ),
+              if (_searchController.text.isNotEmpty)
+                IconButton(
                   icon: const Icon(Icons.clear_rounded),
                   onPressed: _clearSearch,
-                )
-              : null,
+                ),
+            ],
+          ),
           filled: true,
           fillColor: theme.colorScheme.surfaceContainerHighest.withValues(
             alpha: 0.5,
@@ -161,13 +174,104 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
+  // Active Advanced Filters Chips
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Widget _buildActiveAdvancedChips(BuildContext context) {
+    final theme = Theme.of(context);
+    final chips = <Widget>[];
+
+    if (_viewModel.matchMode != TextMatchMode.contains) {
+      chips.add(
+        InputChip(
+          label: Text(_matchModeLabel(_viewModel.matchMode)),
+          avatar: Icon(
+            _matchModeIcon(_viewModel.matchMode),
+            size: 16,
+          ),
+          onDeleted: () => _viewModel.setMatchMode(TextMatchMode.contains),
+          backgroundColor: theme.colorScheme.primaryContainer,
+          deleteIconColor: theme.colorScheme.onPrimaryContainer,
+          labelStyle: TextStyle(color: theme.colorScheme.onPrimaryContainer),
+        ),
+      );
+    }
+
+    final opts = _viewModel.arabicOptions;
+    if (!opts.ignoreDiacritics) {
+      chips.add(
+        InputChip(
+          label: const Text('Diacritics on'),
+          onDeleted: () => _viewModel.setArabicOptions(
+            opts.copyWith(ignoreDiacritics: true),
+          ),
+          backgroundColor: theme.colorScheme.secondaryContainer,
+        ),
+      );
+    }
+    if (!opts.normalizeLetters) {
+      chips.add(
+        InputChip(
+          label: const Text('No normalization'),
+          onDeleted: () => _viewModel.setArabicOptions(
+            opts.copyWith(normalizeLetters: true),
+          ),
+          backgroundColor: theme.colorScheme.secondaryContainer,
+        ),
+      );
+    }
+    if (!opts.stripTatweelAndPunct) {
+      chips.add(
+        InputChip(
+          label: const Text('Keep tatweel'),
+          onDeleted: () => _viewModel.setArabicOptions(
+            opts.copyWith(stripTatweelAndPunct: true),
+          ),
+          backgroundColor: theme.colorScheme.secondaryContainer,
+        ),
+      );
+    }
+
+    if (chips.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (int i = 0; i < chips.length; i++) ...[
+              if (i > 0) const SizedBox(width: 8),
+              chips[i],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Advanced Filters Bottom Sheet
+  // ─────────────────────────────────────────────────────────────────────────
+
+  void _showAdvancedFiltersSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _AdvancedFiltersSheet(viewModel: _viewModel),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
   // Content Router (matches Android SearchView when/else blocks)
   // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildContent(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Loading state
     if (_viewModel.isSearching) {
       return Center(
         child: Column(
@@ -186,22 +290,18 @@ class _SearchPageState extends State<SearchPage> {
       );
     }
 
-    // Error state (matching Android ErrorView)
     if (_viewModel.error != null) {
       return _buildErrorView(context);
     }
 
-    // Empty results after search
     if (_viewModel.hasSearched && _viewModel.totalResults == 0) {
       return _buildEmptyResultsView(context);
     }
 
-    // Search results
     if (_viewModel.hasSearched) {
       return _buildSearchResults(context);
     }
 
-    // Initial state — search history (matching Android SearchHistoryView)
     return _buildPreSearchContent(context);
   }
 
@@ -287,7 +387,6 @@ class _SearchPageState extends State<SearchPage> {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       children: [
-        // Recent Searches
         if (_viewModel.recentSearches.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.only(top: 16, bottom: 8),
@@ -321,7 +420,6 @@ class _SearchPageState extends State<SearchPage> {
               ),
         ],
 
-        // Popular suggestions
         if (_viewModel.suggestions.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.only(top: 20, bottom: 8),
@@ -348,7 +446,6 @@ class _SearchPageState extends State<SearchPage> {
           ),
         ],
 
-        // Empty initial state
         if (_viewModel.recentSearches.isEmpty && _viewModel.suggestions.isEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 64),
@@ -397,7 +494,6 @@ class _SearchPageState extends State<SearchPage> {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       children: [
-        // Chapter results section
         if (hasChapters) ...[
           Padding(
             padding: const EdgeInsets.only(top: 8, bottom: 4),
@@ -422,7 +518,6 @@ class _SearchPageState extends State<SearchPage> {
           if (hasVerses || hasBookmarks) const SizedBox(height: 16),
         ],
 
-        // Verse results section
         if (hasVerses) ...[
           Padding(
             padding: const EdgeInsets.only(top: 8, bottom: 4),
@@ -442,7 +537,6 @@ class _SearchPageState extends State<SearchPage> {
           if (hasBookmarks) const SizedBox(height: 16),
         ],
 
-        // Bookmark results section
         if (hasBookmarks) ...[
           Padding(
             padding: const EdgeInsets.only(top: 8, bottom: 4),
@@ -463,6 +557,203 @@ class _SearchPageState extends State<SearchPage> {
       ],
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Advanced Filters Bottom Sheet
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AdvancedFiltersSheet extends StatefulWidget {
+  final SearchViewModel viewModel;
+
+  const _AdvancedFiltersSheet({required this.viewModel});
+
+  @override
+  State<_AdvancedFiltersSheet> createState() => _AdvancedFiltersSheetState();
+}
+
+class _AdvancedFiltersSheetState extends State<_AdvancedFiltersSheet> {
+  late TextMatchMode _mode;
+  late bool _ignoreDiacritics;
+  late bool _normalizeLetters;
+  late bool _stripTatweel;
+
+  @override
+  void initState() {
+    super.initState();
+    _mode = widget.viewModel.matchMode;
+    _ignoreDiacritics = widget.viewModel.arabicOptions.ignoreDiacritics;
+    _normalizeLetters = widget.viewModel.arabicOptions.normalizeLetters;
+    _stripTatweel = widget.viewModel.arabicOptions.stripTatweelAndPunct;
+  }
+
+  void _apply() {
+    widget.viewModel.setMatchMode(_mode);
+    widget.viewModel.setArabicOptions(
+      ArabicSearchOptions(
+        ignoreDiacritics: _ignoreDiacritics,
+        normalizeLetters: _normalizeLetters,
+        stripTatweelAndPunct: _stripTatweel,
+      ),
+    );
+    Navigator.of(context).pop();
+  }
+
+  void _reset() {
+    setState(() {
+      _mode = TextMatchMode.contains;
+      _ignoreDiacritics = true;
+      _normalizeLetters = true;
+      _stripTatweel = true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurfaceVariant.withValues(
+                      alpha: 0.4,
+                    ),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Title row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Advanced Search',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  TextButton(onPressed: _reset, child: const Text('Reset')),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Match Mode
+              Text(
+                'Match Mode',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: TextMatchMode.values.map((mode) {
+                  return ChoiceChip(
+                    selected: _mode == mode,
+                    label: Text(_matchModeLabel(mode)),
+                    avatar: _mode == mode
+                        ? null
+                        : Icon(_matchModeIcon(mode), size: 18),
+                    onSelected: (_) => setState(() => _mode = mode),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 24),
+
+              // Arabic Processing
+              Text(
+                'Arabic Processing',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 4),
+
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Ignore diacritics (tashkil)'),
+                subtitle: const Text(
+                  'Match text regardless of harakat',
+                ),
+                value: _ignoreDiacritics,
+                onChanged: (v) => setState(() => _ignoreDiacritics = v),
+              ),
+
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Normalize letter variants'),
+                subtitle: const Text(
+                  'Treat أ/إ/آ as ا, ى as ي, ة as ه, etc.',
+                ),
+                value: _normalizeLetters,
+                onChanged: (v) => setState(() => _normalizeLetters = v),
+              ),
+
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Strip tatweel & punctuation'),
+                subtitle: const Text(
+                  'Remove kashida and Arabic punctuation marks',
+                ),
+                value: _stripTatweel,
+                onChanged: (v) => setState(() => _stripTatweel = v),
+              ),
+
+              const SizedBox(height: 16),
+
+              FilledButton(
+                onPressed: _apply,
+                child: const Text('Apply'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+String _matchModeLabel(TextMatchMode mode) {
+  return switch (mode) {
+    TextMatchMode.contains => 'Contains',
+    TextMatchMode.exact => 'Exact',
+    TextMatchMode.prefix => 'Prefix',
+    TextMatchMode.root => 'Root',
+    TextMatchMode.lemma => 'Lemma',
+  };
+}
+
+IconData _matchModeIcon(TextMatchMode mode) {
+  return switch (mode) {
+    TextMatchMode.contains => Icons.text_fields_rounded,
+    TextMatchMode.exact => Icons.format_quote_rounded,
+    TextMatchMode.prefix => Icons.start_rounded,
+    TextMatchMode.root => Icons.account_tree_rounded,
+    TextMatchMode.lemma => Icons.auto_stories_rounded,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -565,7 +856,6 @@ class _VerseResultTile extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Verse reference row
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -585,7 +875,6 @@ class _VerseResultTile extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              // Verse text
               Text(
                 verse.text.isNotEmpty ? verse.text : verse.textWithoutTashkil,
                 textDirection: TextDirection.rtl,

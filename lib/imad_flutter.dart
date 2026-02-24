@@ -29,6 +29,7 @@ export 'src/di/core_module.dart'
     show setupMushafDependencies, setupMushafWithHive, mushafGetIt;
 
 // Domain Models
+export 'src/domain/models/advanced_search.dart';
 export 'src/domain/models/audio_player_state.dart';
 export 'src/domain/models/bookmark.dart';
 export 'src/domain/models/cache_stats.dart';
@@ -103,6 +104,11 @@ export 'src/ui/theme/mushaf_theme_scope.dart';
 export 'src/data/quran/quran_data_provider.dart';
 export 'src/data/quran/quran_metadata.dart';
 export 'src/data/quran/verse_data_provider.dart';
+
+// Search Engine
+export 'src/search/arabic_normalizer.dart';
+export 'src/search/morphology_index.dart';
+export 'src/search/advanced_verse_search.dart';
 
 // Hive Database Implementations
 export 'src/data/local/hive_database_service.dart';
