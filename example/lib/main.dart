@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:imad_flutter/imad_flutter.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
   await setupMushafWithHive();
+  await Hive.openBox<int>('lastPage');
   runApp(const MushafApp());
 }
 
@@ -44,7 +48,19 @@ class _MushafAppState extends State<MushafApp> {
 // ──────────────────────────────────────────────────────────────────────────────
 // Home Page — Main menu showing Core Library and UI Library sections
 // ──────────────────────────────────────────────────────────────────────────────
+class LastPageRepository {
+  final Box<int> _box = Hive.box<int>('lastPage');
 
+  // حفظ آخر صفحة
+  Future<void> setLastPage(int page) async {
+    await _box.put('lastPage', page);
+  }
+
+  // قراءة آخر صفحة (افتراضي 1)
+  int getLastPage() {
+    return _box.get('lastPage', defaultValue: 1)!;
+  }
+}
 class LibraryHomePage extends StatelessWidget {
   const LibraryHomePage({super.key});
 
@@ -228,6 +244,15 @@ class _MushafViewPageState extends State<MushafViewPage> {
   int _currentPage = 1;
   final GlobalKey<MushafPageViewState> _mushafKey = GlobalKey();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
+  final LastPageRepository _repo = LastPageRepository();
+
+  @override
+  void initState() {
+    super.initState();
+
+    // استرجاع آخر صفحة عند بدء Mushaf
+    _currentPage = _repo.getLastPage();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -241,9 +266,10 @@ class _MushafViewPageState extends State<MushafViewPage> {
       ),
       body: MushafPageView(
         key: _mushafKey,
-        initialPage: 1,
+        initialPage: _currentPage,
         onPageChanged: (page) {
           setState(() => _currentPage = page);
+          _repo.setLastPage(page);
         },
         onOpenChapterIndex: () {
           _scaffoldKey.currentState?.openDrawer();
