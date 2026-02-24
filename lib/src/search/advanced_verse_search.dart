@@ -22,6 +22,8 @@ class _VerseRef {
 /// Advanced verse search engine supporting multiple match modes
 /// and Arabic text normalization.
 class AdvancedVerseSearch {
+  static final _wordSplitRegex = RegExp(r'\s+');
+
   final VerseDataProvider _verseProvider;
   final MorphologyIndex _morphIndex;
 
@@ -51,31 +53,27 @@ class AdvancedVerseSearch {
   }
 
   Future<List<Verse>> _searchByRoot(VerseAdvancedSearchQuery query) async {
-    await _morphIndex.ensureLoaded();
-    if (!_morphIndex.isLoaded) {
-      return _searchByText(query.copyWith(mode: TextMatchMode.contains));
-    }
-
-    final normalizedQuery =
-        ArabicNormalizer.normalize(query.query, query.options);
-
-    // The query itself might be a root, or a word from which we derive roots
-    var roots = <String>{normalizedQuery};
-    final derivedRoots = _morphIndex.getRootsForWord(normalizedQuery);
-    roots.addAll(derivedRoots);
-
-    final matchingRefs = <_VerseRef>{};
-    for (final root in roots) {
-      for (final ref in _morphIndex.getVerseRefsForRoot(root)) {
-        final parsed = _parseRef(ref);
-        if (parsed != null) matchingRefs.add(parsed);
-      }
-    }
-
-    return _materializeVerseRefs(matchingRefs);
+    return _searchByMorphology(
+      query,
+      getDerivations: (word) => _morphIndex.getRootsForWord(word),
+      getVerseRefs: (key) => _morphIndex.getVerseRefsForRoot(key),
+    );
   }
 
   Future<List<Verse>> _searchByLemma(VerseAdvancedSearchQuery query) async {
+    return _searchByMorphology(
+      query,
+      getDerivations: (word) => _morphIndex.getLemmasForWord(word),
+      getVerseRefs: (key) => _morphIndex.getVerseRefsForLemma(key),
+    );
+  }
+
+  /// Generic morphology search helper.
+  Future<List<Verse>> _searchByMorphology(
+    VerseAdvancedSearchQuery query, {
+    required List<String> Function(String) getDerivations,
+    required List<String> Function(String) getVerseRefs,
+  }) async {
     await _morphIndex.ensureLoaded();
     if (!_morphIndex.isLoaded) {
       return _searchByText(query.copyWith(mode: TextMatchMode.contains));
@@ -84,13 +82,13 @@ class AdvancedVerseSearch {
     final normalizedQuery =
         ArabicNormalizer.normalize(query.query, query.options);
 
-    var lemmas = <String>{normalizedQuery};
-    final derivedLemmas = _morphIndex.getLemmasForWord(normalizedQuery);
-    lemmas.addAll(derivedLemmas);
+    var keys = <String>{normalizedQuery};
+    final derivedKeys = getDerivations(normalizedQuery);
+    keys.addAll(derivedKeys);
 
     final matchingRefs = <_VerseRef>{};
-    for (final lemma in lemmas) {
-      for (final ref in _morphIndex.getVerseRefsForLemma(lemma)) {
+    for (final key in keys) {
+      for (final ref in getVerseRefs(key)) {
         final parsed = _parseRef(ref);
         if (parsed != null) matchingRefs.add(parsed);
       }
@@ -147,13 +145,13 @@ class AdvancedVerseSearch {
 
   /// Check that `query` appears as a whole word in `text`.
   bool _exactWordMatch(String text, String query) {
-    final words = text.split(RegExp(r'\s+'));
+    final words = text.split(_wordSplitRegex);
     return words.contains(query);
   }
 
   /// Check that any word in `text` starts with `query`.
   bool _prefixWordMatch(String text, String query) {
-    final words = text.split(RegExp(r'\s+'));
+    final words = text.split(_wordSplitRegex);
     return words.any((w) => w.startsWith(query));
   }
 
@@ -190,7 +188,7 @@ class AdvancedVerseSearch {
     return results;
   }
 
-  Verse _toVerse(dynamic v, int page) {
+  Verse _toVerse(PageVerseData v, int page) {
     return Verse(
       verseID: v.verseID,
       humanReadableID: '${v.chapter}_${v.number}',

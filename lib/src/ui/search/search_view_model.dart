@@ -46,6 +46,7 @@ class SearchViewModel extends ChangeNotifier {
   // Advanced search state
   TextMatchMode _matchMode = TextMatchMode.contains;
   ArabicSearchOptions _arabicOptions = const ArabicSearchOptions();
+  int _searchGeneration = 0;
 
   // Getters
   String get query => _query;
@@ -78,6 +79,7 @@ class SearchViewModel extends ChangeNotifier {
   void setMatchMode(TextMatchMode mode) {
     if (_matchMode == mode) return;
     _matchMode = mode;
+    _searchGeneration++;
     notifyListeners();
     if (_query.isNotEmpty) search(_query);
   }
@@ -86,7 +88,23 @@ class SearchViewModel extends ChangeNotifier {
   void setArabicOptions(ArabicSearchOptions options) {
     if (_arabicOptions == options) return;
     _arabicOptions = options;
+    _searchGeneration++;
     notifyListeners();
+    if (_query.isNotEmpty) search(_query);
+  }
+
+  /// Batch update match mode and Arabic options, triggering only one search.
+  void setAdvancedOptions(TextMatchMode mode, ArabicSearchOptions options) {
+    final modeChanged = _matchMode != mode;
+    final optionsChanged = _arabicOptions != options;
+    
+    if (!modeChanged && !optionsChanged) return;
+    
+    _matchMode = mode;
+    _arabicOptions = options;
+    _searchGeneration++;
+    notifyListeners();
+    
     if (_query.isNotEmpty) search(_query);
   }
 
@@ -101,26 +119,39 @@ class SearchViewModel extends ChangeNotifier {
     _query = query;
     _isSearching = true;
     _error = null;
+    _searchGeneration++;
+    final currentGeneration = _searchGeneration;
     notifyListeners();
 
     try {
+      List<Verse> verseResults;
+      List<Chapter> chapterResults;
+      List<Bookmark> bookmarkResults;
+
       switch (_searchType) {
         case SearchType.verse:
-          _verseResults = await _searchVerses(query);
-          _chapterResults = [];
-          _bookmarkResults = [];
+          verseResults = await _searchVerses(query);
+          chapterResults = [];
+          bookmarkResults = [];
           break;
         case SearchType.chapter:
-          _chapterResults = await _chapterRepository.searchChapters(query);
-          _verseResults = [];
-          _bookmarkResults = [];
+          chapterResults = await _chapterRepository.searchChapters(query);
+          verseResults = [];
+          bookmarkResults = [];
           break;
         case SearchType.general:
-          _verseResults = await _searchVerses(query);
-          _chapterResults = await _chapterRepository.searchChapters(query);
-          _bookmarkResults = await _bookmarkRepository.searchBookmarks(query);
+          verseResults = await _searchVerses(query);
+          chapterResults = await _chapterRepository.searchChapters(query);
+          bookmarkResults = await _bookmarkRepository.searchBookmarks(query);
           break;
       }
+
+      // Discard stale results
+      if (currentGeneration != _searchGeneration) return;
+
+      _verseResults = verseResults;
+      _chapterResults = chapterResults;
+      _bookmarkResults = bookmarkResults;
 
       await _searchHistoryRepository.recordSearch(
         query: query,
@@ -131,10 +162,13 @@ class SearchViewModel extends ChangeNotifier {
       _recentSearches = await _searchHistoryRepository.getRecentSearches();
       _hasSearched = true;
     } catch (e) {
+      if (currentGeneration != _searchGeneration) return;
       _error = e.toString();
     } finally {
-      _isSearching = false;
-      notifyListeners();
+      if (currentGeneration == _searchGeneration) {
+        _isSearching = false;
+        notifyListeners();
+      }
     }
   }
 

@@ -105,11 +105,6 @@ export 'src/data/quran/quran_data_provider.dart';
 export 'src/data/quran/quran_metadata.dart';
 export 'src/data/quran/verse_data_provider.dart';
 
-// Search Engine
-export 'src/search/arabic_normalizer.dart';
-export 'src/search/morphology_index.dart';
-export 'src/search/advanced_verse_search.dart';
-
 // Hive Database Implementations
 export 'src/data/local/hive_database_service.dart';
 export 'src/data/local/dao/hive/hive_bookmark_dao.dart';

@@ -38,10 +38,7 @@ class ArabicSearchOptions {
 
   static const ArabicSearchOptions defaults = ArabicSearchOptions();
 
-  bool get isDefault =>
-      ignoreDiacritics == true &&
-      normalizeLetters == true &&
-      stripTatweelAndPunct == true;
+  bool get isDefault => this == defaults;
 
   ArabicSearchOptions copyWith({
     bool? ignoreDiacritics,
@@ -99,4 +96,16 @@ class VerseAdvancedSearchQuery {
   /// Whether this query uses the morphology index.
   bool get requiresMorphologyIndex =>
       mode == TextMatchMode.root || mode == TextMatchMode.lemma;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is VerseAdvancedSearchQuery &&
+          runtimeType == other.runtimeType &&
+          query == other.query &&
+          mode == other.mode &&
+          options == other.options;
+
+  @override
+  int get hashCode => Object.hash(query, mode, options);
 }

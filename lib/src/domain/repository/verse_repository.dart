@@ -24,7 +24,16 @@ abstract class VerseRepository {
   Future<List<Verse>> searchVerses(String query);
 
   /// Advanced verse search with match modes and Arabic processing options.
-  Future<List<Verse>> searchVersesAdvanced(VerseAdvancedSearchQuery query);
+  ///
+  /// Default implementation throws UnimplementedError to maintain backward
+  /// compatibility. Override in concrete implementations to enable advanced search.
+  Future<List<Verse>> searchVersesAdvanced(VerseAdvancedSearchQuery query) {
+    throw UnimplementedError(
+      'searchVersesAdvanced(VerseAdvancedSearchQuery) is not implemented. '
+      'Override this method in your concrete VerseRepository implementation '
+      'to enable advanced search functionality.',
+    );
+  }
 
   /// Get cached verses for a page (returns null if not cached).
   Future<List<Verse>?> getCachedVersesForPage(int pageNumber);

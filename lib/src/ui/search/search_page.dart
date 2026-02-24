@@ -103,7 +103,7 @@ class _SearchPageState extends State<SearchPage> {
           hintText: 'Search verses or chapters...',
           hintTextDirection: TextDirection.ltr,
           prefixIcon: const Icon(Icons.search_rounded),
-          suffixIcon: Row(
+          suffix: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
@@ -588,8 +588,8 @@ class _AdvancedFiltersSheetState extends State<_AdvancedFiltersSheet> {
   }
 
   void _apply() {
-    widget.viewModel.setMatchMode(_mode);
-    widget.viewModel.setArabicOptions(
+    widget.viewModel.setAdvancedOptions(
+      _mode,
       ArabicSearchOptions(
         ignoreDiacritics: _ignoreDiacritics,
         normalizeLetters: _normalizeLetters,

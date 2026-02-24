@@ -28,7 +28,10 @@ class HiveDatabaseService implements DatabaseService {
   late final List<Part> _parts;
   late final List<Quarter> _quarters;
   final QuranDataProvider _dataProvider = QuranDataProvider.instance;
-  final AdvancedVerseSearch _advancedSearch = AdvancedVerseSearch();
+  final AdvancedVerseSearch _advancedSearch;
+
+  HiveDatabaseService({AdvancedVerseSearch? advancedSearch})
+      : _advancedSearch = advancedSearch ?? AdvancedVerseSearch();
 
   @override
   Future<void> initialize() async {

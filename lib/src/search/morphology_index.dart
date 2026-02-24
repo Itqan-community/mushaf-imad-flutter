@@ -11,7 +11,7 @@ class MorphologyIndex {
   static final MorphologyIndex instance = MorphologyIndex._();
 
   bool _loaded = false;
-  bool _loading = false;
+  Future<void>? _loadingFuture;
 
   /// normalized word → list of roots
   Map<String, List<String>> _wordToRoots = {};
@@ -28,8 +28,21 @@ class MorphologyIndex {
   bool get isLoaded => _loaded;
 
   Future<void> ensureLoaded() async {
-    if (_loaded || _loading) return;
-    _loading = true;
+    if (_loaded) return;
+    if (_loadingFuture != null) {
+      await _loadingFuture;
+      return;
+    }
+
+    _loadingFuture = _load();
+    try {
+      await _loadingFuture;
+    } finally {
+      _loadingFuture = null;
+    }
+  }
+
+  Future<void> _load() async {
     try {
       final jsonStr = await rootBundle.loadString(
         'packages/imad_flutter/assets/masaq_morph_index.min.json',
@@ -44,12 +57,10 @@ class MorphologyIndex {
         _parseJson(jsonStr);
       } catch (_) {
         _loaded = false;
-        _loading = false;
         return;
       }
     }
     _loaded = true;
-    _loading = false;
   }
 
   void _parseJson(String jsonStr) {
@@ -62,11 +73,16 @@ class MorphologyIndex {
 
   Map<String, List<String>> _parseStringListMap(dynamic raw) {
     if (raw is! Map) return {};
-    return raw.map((key, value) {
-      final list =
-          (value as List).map((e) => e.toString()).toList(growable: false);
-      return MapEntry(key.toString(), list);
-    });
+    final result = <String, List<String>>{};
+    for (final entry in raw.entries) {
+      if (entry.value is! List) continue;
+      final key = entry.key.toString();
+      final list = (entry.value as List)
+          .map((e) => e.toString())
+          .toList(growable: false);
+      result[key] = list;
+    }
+    return result;
   }
 
   /// Look up roots for a normalized word.
@@ -105,7 +121,7 @@ class MorphologyIndex {
   /// Reset state (for testing).
   void reset() {
     _loaded = false;
-    _loading = false;
+    _loadingFuture = null;
     _wordToRoots = {};
     _wordToLemmas = {};
     _rootToVerseRefs = {};
