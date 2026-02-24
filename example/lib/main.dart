@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:imad_flutter/imad_flutter.dart';
-import 'package:hive/hive.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:hive_flutter/hive_flutter.dart' show Box, Hive, HiveX;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,21 +45,27 @@ class _MushafAppState extends State<MushafApp> {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Home Page — Main menu showing Core Library and UI Library sections
+// LastPageRepository — Handles persisting and restoring the last read mushaf page using Hive
 // ──────────────────────────────────────────────────────────────────────────────
 class LastPageRepository {
   final Box<int> _box = Hive.box<int>('lastPage');
 
-  // حفظ آخر صفحة
+// save the last page
   Future<void> setLastPage(int page) async {
     await _box.put('lastPage', page);
   }
 
-  // قراءة آخر صفحة (افتراضي 1)
+
+  //read last page (default 1)
   int getLastPage() {
     return _box.get('lastPage', defaultValue: 1)!;
   }
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Home Page — Main menu showing Core Library and UI Library sections
+// ──────────────────────────────────────────────────────────────────────────────
+
 class LibraryHomePage extends StatelessWidget {
   const LibraryHomePage({super.key});
 
@@ -250,7 +255,8 @@ class _MushafViewPageState extends State<MushafViewPage> {
   void initState() {
     super.initState();
 
-    // استرجاع آخر صفحة عند بدء Mushaf
+
+    // restore last page when Mushaf starts
     _currentPage = _repo.getLastPage();
   }
 
