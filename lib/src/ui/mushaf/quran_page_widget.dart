@@ -80,7 +80,7 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
 
           Container(
             height: 1,
-            color: theme.secondaryTextColor.withValues(alpha: 0.3),
+            color: theme.secondaryTextColor.withOpacity(0.3),
           ),
 
           Expanded(
@@ -123,38 +123,40 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
                       }
                     }
 
+                    // ✅ Wrap with GestureDetector to handle Long Press since QuranLineImage doesn't support it natively
                     return Expanded(
-                      child: QuranLineImage(
-                        page: widget.pageNumber,
-                        line: line,
-                        highlights: highlights,
-                        markers: markers,
-                        highlightColor: theme.highlightColor,
-                        textColor: theme.textColor,
+                      child: GestureDetector(
+                        onLongPressStart: (details) {
+                          if (widget.onVerseLongPress == null || versesOnLine.isEmpty) return;
+                          
+                          // Calculate tap ratio manually for long press
+                          final RenderBox box = context.findRenderObject() as RenderBox;
+                          final localOffset = box.globalToLocal(details.globalPosition);
+                          final tapRatio = 1.0 - (localOffset.dx / box.size.width);
 
-                        /// TAP = select verse
-                        onTapUpExact: (tapRatio) {
-                          if (widget.onVerseTap == null ||
-                              versesOnLine.isEmpty) return;
-
-                          final target =
-                              _resolveVerse(tapRatio, versesOnLine, markers, line);
-
-                          widget.onVerseTap!(
-                              target.chapter, target.number);
+                          final target = _resolveVerse(tapRatio, versesOnLine, markers, line);
+                          widget.onVerseLongPress!(target.chapter, target.number);
                         },
+                        child: QuranLineImage(
+                          page: widget.pageNumber,
+                          line: line,
+                          highlights: highlights,
+                          markers: markers,
+                          highlightColor: theme.highlightColor,
+                          textColor: theme.textColor,
 
-                        /// 🔥 LONG PRESS = play from verse / context action
-                        onLongPressExact: (tapRatio) {
-                          if (widget.onVerseLongPress == null ||
-                              versesOnLine.isEmpty) return;
+                          /// TAP = select verse
+                          onTapUpExact: (tapRatio) {
+                            if (widget.onVerseTap == null ||
+                                versesOnLine.isEmpty) return;
 
-                          final target =
-                              _resolveVerse(tapRatio, versesOnLine, markers, line);
+                            final target =
+                                _resolveVerse(tapRatio, versesOnLine, markers, line);
 
-                          widget.onVerseLongPress!(
-                              target.chapter, target.number);
-                        },
+                            widget.onVerseTap!(
+                                target.chapter, target.number);
+                          },
+                        ),
                       ),
                     );
                   }),
@@ -167,6 +169,7 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
     );
   }
 
+  /// ✅ Logic to find which verse was touched based on horizontal position (ratio)
   PageVerseData _resolveVerse(
     double tapRatio,
     List<PageVerseData> versesOnLine,
@@ -234,7 +237,7 @@ class _PageHeader extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: themeData.secondaryTextColor.withValues(alpha: 0.15),
+                color: themeData.secondaryTextColor.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -252,4 +255,3 @@ class _PageHeader extends StatelessWidget {
     );
   }
 }
-
