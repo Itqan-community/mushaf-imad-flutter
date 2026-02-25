@@ -97,40 +97,69 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
             _player.processingState == ProcessingState.buffering ||
             _player.processingState == ProcessingState.loading,
         isRepeatEnabled: _player.loopMode != LoopMode.off,
-        errorMessage: null, // Hook up to stream errors if needed
+        errorMessage: null,
       ),
     );
   }
 
-  /// Custom extension to load a specific chapter from a reciter
+  /// Load a chapter, optionally starting from a specific ayah
   Future<void> loadChapter(
     int chapterNumber,
     ReciterInfo reciter, {
     bool autoPlay = false,
+    int? startAyahNumber,
   }) async {
     _currentChapter = chapterNumber;
     _currentReciterId = reciter.id;
 
-    // Use CORS proxy for web to bypass restrictive mp3quran headers
-    final url = kIsWeb
-        ? 'https://corsproxy.io/?${Uri.encodeComponent(reciter.getAudioUrl(chapterNumber))}'
-        : reciter.getAudioUrl(chapterNumber);
-
     final title = 'Surah ${chapterNumber.toString().padLeft(3, "0")}';
-    print('[FlutterAudioPlayer] Loading chapter: $title from URL: $url');
-
-    mediaItem.add(
-      MediaItem(id: url, album: reciter.getDisplayName(), title: title),
-    );
+    print('[FlutterAudioPlayer] Loading chapter: $title');
 
     try {
-      print('[FlutterAudioPlayer] Calling setAudioSource...');
-      await _player.setAudioSource(AudioSource.uri(Uri.parse(url)));
-      print(
-        '[FlutterAudioPlayer] setAudioSource completed successfully. autoPlay=$autoPlay',
+      AudioSource source;
+
+      // ✅ تشغيل من آية معيّنة
+      if (startAyahNumber != null && startAyahNumber > 1) {
+        final verseCount = reciter.getChapterVerseCount(chapterNumber);
+        final children = <AudioSource>[];
+
+        for (int ayah = startAyahNumber; ayah <= verseCount; ayah++) {
+          final ayahUrl = reciter.getAyahUrl(
+            chapterNumber: chapterNumber,
+            ayahNumber: ayah,
+          );
+
+          final finalUrl = kIsWeb
+              ? 'https://corsproxy.io/?${Uri.encodeComponent(ayahUrl)}'
+              : ayahUrl;
+
+          children.add(AudioSource.uri(Uri.parse(finalUrl)));
+        }
+
+        source = ConcatenatingAudioSource(children: children);
+      }
+      // ✅ السلوك القديم: تشغيل السورة كاملة
+      else {
+        final chapterUrl = reciter.getAudioUrl(chapterNumber);
+        final finalUrl = kIsWeb
+            ? 'https://corsproxy.io/?${Uri.encodeComponent(chapterUrl)}'
+            : chapterUrl;
+
+        source = AudioSource.uri(Uri.parse(finalUrl));
+      }
+
+      mediaItem.add(
+        MediaItem(
+          id: 'chapter-$chapterNumber',
+          album: reciter.getDisplayName(),
+          title: title,
+        ),
       );
+
+      await _player.setAudioSource(source);
+
       if (autoPlay) {
-        play();
+        await play();
       }
     } catch (e, stack) {
       print('[FlutterAudioPlayer] ERROR loading audio source: $e');
@@ -181,15 +210,15 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
   Future<void> setRepeatMode(AudioServiceRepeatMode repeatMode) async {
     final loopMode =
         repeatMode == AudioServiceRepeatMode.all ||
-            repeatMode == AudioServiceRepeatMode.one
-        ? LoopMode.one
-        : LoopMode.off;
+                repeatMode == AudioServiceRepeatMode.one
+            ? LoopMode.one
+            : LoopMode.off;
     await _player.setLoopMode(loopMode);
   }
 
   Future<void> setRepeatModeBool(bool enabled) => setRepeatMode(
-    enabled ? AudioServiceRepeatMode.one : AudioServiceRepeatMode.none,
-  );
+        enabled ? AudioServiceRepeatMode.one : AudioServiceRepeatMode.none,
+      );
 
   bool isRepeatMode() => _player.loopMode != LoopMode.off;
 }
