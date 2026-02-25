@@ -54,6 +54,9 @@ class MushafPageViewState extends State<MushafPageView> {
 
   Future<void> _initAudioListener() async {
     await VerseDataProvider.instance.initialize();
+    
+    // ✅ Check mounted before subscribing to avoid memory leaks
+    if (!mounted) return;
 
     _audioSubscription = mushafGetIt<AudioRepository>()
         .getPlayerStateStream()
@@ -159,6 +162,14 @@ class MushafPageViewState extends State<MushafPageView> {
                                 _selectedVerseKey == key ? null : key;
                           });
                         },
+                        // ✅ Wired Long Press to Play Verse
+                        onVerseLongPress: (chapter, verse) {
+                          mushafGetIt<AudioRepository>().loadChapter(
+                            chapter,
+                            autoPlay: true,
+                            startAyahNumber: verse,
+                          );
+                        },
                       );
                     },
                   ),
@@ -169,6 +180,7 @@ class MushafPageViewState extends State<MushafPageView> {
                       right: 0,
                       bottom: 0,
                       child: _NavigationBar(
+                        themeData: themeData, // Passed theme
                         currentPage: _currentPage,
                         totalPages: QuranDataProvider.totalPages,
                         canGoPrevious: _currentPage > 1,
@@ -185,6 +197,7 @@ class MushafPageViewState extends State<MushafPageView> {
                         top: MediaQuery.of(context).padding.top + 8,
                         right: 16,
                         child: _PageInfoBadge(
+                          themeData: themeData, // Passed theme
                           pageNumber: _currentPage,
                           chapterName: chapterName,
                           juzNumber: juz,
@@ -222,6 +235,7 @@ class MushafPageViewState extends State<MushafPageView> {
 /// ---------- UI helpers ----------
 
 class _NavigationBar extends StatelessWidget {
+  final ReadingThemeData themeData;
   final int currentPage;
   final int totalPages;
   final bool canGoPrevious;
@@ -231,6 +245,7 @@ class _NavigationBar extends StatelessWidget {
   final VoidCallback? onOpenChapterIndex;
 
   const _NavigationBar({
+    required this.themeData,
     required this.currentPage,
     required this.totalPages,
     required this.canGoPrevious,
@@ -249,23 +264,27 @@ class _NavigationBar extends StatelessWidget {
         top: 12,
         bottom: MediaQuery.of(context).padding.bottom + 12,
       ),
-      color: const Color(0xFFFDF8F0).withValues(alpha: 0.95),
+      // ✅ Removed hardcoded color, using theme background with opacity
+      color: themeData.backgroundColor.withOpacity(0.95),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _NavButton(
+            themeData: themeData,
             icon: Icons.arrow_back_rounded,
             enabled: canGoNext,
             onTap: onNext,
           ),
           if (onOpenChapterIndex != null)
             _NavButton(
+              themeData: themeData,
               icon: Icons.menu_book_rounded,
               enabled: true,
               onTap: onOpenChapterIndex!,
               isAccent: true,
             ),
           _NavButton(
+            themeData: themeData,
             icon: Icons.arrow_forward_rounded,
             enabled: canGoPrevious,
             onTap: onPrevious,
@@ -277,12 +296,14 @@ class _NavigationBar extends StatelessWidget {
 }
 
 class _NavButton extends StatelessWidget {
+  final ReadingThemeData themeData;
   final IconData icon;
   final bool enabled;
   final VoidCallback onTap;
   final bool isAccent;
 
   const _NavButton({
+    required this.themeData,
     required this.icon,
     required this.enabled,
     required this.onTap,
@@ -296,8 +317,9 @@ class _NavButton extends StatelessWidget {
       child: Icon(
         icon,
         size: 26,
+        // ✅ Using theme text color instead of hardcoded dark brown
         color: enabled
-            ? (isAccent ? Colors.white : const Color(0xFF5C4033))
+            ? (isAccent ? Colors.blueAccent : themeData.textColor)
             : Colors.grey,
       ),
     );
@@ -305,11 +327,13 @@ class _NavButton extends StatelessWidget {
 }
 
 class _PageInfoBadge extends StatelessWidget {
+  final ReadingThemeData themeData;
   final int pageNumber;
   final String chapterName;
   final int juzNumber;
 
   const _PageInfoBadge({
+    required this.themeData,
     required this.pageNumber,
     required this.chapterName,
     required this.juzNumber,
@@ -320,17 +344,18 @@ class _PageInfoBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5ECD7),
+        // ✅ Subtle theme-based background for the badge
+        color: themeData.textColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
         '${QuranDataProvider.toArabicNumerals(pageNumber)} / ٦٠٤',
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w700,
+          color: themeData.textColor,
         ),
       ),
     );
   }
 }
-
