@@ -23,7 +23,6 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
   }
 
   void _initStreams() {
-    // Listen to just_audio state changes and broadcast to audio_service and domain
     _player.playbackEventStream.listen((PlaybackEvent event) {
       final playing = _player.playing;
       playbackState.add(
@@ -53,6 +52,11 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
     });
 
     _player.positionStream.listen((_) => _broadcastDomainState());
+  }
+
+  /// ✅ Helper to resolve final URL for Web compatibility (CORS Proxy)
+  String _resolveFinalUrl(String url) {
+    return kIsWeb ? 'https://corsproxy.io/?${Uri.encodeComponent(url)}' : url;
   }
 
   AudioProcessingState _getProcessingState() {
@@ -102,7 +106,6 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
     );
   }
 
-  /// Load a chapter, optionally starting from a specific ayah
   Future<void> loadChapter(
     int chapterNumber,
     ReciterInfo reciter, {
@@ -113,13 +116,13 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
     _currentReciterId = reciter.id;
 
     final title = 'Surah ${chapterNumber.toString().padLeft(3, "0")}';
-    print('[FlutterAudioPlayer] Loading chapter: $title');
+    debugPrint('[FlutterAudioPlayer] Loading chapter: $title');
 
     try {
       AudioSource source;
 
-      // ✅ تشغيل من آية معيّنة
       if (startAyahNumber != null && startAyahNumber > 1) {
+        // ⚠️ Note: ReciterInfo must implement getChapterVerseCount and getAyahUrl
         final verseCount = reciter.getChapterVerseCount(chapterNumber);
         final children = <AudioSource>[];
 
@@ -128,24 +131,17 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
             chapterNumber: chapterNumber,
             ayahNumber: ayah,
           );
-
-          final finalUrl = kIsWeb
-              ? 'https://corsproxy.io/?${Uri.encodeComponent(ayahUrl)}'
-              : ayahUrl;
-
-          children.add(AudioSource.uri(Uri.parse(finalUrl)));
+          
+          // ✅ Using helper to avoid duplication
+          children.add(AudioSource.uri(Uri.parse(_resolveFinalUrl(ayahUrl))));
         }
 
         source = ConcatenatingAudioSource(children: children);
-      }
-      // ✅ السلوك القديم: تشغيل السورة كاملة
-      else {
+      } else {
         final chapterUrl = reciter.getAudioUrl(chapterNumber);
-        final finalUrl = kIsWeb
-            ? 'https://corsproxy.io/?${Uri.encodeComponent(chapterUrl)}'
-            : chapterUrl;
-
-        source = AudioSource.uri(Uri.parse(finalUrl));
+        
+        // ✅ Using helper to avoid duplication
+        source = AudioSource.uri(Uri.parse(_resolveFinalUrl(chapterUrl)));
       }
 
       mediaItem.add(
@@ -162,8 +158,8 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
         await play();
       }
     } catch (e, stack) {
-      print('[FlutterAudioPlayer] ERROR loading audio source: $e');
-      print(stack);
+      debugPrint('[FlutterAudioPlayer] ERROR loading audio source: $e');
+      debugPrintStack(stackTrace: stack);
       _domainStateController.add(
         domain.AudioPlayerState(
           playbackState: domain.PlaybackState.error,
@@ -175,27 +171,24 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> play() async {
-    print(
-      '[FlutterAudioPlayer] Play requested. Current state: ${_player.processingState}, playing: ${_player.playing}',
-    );
+    debugPrint('[FlutterAudioPlayer] Play requested.');
     try {
       await _player.play();
-      print('[FlutterAudioPlayer] Play completed.');
     } catch (e, stack) {
-      print('[FlutterAudioPlayer] ERROR during play(): $e');
-      print(stack);
+      debugPrint('[FlutterAudioPlayer] ERROR during play(): $e');
+      debugPrintStack(stackTrace: stack);
     }
   }
 
   @override
   Future<void> pause() async {
-    print('[FlutterAudioPlayer] Pause requested.');
+    debugPrint('[FlutterAudioPlayer] Pause requested.');
     await _player.pause();
   }
 
   @override
   Future<void> stop() async {
-    print('[FlutterAudioPlayer] Stop requested.');
+    debugPrint('[FlutterAudioPlayer] Stop requested.');
     await _player.stop();
     await super.stop();
   }
@@ -208,16 +201,23 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> setRepeatMode(AudioServiceRepeatMode repeatMode) async {
-    final loopMode =
-        repeatMode == AudioServiceRepeatMode.all ||
-                repeatMode == AudioServiceRepeatMode.one
-            ? LoopMode.one
-            : LoopMode.off;
+    // ✅ Improved mapping: .all should loop the whole playlist, not just one ayah
+    late final LoopMode loopMode;
+    switch (repeatMode) {
+      case AudioServiceRepeatMode.one:
+        loopMode = LoopMode.one;
+      case AudioServiceRepeatMode.all:
+      case AudioServiceRepeatMode.group:
+        loopMode = LoopMode.all;
+      case AudioServiceRepeatMode.none:
+      default:
+        loopMode = LoopMode.off;
+    }
     await _player.setLoopMode(loopMode);
   }
 
   Future<void> setRepeatModeBool(bool enabled) => setRepeatMode(
-        enabled ? AudioServiceRepeatMode.one : AudioServiceRepeatMode.none,
+        enabled ? AudioServiceRepeatMode.all : AudioServiceRepeatMode.none,
       );
 
   bool isRepeatMode() => _player.loopMode != LoopMode.off;
