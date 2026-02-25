@@ -12,7 +12,9 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
   int? _currentChapter;
   int? _currentReciterId;
 
-  /// Expose the underlying just_audio player state as our domain state
+  // ✅ Fix 1: Extract proxy URL to a constant as requested by CodeRabbit
+  static const String _webProxyUrl = 'https://corsproxy.io/?';
+
   final _domainStateController =
       StreamController<domain.AudioPlayerState>.broadcast();
   Stream<domain.AudioPlayerState> get domainStateStream =>
@@ -20,6 +22,12 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
 
   FlutterAudioPlayer() {
     _initStreams();
+  }
+
+  // ✅ Fix 2: Add dispose to prevent memory leaks
+  Future<void> dispose() async {
+    await _player.dispose();
+    await _domainStateController.close();
   }
 
   void _initStreams() {
@@ -54,9 +62,9 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
     _player.positionStream.listen((_) => _broadcastDomainState());
   }
 
-  /// ✅ Helper to resolve final URL for Web compatibility (CORS Proxy)
+  /// ✅ Fix 3: Use the constant for proxy URL
   String _resolveFinalUrl(String url) {
-    return kIsWeb ? 'https://corsproxy.io/?${Uri.encodeComponent(url)}' : url;
+    return kIsWeb ? '$_webProxyUrl${Uri.encodeComponent(url)}' : url;
   }
 
   AudioProcessingState _getProcessingState() {
@@ -89,10 +97,10 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
     }
   }
 
-  void _broadcastDomainState() {
+  void _broadcastDomainState({String? error}) {
     _domainStateController.add(
       domain.AudioPlayerState(
-        playbackState: _getDomainPlaybackState(),
+        playbackState: error != null ? domain.PlaybackState.error : _getDomainPlaybackState(),
         currentPositionMs: _player.position.inMilliseconds,
         durationMs: _player.duration?.inMilliseconds ?? 0,
         currentChapter: _currentChapter,
@@ -101,7 +109,7 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
             _player.processingState == ProcessingState.buffering ||
             _player.processingState == ProcessingState.loading,
         isRepeatEnabled: _player.loopMode != LoopMode.off,
-        errorMessage: null,
+        errorMessage: error,
       ),
     );
   }
@@ -122,25 +130,25 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
       AudioSource source;
 
       if (startAyahNumber != null && startAyahNumber > 1) {
-        // ⚠️ Note: ReciterInfo must implement getChapterVerseCount and getAyahUrl
         final verseCount = reciter.getChapterVerseCount(chapterNumber);
-        final children = <AudioSource>[];
-
-        for (int ayah = startAyahNumber; ayah <= verseCount; ayah++) {
-          final ayahUrl = reciter.getAyahUrl(
-            chapterNumber: chapterNumber,
-            ayahNumber: ayah,
-          );
-          
-          // ✅ Using helper to avoid duplication
-          children.add(AudioSource.uri(Uri.parse(_resolveFinalUrl(ayahUrl))));
+        
+        // ✅ Fix 4: Add validation for startAyahNumber to avoid empty playlist error
+        if (startAyahNumber > verseCount) {
+          final chapterUrl = reciter.getAudioUrl(chapterNumber);
+          source = AudioSource.uri(Uri.parse(_resolveFinalUrl(chapterUrl)));
+        } else {
+          final children = <AudioSource>[];
+          for (int ayah = startAyahNumber; ayah <= verseCount; ayah++) {
+            final ayahUrl = reciter.getAyahUrl(
+              chapterNumber: chapterNumber,
+              ayahNumber: ayah,
+            );
+            children.add(AudioSource.uri(Uri.parse(_resolveFinalUrl(ayahUrl))));
+          }
+          source = ConcatenatingAudioSource(children: children);
         }
-
-        source = ConcatenatingAudioSource(children: children);
       } else {
         final chapterUrl = reciter.getAudioUrl(chapterNumber);
-        
-        // ✅ Using helper to avoid duplication
         source = AudioSource.uri(Uri.parse(_resolveFinalUrl(chapterUrl)));
       }
 
@@ -160,12 +168,7 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
     } catch (e, stack) {
       debugPrint('[FlutterAudioPlayer] ERROR loading audio source: $e');
       debugPrintStack(stackTrace: stack);
-      _domainStateController.add(
-        domain.AudioPlayerState(
-          playbackState: domain.PlaybackState.error,
-          errorMessage: e.toString(),
-        ),
-      );
+      _broadcastDomainState(error: e.toString());
     }
   }
 
@@ -177,18 +180,18 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
     } catch (e, stack) {
       debugPrint('[FlutterAudioPlayer] ERROR during play(): $e');
       debugPrintStack(stackTrace: stack);
+      // ✅ Fix 5: Inform UI about play errors
+      _broadcastDomainState(error: e.toString());
     }
   }
 
   @override
   Future<void> pause() async {
-    debugPrint('[FlutterAudioPlayer] Pause requested.');
     await _player.pause();
   }
 
   @override
   Future<void> stop() async {
-    debugPrint('[FlutterAudioPlayer] Stop requested.');
     await _player.stop();
     await super.stop();
   }
@@ -197,28 +200,21 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
   Future<void> seek(Duration position) => _player.seek(position);
 
   @override
-  Future<void> setSpeed(double speed) => _player.setSpeed(speed);
-
-  @override
   Future<void> setRepeatMode(AudioServiceRepeatMode repeatMode) async {
-    // ✅ Improved mapping: .all should loop the whole playlist, not just one ayah
     late final LoopMode loopMode;
     switch (repeatMode) {
       case AudioServiceRepeatMode.one:
         loopMode = LoopMode.one;
+        break;
       case AudioServiceRepeatMode.all:
       case AudioServiceRepeatMode.group:
         loopMode = LoopMode.all;
+        break;
       case AudioServiceRepeatMode.none:
       default:
         loopMode = LoopMode.off;
+        break;
     }
     await _player.setLoopMode(loopMode);
   }
-
-  Future<void> setRepeatModeBool(bool enabled) => setRepeatMode(
-        enabled ? AudioServiceRepeatMode.all : AudioServiceRepeatMode.none,
-      );
-
-  bool isRepeatMode() => _player.loopMode != LoopMode.off;
 }
