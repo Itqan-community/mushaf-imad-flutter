@@ -6,20 +6,20 @@ import '../theme/reading_theme.dart';
 import 'quran_line_image.dart';
 
 /// Renders a single Quran page — 15 line images with a page header.
-///
-/// Port of the Android QuranPageView composable.
-/// Supports verse-level selection and highlighting.
+/// Supports verse-level selection, highlighting, and long-press actions.
 class QuranPageWidget extends StatefulWidget {
   final int pageNumber;
 
   /// Currently selected verse (chapterNumber * 1000 + verseNumber).
-  /// null means no selection.
   final int? selectedVerseKey;
 
-  /// Called when a verse is tapped. Provides (chapterNumber, verseNumber).
+  /// Called when a verse is tapped (selection).
   final void Function(int chapterNumber, int verseNumber)? onVerseTap;
 
-  /// Reading theme data for colors. Defaults to light theme.
+  /// 🔥 NEW: Called when a verse is long-pressed (e.g. play from verse)
+  final void Function(int chapterNumber, int verseNumber)? onVerseLongPress;
+
+  /// Reading theme data for colors.
   final ReadingThemeData? themeData;
 
   const QuranPageWidget({
@@ -27,6 +27,7 @@ class QuranPageWidget extends StatefulWidget {
     required this.pageNumber,
     this.selectedVerseKey,
     this.onVerseTap,
+    this.onVerseLongPress,
     this.themeData,
   });
 
@@ -70,7 +71,6 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
       color: theme.backgroundColor,
       child: Column(
         children: [
-          // Page header
           _PageHeader(
             chapters: _chapters,
             pageNumber: widget.pageNumber,
@@ -78,13 +78,11 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
             themeData: theme,
           ),
 
-          // Divider
           Container(
             height: 1,
             color: theme.secondaryTextColor.withValues(alpha: 0.3),
           ),
 
-          // 15 line images
           Expanded(
             child: Directionality(
               textDirection: TextDirection.rtl,
@@ -94,7 +92,6 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
                   children: List.generate(15, (index) {
                     final line = index + 1;
 
-                    // Find markers ending on this line
                     final markers = pageVerses
                         .where(
                           (v) =>
@@ -103,12 +100,10 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
                         )
                         .toList();
 
-                    // Find verses that occupy this line
                     final versesOnLine = pageVerses
                         .where((v) => v.occupiesLine(line))
                         .toList();
 
-                    // Calculate exact highlight regions for the selected verse
                     final highlights = <VerseHighlightData>[];
                     if (widget.selectedVerseKey != null) {
                       final selectedVerse = versesOnLine
@@ -136,37 +131,29 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
                         markers: markers,
                         highlightColor: theme.highlightColor,
                         textColor: theme.textColor,
+
+                        /// TAP = select verse
                         onTapUpExact: (tapRatio) {
-                          if (widget.onVerseTap == null || versesOnLine.isEmpty)
-                            return;
+                          if (widget.onVerseTap == null ||
+                              versesOnLine.isEmpty) return;
 
-                          PageVerseData? target;
+                          final target =
+                              _resolveVerse(tapRatio, versesOnLine, markers, line);
 
-                          // 1. Precise hit test against exact verse bounds
-                          for (final verse in versesOnLine) {
-                            final hList = verse.highlights1441.where(
-                              (h) => h.line == line,
-                            );
-                            for (final h in hList) {
-                              if (tapRatio >= h.left && tapRatio <= h.right) {
-                                target = verse;
-                                break;
-                              }
-                            }
-                            if (target != null) break;
-                          }
+                          widget.onVerseTap!(
+                              target.chapter, target.number);
+                        },
 
-                          // 2. Fallback if tapped on empty space or gap between verses
-                          if (target == null) {
-                            target = markers.isNotEmpty
-                                ? markers.last
-                                : versesOnLine.last;
-                          }
+                        /// 🔥 LONG PRESS = play from verse / context action
+                        onLongPressExact: (tapRatio) {
+                          if (widget.onVerseLongPress == null ||
+                              versesOnLine.isEmpty) return;
 
-                          print(
-                            "Calling onVerseTap with chapter: ${target?.chapter}, verse: ${target?.number}",
-                          );
-                          widget.onVerseTap!(target!.chapter, target.number);
+                          final target =
+                              _resolveVerse(tapRatio, versesOnLine, markers, line);
+
+                          widget.onVerseLongPress!(
+                              target.chapter, target.number);
                         },
                       ),
                     );
@@ -179,9 +166,25 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
       ),
     );
   }
+
+  PageVerseData _resolveVerse(
+    double tapRatio,
+    List<PageVerseData> versesOnLine,
+    List<PageVerseData> markers,
+    int line,
+  ) {
+    for (final verse in versesOnLine) {
+      final hList = verse.highlights1441.where((h) => h.line == line);
+      for (final h in hList) {
+        if (tapRatio >= h.left && tapRatio <= h.right) {
+          return verse;
+        }
+      }
+    }
+    return markers.isNotEmpty ? markers.last : versesOnLine.last;
+  }
 }
 
-/// Page header showing surah name, page number, and juz.
 class _PageHeader extends StatelessWidget {
   final List<ChapterData> chapters;
   final int pageNumber;
@@ -208,7 +211,6 @@ class _PageHeader extends StatelessWidget {
         textDirection: TextDirection.rtl,
         child: Row(
           children: [
-            // Juz (right side in RTL)
             Text(
               'جزء ${QuranDataProvider.toArabicNumerals(juzNumber)}',
               style: TextStyle(
@@ -217,8 +219,6 @@ class _PageHeader extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               ),
             ),
-
-            // Chapter name (center)
             Expanded(
               child: Text(
                 chapterName,
@@ -231,8 +231,6 @@ class _PageHeader extends StatelessWidget {
                 ),
               ),
             ),
-
-            // Page number (left side in RTL)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
@@ -254,3 +252,4 @@ class _PageHeader extends StatelessWidget {
     );
   }
 }
+
