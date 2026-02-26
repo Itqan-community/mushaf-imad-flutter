@@ -65,6 +65,9 @@ Future<void> setupMushafDependencies({
   required SearchHistoryDao searchHistoryDao,
   MushafLogger? logger,
 }) async {
+  // Guard: if already registered, skip entirely
+  if (mushafGetIt.isRegistered<MushafLogger>()) return;
+
   // Logger
   mushafGetIt.registerSingleton<MushafLogger>(logger ?? DefaultMushafLogger());
 
