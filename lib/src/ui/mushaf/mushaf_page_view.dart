@@ -59,7 +59,6 @@ class MushafPageViewState extends State<MushafPageView> {
     await VerseDataProvider.instance.initialize();
     if (!mounted) return;
 
-    // ✅ Cleanly handle subscription to avoid memory leaks
     final stream = mushafGetIt<AudioRepository>().getPlayerStateStream();
     _audioSubscription = stream.listen((state) {
       if (!mounted) return;
@@ -168,11 +167,12 @@ class MushafPageViewState extends State<MushafPageView> {
                           final reciterId = _currentReciterId;
                           if (reciterId == null) return;
 
-                          // ✅ Fixed: Removed startAyahNumber to match Repository signature
+                          // ✅ تم الإصلاح: تمرير startAyahNumber لتبدأ التلاوة من الآية المحددة
                           mushafGetIt<AudioRepository>().loadChapter(
                             chapter,
                             reciterId,
                             autoPlay: true,
+                            startAyahNumber: verse,
                           );
                         },
                       );
@@ -315,7 +315,6 @@ class _NavButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Better touch feedback with Material, Padding and BorderRadius
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -358,7 +357,8 @@ class _PageInfoBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
-        '${QuranDataProvider.toArabicNumerals(pageNumber)} / ٦٠٤',
+        // ✅ تم الإصلاح: استخدام إجمالي الصفحات ديناميكياً مع الأرقام العربية
+        '${QuranDataProvider.toArabicNumerals(pageNumber)} / ${QuranDataProvider.toArabicNumerals(QuranDataProvider.totalPages)}',
         style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w700,
