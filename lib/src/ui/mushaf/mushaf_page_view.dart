@@ -168,11 +168,10 @@ class MushafPageViewState extends State<MushafPageView> {
                           final reciterId = _currentReciterId;
                           if (reciterId == null) return;
 
-                          // ✅ Corrected loadChapter signature: chapter, reciterId, startAyah, autoPlay
+                          // ✅ Fixed: Removed startAyahNumber to match Repository signature
                           mushafGetIt<AudioRepository>().loadChapter(
                             chapter,
                             reciterId,
-                            startAyahNumber: verse,
                             autoPlay: true,
                           );
                         },
