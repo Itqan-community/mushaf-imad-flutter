@@ -6,6 +6,7 @@ import '../../domain/repository/audio_repository.dart';
 import '../audio/ayah_timing_service.dart';
 import '../audio/flutter_audio_player.dart';
 import '../audio/reciter_service.dart';
+
 class DefaultAudioRepository implements AudioRepository {
   final ReciterService _reciterService;
   final AyahTimingService _ayahTimingService;
@@ -75,14 +76,17 @@ class DefaultAudioRepository implements AudioRepository {
     int chapterNumber,
     int reciterId, {
     bool autoPlay = false,
+    int? startAyahNumber, // ✅ تم إضافة المعامل هنا
   }) async {
     final reciter = await _reciterService.getReciterById(reciterId);
     if (reciter == null) return;
 
+    // ✅ تمرير startAyahNumber إلى المشغل الفعلي
     await _audioPlayer.loadChapter(
       chapterNumber,
       reciter,
       autoPlay: autoPlay,
+      startAyahNumber: startAyahNumber,
     );
   }
 
