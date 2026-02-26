@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
+
 import '../../domain/models/audio_player_state.dart' as domain;
 import '../../domain/models/reciter_info.dart';
 
@@ -12,11 +13,12 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
   int? _currentChapter;
   int? _currentReciterId;
 
-  // ✅ Fix 1: Extract proxy URL to a constant as requested by CodeRabbit
+  /// Web proxy for CORS (used only on web)
   static const String _webProxyUrl = 'https://corsproxy.io/?';
 
   final _domainStateController =
       StreamController<domain.AudioPlayerState>.broadcast();
+
   Stream<domain.AudioPlayerState> get domainStateStream =>
       _domainStateController.stream;
 
@@ -24,7 +26,7 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
     _initStreams();
   }
 
-  // ✅ Fix 2: Add dispose to prevent memory leaks
+  /// Dispose resources
   Future<void> dispose() async {
     await _player.dispose();
     await _domainStateController.close();
@@ -33,6 +35,7 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
   void _initStreams() {
     _player.playbackEventStream.listen((PlaybackEvent event) {
       final playing = _player.playing;
+
       playbackState.add(
         playbackState.value.copyWith(
           controls: [
@@ -62,7 +65,6 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
     _player.positionStream.listen((_) => _broadcastDomainState());
   }
 
-  /// ✅ Fix 3: Use the constant for proxy URL
   String _resolveFinalUrl(String url) {
     return kIsWeb ? '$_webProxyUrl${Uri.encodeComponent(url)}' : url;
   }
@@ -100,7 +102,8 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
   void _broadcastDomainState({String? error}) {
     _domainStateController.add(
       domain.AudioPlayerState(
-        playbackState: error != null ? domain.PlaybackState.error : _getDomainPlaybackState(),
+        playbackState:
+            error != null ? domain.PlaybackState.error : _getDomainPlaybackState(),
         currentPositionMs: _player.position.inMilliseconds,
         durationMs: _player.duration?.inMilliseconds ?? 0,
         currentChapter: _currentChapter,
@@ -131,8 +134,7 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
 
       if (startAyahNumber != null && startAyahNumber > 1) {
         final verseCount = reciter.getChapterVerseCount(chapterNumber);
-        
-        // ✅ Fix 4: Add validation for startAyahNumber to avoid empty playlist error
+
         if (startAyahNumber > verseCount) {
           final chapterUrl = reciter.getAudioUrl(chapterNumber);
           source = AudioSource.uri(Uri.parse(_resolveFinalUrl(chapterUrl)));
@@ -143,7 +145,9 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
               chapterNumber: chapterNumber,
               ayahNumber: ayah,
             );
-            children.add(AudioSource.uri(Uri.parse(_resolveFinalUrl(ayahUrl))));
+            children.add(
+              AudioSource.uri(Uri.parse(_resolveFinalUrl(ayahUrl))),
+            );
           }
           source = ConcatenatingAudioSource(children: children);
         }
@@ -172,6 +176,19 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
     }
   }
 
+  Future<void> loadChapterByReciterId(
+    int chapterNumber,
+    int reciterId, {
+    bool autoPlay = false,
+  }) async {
+    final reciter = ReciterInfo.byId(reciterId);
+    return loadChapter(
+      chapterNumber,
+      reciter,
+      autoPlay: autoPlay,
+    );
+  }
+
   @override
   Future<void> play() async {
     debugPrint('[FlutterAudioPlayer] Play requested.');
@@ -180,7 +197,6 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
     } catch (e, stack) {
       debugPrint('[FlutterAudioPlayer] ERROR during play(): $e');
       debugPrintStack(stackTrace: stack);
-      // ✅ Fix 5: Inform UI about play errors
       _broadcastDomainState(error: e.toString());
     }
   }
