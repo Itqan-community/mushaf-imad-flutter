@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+// ⚠️ السطر ده هو مفتاح الحل، تأكد من مسار الملف الصحيح في مشروعك
 import '../../domain/models/page_verse_data.dart'; 
 import 'quran_line_image.dart';
 
 class QuranPageWidget extends StatefulWidget {
   final int pageNumber;
-  final List<PageVerseData> verses;
+  final List<PageVerseData> verses; // الآن سيعرف أن لها line و chapter
   final List<PageVerseData> markers;
   final int? highlightedVerseKey;
-  final ThemeData themeData; 
+  final ThemeData themeData;
   final Function(int chapter, int verse)? onVerseTap;
   final Function(int chapter, int verse)? onVerseLongPress;
 
@@ -16,7 +17,7 @@ class QuranPageWidget extends StatefulWidget {
     required this.pageNumber,
     required this.verses,
     required this.markers,
-    required this.themeData,  
+    required this.themeData,
     this.highlightedVerseKey,
     this.onVerseTap,
     this.onVerseLongPress,
@@ -29,7 +30,7 @@ class QuranPageWidget extends StatefulWidget {
 class _QuranPageWidgetState extends State<QuranPageWidget> {
   @override
   Widget build(BuildContext context) {
-    final theme = widget.themeData; // نستخدم الثيم الممرر من الأب
+    final theme = widget.themeData;
     
     return Container(
       color: theme.scaffoldBackgroundColor,
@@ -38,6 +39,8 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
         physics: const NeverScrollableScrollPhysics(),
         itemBuilder: (context, index) {
           final line = index + 1;
+          
+          // هنا Dart سيفهم الـ v والـ m لأننا حددنا النوع في الـ List فوق
           final versesOnLine = widget.verses.where((v) => v.line == line).toList();
           final markersOnLine = widget.markers.where((m) => m.line == line).toList();
           
@@ -81,6 +84,7 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
     );
   }
 
+  // تحديد النوع هنا يمنع خطأ "PageVerseData isn't a type"
   PageVerseData? _resolveVerse(double tapRatio, List<PageVerseData> verses, List<PageVerseData> markers, int line) {
     for (final verse in verses) {
       final hList = verse.highlights1441.where((h) => h.line == line);
