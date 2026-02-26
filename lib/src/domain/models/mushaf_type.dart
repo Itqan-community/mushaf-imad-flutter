@@ -6,4 +6,8 @@ enum MushafType {
 
   /// Traditional layout (1405 Hijri)
   hafs1405,
+
+  /// Warsh Mushaf - North African riwaya
+  /// Uses different page layout and verse markings
+  warsh,
 }

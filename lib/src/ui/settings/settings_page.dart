@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/audio/reciter_data_provider.dart';
 import '../../di/core_module.dart';
+import '../../domain/models/mushaf_type.dart';
 import '../../domain/repository/data_export_repository.dart';
 import '../../domain/repository/preferences_repository.dart';
 import '../theme/theme_picker_widget.dart';
@@ -62,10 +63,17 @@ class _SettingsPageState extends State<SettingsPage> {
               Card(
                 child: Column(
                   children: [
-                    _PreferenceTile(
-                      icon: Icons.menu_book_rounded,
-                      label: 'Mushaf Type',
-                      value: _viewModel.mushafType.name.toUpperCase(),
+                    ListTile(
+                      leading: const Icon(Icons.menu_book_rounded),
+                      title: const Text('Mushaf Type'),
+                      trailing: Text(
+                        _getMushafTypeDisplayName(_viewModel.mushafType),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      onTap: () => _showMushafTypeSelector(context),
                     ),
                     const Divider(height: 1, indent: 56),
                     _PreferenceTile(
@@ -319,6 +327,68 @@ class _SettingsPageState extends State<SettingsPage> {
         ],
       ),
     );
+  }
+
+  /// Get display name for Mushaf type
+  String _getMushafTypeDisplayName(MushafType type) {
+    switch (type) {
+      case MushafType.hafs1441:
+        return 'Hafs (1441)';
+      case MushafType.hafs1405:
+        return 'Hafs (1405)';
+      case MushafType.warsh:
+        return 'Warsh (North Africa)';
+    }
+  }
+
+  /// Show Mushaf type selector dialog
+  void _showMushafTypeSelector(BuildContext context) {
+    final theme = Theme.of(context);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Mushaf Type'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: MushafType.values.map((type) {
+            final isSelected = type == _viewModel.mushafType;
+            return ListTile(
+              leading: Icon(
+                isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                color: isSelected ? theme.colorScheme.primary : null,
+              ),
+              title: Text(_getMushafTypeDisplayName(type)),
+              subtitle: Text(
+                _getMushafTypeDescription(type),
+                style: theme.textTheme.bodySmall,
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _viewModel.setMushafType(type);
+              },
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Get description for Mushaf type
+  String _getMushafTypeDescription(MushafType type) {
+    switch (type) {
+      case MushafType.hafs1441:
+        return 'Modern Madina Mushaf (1441 Hijri) - Most common worldwide';
+      case MushafType.hafs1405:
+        return 'Traditional Madina Mushaf (1405 Hijri) - Classic layout';
+      case MushafType.warsh:
+        return 'North African riwaya - Used in Morocco, Algeria, Tunisia';
+    }
   }
 }
 

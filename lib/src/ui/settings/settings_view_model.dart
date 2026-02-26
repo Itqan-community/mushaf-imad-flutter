@@ -93,4 +93,11 @@ class SettingsViewModel extends ChangeNotifier {
     await _loadPreferences(); // Refresh after clear
     notifyListeners();
   }
+
+  /// Set the Mushaf type and reload preferences
+  Future<void> setMushafType(MushafType type) async {
+    _mushafType = type;
+    await _preferencesRepository.setMushafType(type);
+    notifyListeners();
+  }
 }

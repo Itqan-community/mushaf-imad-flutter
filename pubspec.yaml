@@ -638,3 +638,18 @@ flutter:
     - family: QuranNumbers
       fonts:
         - asset: assets/fonts/QuranNumbers.ttf
+    
+    # Warsh Mushaf Fonts - North African riwaya
+    - family: WarshQuran
+      fonts:
+        - asset: assets/fonts/warsh/WarshQuran-Regular.ttf
+        - asset: assets/fonts/warsh/WarshQuran-Bold.ttf
+          weight: 700
+    
+    - family: WarshText
+      fonts:
+        - asset: assets/fonts/warsh/WarshText-Regular.ttf
+        - asset: assets/fonts/warsh/WarshText-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/warsh/WarshText-Bold.ttf
+          weight: 700
