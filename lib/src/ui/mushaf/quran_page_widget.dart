@@ -1,34 +1,23 @@
 import 'package:flutter/material.dart';
-import '../../data/quran/quran_data_provider.dart';
-import '../../data/quran/quran_metadata.dart';
-import '../../data/quran/verse_data_provider.dart';
-import '../theme/reading_theme.dart';
+import '../../domain/models/page_verse_data.dart';
 import 'quran_line_image.dart';
 
-/// Renders a single Quran page — 15 line images with a page header.
-/// Supports verse-level selection, highlighting, and long-press actions.
 class QuranPageWidget extends StatefulWidget {
   final int pageNumber;
-
-  /// Currently selected verse (chapterNumber * 1000 + verseNumber).
-  final int? selectedVerseKey;
-
-  /// Called when a verse is tapped (selection).
-  final void Function(int chapterNumber, int verseNumber)? onVerseTap;
-
-  /// 🔥 NEW: Called when a verse is long-pressed (e.g. play from verse)
-  final void Function(int chapterNumber, int verseNumber)? onVerseLongPress;
-
-  /// Reading theme data for colors.
-  final ReadingThemeData? themeData;
+  final List<PageVerseData> verses;
+  final List<PageVerseData> markers;
+  final int? highlightedVerseKey;
+  final Function(int chapter, int verse)? onVerseTap;
+  final Function(int chapter, int verse)? onVerseLongPress;
 
   const QuranPageWidget({
     super.key,
     required this.pageNumber,
-    this.selectedVerseKey,
+    required this.verses,
+    required this.markers,
+    this.highlightedVerseKey,
     this.onVerseTap,
     this.onVerseLongPress,
-    this.themeData,
   });
 
   @override
@@ -36,224 +25,68 @@ class QuranPageWidget extends StatefulWidget {
 }
 
 class _QuranPageWidgetState extends State<QuranPageWidget> {
-  late final QuranDataProvider _dataProvider;
-  late List<ChapterData> _chapters;
-  late int _juz;
-
-  @override
-  void initState() {
-    super.initState();
-    _dataProvider = QuranDataProvider.instance;
-    _updatePageData();
-  }
-
-  @override
-  void didUpdateWidget(covariant QuranPageWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.pageNumber != widget.pageNumber) {
-      _updatePageData();
-    }
-  }
-
-  void _updatePageData() {
-    _chapters = _dataProvider.getChaptersForPage(widget.pageNumber);
-    _juz = _dataProvider.getJuzForPage(widget.pageNumber);
-  }
-
   @override
   Widget build(BuildContext context) {
-    final verseProvider = VerseDataProvider.instance;
-    final pageVerses = verseProvider.getVersesForPage(widget.pageNumber);
-    final theme =
-        widget.themeData ?? ReadingThemeData.fromTheme(ReadingTheme.light);
-
+    final theme = Theme.of(context);
+    
     return Container(
-      color: theme.backgroundColor,
-      child: Column(
-        children: [
-          _PageHeader(
-            chapters: _chapters,
-            pageNumber: widget.pageNumber,
-            juzNumber: _juz,
-            themeData: theme,
-          ),
+      color: theme.scaffoldBackgroundColor,
+      child: ListView.builder(
+        itemCount: 15, // standard 15 lines per page
+        physics: const NeverScrollableScrollPhysics(),
+        itemBuilder: (context, index) {
+          final line = index + 1;
+          final versesOnLine = widget.verses.where((v) => v.line == line).toList();
+          final markersOnLine = widget.markers.where((m) => m.line == line).toList();
+          
+          final highlights = versesOnLine
+              .where((v) => (v.chapter * 1000 + v.number) == widget.highlightedVerseKey)
+              .toList();
 
-          Container(
-            height: 1,
-            color: theme.secondaryTextColor.withOpacity(0.3),
-          ),
+          return Builder(
+            builder: (lineContext) => GestureDetector(
+              onLongPressStart: (details) {
+                if (widget.onVerseLongPress == null || versesOnLine.isEmpty) return;
 
-          Expanded(
-            child: Directionality(
-              textDirection: TextDirection.rtl,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Column(
-                  children: List.generate(15, (index) {
-                    final line = index + 1;
+                // ✅ الحصول على الـ RenderBox للسطر الحالي فقط لضمان دقة الـ Ratio
+                final RenderBox box = lineContext.findRenderObject() as RenderBox;
+                final localOffset = box.globalToLocal(details.globalPosition);
+                final tapRatio = 1.0 - (localOffset.dx / box.size.width);
 
-                    final markers = pageVerses
-                        .where(
-                          (v) =>
-                              v.marker1441 != null &&
-                              v.marker1441!.line == line,
-                        )
-                        .toList();
-
-                    final versesOnLine = pageVerses
-                        .where((v) => v.occupiesLine(line))
-                        .toList();
-
-                    final highlights = <VerseHighlightData>[];
-                    if (widget.selectedVerseKey != null) {
-                      final selectedVerse = versesOnLine
-                          .where(
-                            (v) =>
-                                v.chapter * 1000 + v.number ==
-                                widget.selectedVerseKey,
-                          )
-                          .firstOrNull;
-
-                      if (selectedVerse != null) {
-                        highlights.addAll(
-                          selectedVerse.highlights1441.where(
-                            (h) => h.line == line,
-                          ),
-                        );
-                      }
-                    }
-
-                    // ✅ FIX: Use Builder to get the specific context of the line for accurate RenderBox measurement
-                    return Expanded(
-                      child: Builder(
-                        builder: (lineContext) => GestureDetector(
-                          onLongPressStart: (details) {
-                            if (widget.onVerseLongPress == null || versesOnLine.isEmpty) return;
-                            
-                            // ✅ Now measuring the RenderBox of the line itself, not the entire page
-                            final RenderBox box = lineContext.findRenderObject() as RenderBox;
-                            final localOffset = box.globalToLocal(details.globalPosition);
-                            final tapRatio = 1.0 - (localOffset.dx / box.size.width);
-
-                            final target = _resolveVerse(tapRatio, versesOnLine, markers, line);
-                            widget.onVerseLongPress!(target.chapter, target.number);
-                          },
-                          child: QuranLineImage(
-                            page: widget.pageNumber,
-                            line: line,
-                            highlights: highlights,
-                            markers: markers,
-                            highlightColor: theme.highlightColor,
-                            textColor: theme.textColor,
-
-                            /// TAP = select verse
-                            onTapUpExact: (tapRatio) {
-                              if (widget.onVerseTap == null ||
-                                  versesOnLine.isEmpty) return;
-
-                              final target =
-                                  _resolveVerse(tapRatio, versesOnLine, markers, line);
-
-                              widget.onVerseTap!(
-                                  target.chapter, target.number);
-                            },
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                ),
+                final target = _resolveVerse(tapRatio, versesOnLine, markersOnLine, line);
+                if (target != null) {
+                  widget.onVerseLongPress!(target.chapter, target.number);
+                }
+              },
+              child: QuranLineImage(
+                page: widget.pageNumber,
+                line: line,
+                highlights: highlights,
+                markers: markersOnLine,
+                highlightColor: theme.highlightColor,
+                textColor: theme.textTheme.bodyLarge?.color ?? Colors.black,
+                onTapUpExact: (tapRatio) {
+                  if (widget.onVerseTap == null || versesOnLine.isEmpty) return;
+                  final target = _resolveVerse(tapRatio, versesOnLine, markersOnLine, line);
+                  if (target != null) {
+                    widget.onVerseTap!(target.chapter, target.number);
+                  }
+                },
               ),
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 
-  /// Logic to find which verse was touched based on horizontal position (ratio)
-  PageVerseData _resolveVerse(
-    double tapRatio,
-    List<PageVerseData> versesOnLine,
-    List<PageVerseData> markers,
-    int line,
-  ) {
-    for (final verse in versesOnLine) {
+  PageVerseData? _resolveVerse(double tapRatio, List<PageVerseData> verses, List<PageVerseData> markers, int line) {
+    for (final verse in verses) {
       final hList = verse.highlights1441.where((h) => h.line == line);
       for (final h in hList) {
-        if (tapRatio >= h.left && tapRatio <= h.right) {
-          return verse;
-        }
+        if (tapRatio >= h.left && tapRatio <= h.right) return verse;
       }
     }
-    return markers.isNotEmpty ? markers.last : versesOnLine.last;
-  }
-}
-
-class _PageHeader extends StatelessWidget {
-  final List<ChapterData> chapters;
-  final int pageNumber;
-  final int juzNumber;
-  final ReadingThemeData themeData;
-
-  const _PageHeader({
-    required this.chapters,
-    required this.pageNumber,
-    required this.juzNumber,
-    required this.themeData,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final chapterName = chapters.isNotEmpty
-        ? chapters.map((c) => c.arabicTitle).join(' - ')
-        : '';
-
-    return Container(
-      color: themeData.surfaceColor,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Directionality(
-        textDirection: TextDirection.rtl,
-        child: Row(
-          children: [
-            Text(
-              'جزء ${QuranDataProvider.toArabicNumerals(juzNumber)}',
-              style: TextStyle(
-                fontSize: 13,
-                color: themeData.secondaryTextColor,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            Expanded(
-              child: Text(
-                chapterName,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: themeData.textColor,
-                  fontWeight: FontWeight.w700,
-                  fontFamily: 'serif',
-                ),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: themeData.secondaryTextColor.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '${QuranDataProvider.toArabicNumerals(pageNumber)} / ٦٠٤',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: themeData.secondaryTextColor,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return markers.isNotEmpty ? markers.last : verses.isNotEmpty ? verses.last : null;
   }
 }
