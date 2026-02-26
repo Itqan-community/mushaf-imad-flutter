@@ -77,7 +77,7 @@ class LibraryHomePage extends StatelessWidget {
           ),
           _MenuCard(
             icon: Icons.list_alt,
-            title: 'Chapters',
+            title: 'Chapters & Bookmarks',
             subtitle: 'ChapterRepository - All 114 surahs',
             onTap: () => _push(context, const ChaptersPage()),
           ),
