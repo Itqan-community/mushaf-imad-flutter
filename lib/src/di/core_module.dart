@@ -2,6 +2,8 @@ import 'package:get_it/get_it.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../data/audio/ayah_timing_service.dart';
+import '../data/audio/quran_com_audio_service.dart';
+import '../data/audio/quran_com_reciter_service.dart';
 import '../data/audio/reciter_service.dart';
 import '../data/cache/chapters_data_cache.dart';
 import '../data/cache/quran_data_cache_service.dart';
@@ -12,6 +14,7 @@ import '../data/local/dao/hive/hive_search_history_dao.dart';
 import '../data/audio/flutter_audio_player.dart';
 import '../data/repository/database_service.dart';
 import '../data/repository/default_audio_repository.dart';
+import '../data/repository/quran_com_audio_repository.dart';
 import 'package:audio_service/audio_service.dart';
 import '../data/repository/default_bookmark_repository.dart';
 import '../data/repository/default_chapter_repository.dart';
@@ -40,6 +43,30 @@ import '../logging/mushaf_logger.dart';
 /// Service locator instance for the library.
 final GetIt mushafGetIt = GetIt.instance;
 
+/// Configuration for Mushaf audio features.
+class MushafAudioConfig {
+  /// Whether to use Quran.com API for audio (true) or local mp3quran sources (false).
+  final bool useQuranComApi;
+  
+  /// Timeout for API requests.
+  final Duration apiTimeout;
+  
+  /// Whether to cache API responses.
+  final bool enableApiCache;
+
+  const MushafAudioConfig({
+    this.useQuranComApi = true,
+    this.apiTimeout = const Duration(seconds: 30),
+    this.enableApiCache = true,
+  });
+
+  /// Default configuration with Quran.com API enabled.
+  static const MushafAudioConfig quranCom = MushafAudioConfig(useQuranComApi: true);
+  
+  /// Configuration using local audio sources (mp3quran).
+  static const MushafAudioConfig local = MushafAudioConfig(useQuranComApi: false);
+}
+
 /// Register all core dependencies for the Mushaf library.
 ///
 /// Call this before using any library features.
@@ -49,6 +76,8 @@ final GetIt mushafGetIt = GetIt.instance;
 /// [bookmarkDao], [readingHistoryDao], [searchHistoryDao] must be
 /// provided for the full feature set, or the library will use stubs.
 ///
+/// [audioConfig] allows you to configure audio source (Quran.com API or local).
+///
 /// Example:
 /// ```dart
 /// await setupMushafDependencies(
@@ -56,6 +85,7 @@ final GetIt mushafGetIt = GetIt.instance;
 ///   bookmarkDao: HiveBookmarkDao(),
 ///   readingHistoryDao: HiveReadingHistoryDao(),
 ///   searchHistoryDao: HiveSearchHistoryDao(),
+///   audioConfig: MushafAudioConfig.quranCom, // Use Quran.com API
 /// );
 /// ```
 Future<void> setupMushafDependencies({
@@ -64,6 +94,7 @@ Future<void> setupMushafDependencies({
   required ReadingHistoryDao readingHistoryDao,
   required SearchHistoryDao searchHistoryDao,
   MushafLogger? logger,
+  MushafAudioConfig audioConfig = MushafAudioConfig.quranCom,
 }) async {
   // Guard: if already registered, skip entirely
   if (mushafGetIt.isRegistered<MushafLogger>()) return;
@@ -78,9 +109,8 @@ Future<void> setupMushafDependencies({
   mushafGetIt.registerSingleton<ChaptersDataCache>(ChaptersDataCache());
   mushafGetIt.registerSingleton<QuranDataCacheService>(QuranDataCacheService());
 
-  // Audio services
+  // Ayah timing service (shared)
   mushafGetIt.registerSingleton<AyahTimingService>(AyahTimingService());
-  mushafGetIt.registerSingleton<ReciterService>(ReciterService());
 
   // DAOs
   mushafGetIt.registerSingleton<BookmarkDao>(bookmarkDao);
@@ -144,13 +174,35 @@ Future<void> setupMushafDependencies({
     ),
   );
 
-  mushafGetIt.registerSingleton<AudioRepository>(
-    DefaultAudioRepository(
-      mushafGetIt<ReciterService>(),
-      mushafGetIt<AyahTimingService>(),
-      audioPlayer,
-    ),
-  );
+  // Setup audio repository based on configuration
+  if (audioConfig.useQuranComApi) {
+    // Quran.com API implementation
+    final audioService = AudioService(timeout: audioConfig.apiTimeout);
+    final reciterService = QuranComReciterService(audioService: audioService);
+    
+    mushafGetIt.registerSingleton<AudioService>(audioService);
+    mushafGetIt.registerSingleton<QuranComReciterService>(reciterService);
+    
+    mushafGetIt.registerSingleton<AudioRepository>(
+      QuranComAudioRepository(
+        reciterService,
+        mushafGetIt<AyahTimingService>(),
+        audioPlayer,
+        audioService,
+      ),
+    );
+  } else {
+    // Local implementation (mp3quran)
+    mushafGetIt.registerSingleton<ReciterService>(ReciterService());
+    
+    mushafGetIt.registerSingleton<AudioRepository>(
+      DefaultAudioRepository(
+        mushafGetIt<ReciterService>(),
+        mushafGetIt<AyahTimingService>(),
+        audioPlayer,
+      ),
+    );
+  }
 
   mushafGetIt.registerSingleton<DataExportRepository>(
     DefaultDataExportRepository(
@@ -162,16 +214,21 @@ Future<void> setupMushafDependencies({
   );
 }
 
-/// Convenience method: set up all dependencies using default Hive backends.
+/// Convenience method: set up all dependencies using default Hive backends
+/// with Quran.com API for audio.
 ///
 /// Call this for the simplest possible setup using the built-in Hive
-/// implementations for database, bookmarks, reading history, and search.
+/// implementations for database, bookmarks, reading history, and search,
+/// along with Quran.com API for audio recitations.
 ///
 /// Example:
 /// ```dart
 /// await setupMushafWithHive();
 /// ```
-Future<void> setupMushafWithHive({MushafLogger? logger}) async {
+Future<void> setupMushafWithHive({
+  MushafLogger? logger,
+  MushafAudioConfig audioConfig = MushafAudioConfig.quranCom,
+}) async {
   // Initialize Hive
   await Hive.initFlutter();
 
@@ -185,5 +242,23 @@ Future<void> setupMushafWithHive({MushafLogger? logger}) async {
     readingHistoryDao: HiveReadingHistoryDao(),
     searchHistoryDao: HiveSearchHistoryDao(),
     logger: logger,
+    audioConfig: audioConfig,
+  );
+}
+
+/// Convenience method: set up all dependencies using local audio sources (mp3quran)
+/// instead of Quran.com API.
+///
+/// Use this if you prefer to use the local mp3quran audio sources
+/// that were included in the original implementation.
+///
+/// Example:
+/// ```dart
+/// await setupMushafWithLocalAudio();
+/// ```
+Future<void> setupMushafWithLocalAudio({MushafLogger? logger}) async {
+  await setupMushafWithHive(
+    logger: logger,
+    audioConfig: MushafAudioConfig.local,
   );
 }

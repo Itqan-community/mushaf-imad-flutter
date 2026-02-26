@@ -26,7 +26,12 @@ export 'src/mushaf_library.dart';
 
 // DI
 export 'src/di/core_module.dart'
-    show setupMushafDependencies, setupMushafWithHive, mushafGetIt;
+    show
+        setupMushafDependencies,
+        setupMushafWithHive,
+        setupMushafWithLocalAudio,
+        mushafGetIt,
+        MushafAudioConfig;
 
 // Domain Models
 export 'src/domain/models/audio_player_state.dart';
@@ -71,6 +76,9 @@ export 'src/data/local/dao/search_history_dao.dart';
 
 // Data Layer - Audio (public utilities)
 export 'src/data/audio/reciter_data_provider.dart';
+export 'src/data/audio/quran_com_audio_service.dart';
+export 'src/data/audio/quran_com_reciter_service.dart';
+export 'src/data/repository/quran_com_audio_repository.dart';
 
 // Logging
 export 'src/logging/mushaf_logger.dart';
