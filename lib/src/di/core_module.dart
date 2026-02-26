@@ -36,6 +36,7 @@ import '../domain/repository/reading_history_repository.dart';
 import '../domain/repository/search_history_repository.dart';
 import '../domain/repository/verse_repository.dart';
 import '../logging/mushaf_logger.dart';
+import '../services/last_read_service.dart';
 
 /// Service locator instance for the library.
 final GetIt mushafGetIt = GetIt.instance;
@@ -129,8 +130,14 @@ Future<void> setupMushafDependencies({
     DefaultSearchHistoryRepository(mushafGetIt<SearchHistoryDao>()),
   );
 
-  mushafGetIt.registerSingleton<PreferencesRepository>(
-    DefaultPreferencesRepository(),
+  // Initialize and register PreferencesRepository
+  final preferencesRepository = DefaultPreferencesRepository();
+  await preferencesRepository.initialize();
+  mushafGetIt.registerSingleton<PreferencesRepository>(preferencesRepository);
+
+  // Register LastReadService
+  mushafGetIt.registerSingleton<LastReadService>(
+    LastReadService(preferencesRepository: preferencesRepository),
   );
 
   // Initialize AudioService for background playback

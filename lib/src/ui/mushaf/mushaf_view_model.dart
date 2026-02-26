@@ -46,18 +46,19 @@ class MushafViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   /// Initialize the ViewModel.
+  /// Loads the last read page from SharedPreferences.
   Future<void> initialize() async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      // Load last read position
+      // Load last read page from SharedPreferences
+      _currentPage = await _preferencesRepository.getCurrentPage();
+      
+      // Also load last read position for additional context
       _lastReadPosition = await _readingHistoryRepository.getLastReadPosition(
         _mushafType,
       );
-      if (_lastReadPosition != null) {
-        _currentPage = _lastReadPosition!.pageNumber;
-      }
 
       await loadPage(_currentPage);
     } finally {

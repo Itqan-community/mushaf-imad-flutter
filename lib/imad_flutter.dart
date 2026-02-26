@@ -101,6 +101,7 @@ export 'src/ui/theme/mushaf_theme_scope.dart';
 
 // Services
 export 'src/services/advanced_search_service.dart';
+export 'src/services/last_read_service.dart';
 
 // Utilities
 export 'src/utils/arabic_normalizer.dart';
