@@ -54,8 +54,7 @@ class MushafPageViewState extends State<MushafPageView> {
 
   Future<void> _initAudioListener() async {
     await VerseDataProvider.instance.initialize();
-    
-    // ✅ Check mounted before subscribing to avoid memory leaks
+
     if (!mounted) return;
 
     _audioSubscription = mushafGetIt<AudioRepository>()
@@ -162,12 +161,15 @@ class MushafPageViewState extends State<MushafPageView> {
                                 _selectedVerseKey == key ? null : key;
                           });
                         },
-                        // ✅ Wired Long Press to Play Verse
+                        // ✅ FIXED: Correct AudioRepository usage
                         onVerseLongPress: (chapter, verse) {
+                          final reciterId =
+                              mushafGetIt<AudioRepository>().currentReciterId;
+
                           mushafGetIt<AudioRepository>().loadChapter(
                             chapter,
+                            reciterId,
                             autoPlay: true,
-                            startAyahNumber: verse,
                           );
                         },
                       );
@@ -180,7 +182,7 @@ class MushafPageViewState extends State<MushafPageView> {
                       right: 0,
                       bottom: 0,
                       child: _NavigationBar(
-                        themeData: themeData, // Passed theme
+                        themeData: themeData,
                         currentPage: _currentPage,
                         totalPages: QuranDataProvider.totalPages,
                         canGoPrevious: _currentPage > 1,
@@ -197,7 +199,7 @@ class MushafPageViewState extends State<MushafPageView> {
                         top: MediaQuery.of(context).padding.top + 8,
                         right: 16,
                         child: _PageInfoBadge(
-                          themeData: themeData, // Passed theme
+                          themeData: themeData,
                           pageNumber: _currentPage,
                           chapterName: chapterName,
                           juzNumber: juz,
@@ -264,7 +266,6 @@ class _NavigationBar extends StatelessWidget {
         top: 12,
         bottom: MediaQuery.of(context).padding.bottom + 12,
       ),
-      // ✅ Removed hardcoded color, using theme background with opacity
       color: themeData.backgroundColor.withOpacity(0.95),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -317,7 +318,6 @@ class _NavButton extends StatelessWidget {
       child: Icon(
         icon,
         size: 26,
-        // ✅ Using theme text color instead of hardcoded dark brown
         color: enabled
             ? (isAccent ? Colors.blueAccent : themeData.textColor)
             : Colors.grey,
@@ -344,7 +344,6 @@ class _PageInfoBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        // ✅ Subtle theme-based background for the badge
         color: themeData.textColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
       ),
