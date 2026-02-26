@@ -6,14 +6,12 @@ import 'package:just_audio/just_audio.dart';
 import '../../domain/models/audio_player_state.dart' as domain;
 import '../../domain/models/reciter_info.dart';
 
-/// App-specific AudioHandler that connects just_audio to audio_service
 class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
   final AudioPlayer _player = AudioPlayer();
 
   int? _currentChapter;
   int? _currentReciterId;
 
-  /// Web proxy for CORS (used only on web)
   static const String _webProxyUrl = 'https://corsproxy.io/?';
 
   final _domainStateController =
@@ -22,18 +20,19 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
   Stream<domain.AudioPlayerState> get domainStateStream =>
       _domainStateController.stream;
 
+  int? get currentReciterId => _currentReciterId;
+
   FlutterAudioPlayer() {
     _initStreams();
   }
 
-  /// Dispose resources
   Future<void> dispose() async {
     await _player.dispose();
     await _domainStateController.close();
   }
 
   void _initStreams() {
-    _player.playbackEventStream.listen((PlaybackEvent event) {
+    _player.playbackEventStream.listen((event) {
       final playing = _player.playing;
 
       playbackState.add(
@@ -44,18 +43,11 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
             MediaControl.stop,
             MediaControl.skipToNext,
           ],
-          systemActions: const {
-            MediaAction.seek,
-            MediaAction.seekForward,
-            MediaAction.seekBackward,
-          },
-          androidCompactActionIndices: const [0, 1, 3],
           processingState: _getProcessingState(),
           playing: playing,
           updatePosition: _player.position,
           bufferedPosition: _player.bufferedPosition,
           speed: _player.speed,
-          queueIndex: event.currentIndex,
         ),
       );
 
@@ -126,85 +118,44 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
     _currentChapter = chapterNumber;
     _currentReciterId = reciter.id;
 
-    final title = 'Surah ${chapterNumber.toString().padLeft(3, "0")}';
-    debugPrint('[FlutterAudioPlayer] Loading chapter: $title');
+    AudioSource source;
 
-    try {
-      AudioSource source;
+    if (startAyahNumber != null && startAyahNumber > 1) {
+      final verseCount = reciter.getChapterVerseCount(chapterNumber);
+      final children = <AudioSource>[];
 
-      if (startAyahNumber != null && startAyahNumber > 1) {
-        final verseCount = reciter.getChapterVerseCount(chapterNumber);
-
-        if (startAyahNumber > verseCount) {
-          final chapterUrl = reciter.getAudioUrl(chapterNumber);
-          source = AudioSource.uri(Uri.parse(_resolveFinalUrl(chapterUrl)));
-        } else {
-          final children = <AudioSource>[];
-          for (int ayah = startAyahNumber; ayah <= verseCount; ayah++) {
-            final ayahUrl = reciter.getAyahUrl(
-              chapterNumber: chapterNumber,
-              ayahNumber: ayah,
-            );
-            children.add(
-              AudioSource.uri(Uri.parse(_resolveFinalUrl(ayahUrl))),
-            );
-          }
-          source = ConcatenatingAudioSource(children: children);
-        }
-      } else {
-        final chapterUrl = reciter.getAudioUrl(chapterNumber);
-        source = AudioSource.uri(Uri.parse(_resolveFinalUrl(chapterUrl)));
+      for (int ayah = startAyahNumber; ayah <= verseCount; ayah++) {
+        final url = reciter.getAyahUrl(
+          chapterNumber: chapterNumber,
+          ayahNumber: ayah,
+        );
+        children.add(AudioSource.uri(Uri.parse(_resolveFinalUrl(url))));
       }
 
-      mediaItem.add(
-        MediaItem(
-          id: 'chapter-$chapterNumber',
-          album: reciter.getDisplayName(),
-          title: title,
-        ),
-      );
+      source = ConcatenatingAudioSource(children: children);
+    } else {
+      final url = reciter.getAudioUrl(chapterNumber);
+      source = AudioSource.uri(Uri.parse(_resolveFinalUrl(url)));
+    }
 
-      await _player.setAudioSource(source);
+    await _player.setAudioSource(source);
 
-      if (autoPlay) {
-        await play();
-      }
-    } catch (e, stack) {
-      debugPrint('[FlutterAudioPlayer] ERROR loading audio source: $e');
-      debugPrintStack(stackTrace: stack);
-      _broadcastDomainState(error: e.toString());
+    if (autoPlay) {
+      await play();
     }
   }
 
-  Future<void> loadChapterByReciterId(
-    int chapterNumber,
-    int reciterId, {
-    bool autoPlay = false,
-  }) async {
-    final reciter = ReciterInfo.byId(reciterId);
-    return loadChapter(
-      chapterNumber,
-      reciter,
-      autoPlay: autoPlay,
-    );
+  void setRepeatModeBool(bool enabled) {
+    _player.setLoopMode(enabled ? LoopMode.all : LoopMode.off);
   }
 
-  @override
-  Future<void> play() async {
-    debugPrint('[FlutterAudioPlayer] Play requested.');
-    try {
-      await _player.play();
-    } catch (e, stack) {
-      debugPrint('[FlutterAudioPlayer] ERROR during play(): $e');
-      debugPrintStack(stackTrace: stack);
-      _broadcastDomainState(error: e.toString());
-    }
-  }
+  bool isRepeatMode() => _player.loopMode != LoopMode.off;
 
   @override
-  Future<void> pause() async {
-    await _player.pause();
-  }
+  Future<void> play() => _player.play();
+
+  @override
+  Future<void> pause() => _player.pause();
 
   @override
   Future<void> stop() async {
@@ -214,23 +165,4 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> seek(Duration position) => _player.seek(position);
-
-  @override
-  Future<void> setRepeatMode(AudioServiceRepeatMode repeatMode) async {
-    late final LoopMode loopMode;
-    switch (repeatMode) {
-      case AudioServiceRepeatMode.one:
-        loopMode = LoopMode.one;
-        break;
-      case AudioServiceRepeatMode.all:
-      case AudioServiceRepeatMode.group:
-        loopMode = LoopMode.all;
-        break;
-      case AudioServiceRepeatMode.none:
-      default:
-        loopMode = LoopMode.off;
-        break;
-    }
-    await _player.setLoopMode(loopMode);
-  }
 }
