@@ -12,6 +12,7 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
   int? _currentChapter;
   int? _currentReciterId;
 
+  // يمكن مستقبلاً نقل هذا الرابط لملف إعدادات (Config) كما اقترح البوت
   static const String _webProxyUrl = 'https://corsproxy.io/?';
 
   final _domainStateController =
@@ -109,6 +110,7 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
     );
   }
 
+  /// تحميل السورة مع دعم البدء من آية محددة
   Future<void> loadChapter(
     int chapterNumber,
     ReciterInfo reciter, {
@@ -120,29 +122,44 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
 
     AudioSource source;
 
+    // ✅ إضافة الحماية (Validation) التي طلبها البوت
     if (startAyahNumber != null && startAyahNumber > 1) {
       final verseCount = reciter.getChapterVerseCount(chapterNumber);
-      final children = <AudioSource>[];
-
-      for (int ayah = startAyahNumber; ayah <= verseCount; ayah++) {
-        final url = reciter.getAyahUrl(
-          chapterNumber: chapterNumber,
-          ayahNumber: ayah,
-        );
-        children.add(AudioSource.uri(Uri.parse(_resolveFinalUrl(url))));
+      
+      // إذا كان رقم الآية أكبر من عدد آيات السورة، ابدأ من السورة كاملة
+      if (startAyahNumber > verseCount) {
+        final url = reciter.getAudioUrl(chapterNumber);
+        source = AudioSource.uri(Uri.parse(_resolveFinalUrl(url)));
+      } else {
+        final children = <AudioSource>[];
+        for (int ayah = startAyahNumber; ayah <= verseCount; ayah++) {
+          final url = reciter.getAyahUrl(
+            chapterNumber: chapterNumber,
+            ayahNumber: ayah,
+          );
+          children.add(AudioSource.uri(Uri.parse(_resolveFinalUrl(url))));
+        }
+        source = ConcatenatingAudioSource(children: children);
       }
-
-      source = ConcatenatingAudioSource(children: children);
     } else {
       final url = reciter.getAudioUrl(chapterNumber);
       source = AudioSource.uri(Uri.parse(_resolveFinalUrl(url)));
     }
 
-    await _player.setAudioSource(source);
-
-    if (autoPlay) {
-      await play();
+    try {
+      await _player.setAudioSource(source);
+      if (autoPlay) {
+        await play();
+      }
+    } catch (e) {
+      _broadcastDomainState(error: e.toString());
     }
+  }
+
+  /// ✅ إضافة الدالة المفقودة التي سببت الخطأ الحرج في الـ Repository
+  @override
+  Future<void> setSpeed(double speed) async {
+    await _player.setSpeed(speed);
   }
 
   void setRepeatModeBool(bool enabled) {
