@@ -4,7 +4,18 @@ Add mushaf to your Flutter application easily! A fully functional, modular Quran
 
 [![Flutter](https://img.shields.io/badge/Platform-Flutter-02569B?logo=flutter)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.11.0-0175C2?logo=dart)](https://dart.dev)
-[![Version](https://img.shields.io/badge/version-0.0.2-blue.svg)]()
+[![Version](https://img.shields.io/badge/version-0.0.3-blue.svg)]()
+
+---
+
+## 📸 Screenshots
+
+<p align="center">
+  <img src="screenshots/Screenshot_1771858038.png" width="220" />
+  <img src="screenshots/Screenshot_1771858063.png" width="220" />
+  <img src="screenshots/Screenshot_1771858068.png" width="220" />
+  <img src="screenshots/Screenshot_1771858085.png" width="220" />
+</p>
 
 ---
 
