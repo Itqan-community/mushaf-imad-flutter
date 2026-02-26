@@ -71,17 +71,17 @@ class DefaultAudioRepository implements AudioRepository {
     }
   }
 
+  /// ✅ تم تحديث الدالة لتتطابق تماماً مع الـ Interface وتدعم الـ startAyahNumber
   @override
   void loadChapter(
     int chapterNumber,
     int reciterId, {
     bool autoPlay = false,
-    int? startAyahNumber, // ✅ تم إضافة المعامل هنا
+    int? startAyahNumber, // هذا هو المعامل الذي كان ينقصك ويسبب الخطأ
   }) async {
     final reciter = await _reciterService.getReciterById(reciterId);
     if (reciter == null) return;
 
-    // ✅ تمرير startAyahNumber إلى المشغل الفعلي
     await _audioPlayer.loadChapter(
       chapterNumber,
       reciter,
@@ -103,6 +103,7 @@ class DefaultAudioRepository implements AudioRepository {
   void seekTo(int positionMs) =>
       _audioPlayer.seek(Duration(milliseconds: positionMs));
 
+  /// ✅ استخدام دالة setSpeed التي أضفناها في FlutterAudioPlayer
   @override
   void setPlaybackSpeed(double speed) =>
       _audioPlayer.setSpeed(speed);
