@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+
 import '../../di/core_module.dart';
 import '../../domain/repository/audio_repository.dart';
 import '../../domain/models/audio_player_state.dart' as domain;
@@ -40,7 +41,9 @@ class MushafPageViewState extends State<MushafPageView> {
   int _currentPage = 1;
   int? _selectedVerseKey; // chapter * 1000 + verse
   bool _showControls = true;
+
   StreamSubscription<domain.AudioPlayerState>? _audioSubscription;
+  int? _currentReciterId;
 
   @override
   void initState() {
@@ -54,13 +57,13 @@ class MushafPageViewState extends State<MushafPageView> {
 
   Future<void> _initAudioListener() async {
     await VerseDataProvider.instance.initialize();
-
     if (!mounted) return;
 
     _audioSubscription = mushafGetIt<AudioRepository>()
         .getPlayerStateStream()
         .listen((state) {
       if (!mounted) return;
+      _currentReciterId = state.currentReciterId;
 
       if (state.currentChapter != null && state.currentVerse != null) {
         final key = state.currentChapter! * 1000 + state.currentVerse!;
@@ -161,10 +164,9 @@ class MushafPageViewState extends State<MushafPageView> {
                                 _selectedVerseKey == key ? null : key;
                           });
                         },
-                        // ✅ FIXED: Correct AudioRepository usage
                         onVerseLongPress: (chapter, verse) {
-                          final reciterId =
-                              mushafGetIt<AudioRepository>().currentReciterId;
+                          final reciterId = _currentReciterId;
+                          if (reciterId == null) return;
 
                           mushafGetIt<AudioRepository>().loadChapter(
                             chapter,
@@ -234,7 +236,6 @@ class MushafPageViewState extends State<MushafPageView> {
   }
 }
 
-/// ---------- UI helpers ----------
 
 class _NavigationBar extends StatelessWidget {
   final ReadingThemeData themeData;
