@@ -99,6 +99,12 @@ export 'src/ui/settings/settings_page.dart';
 export 'src/ui/theme/theme_picker_widget.dart';
 export 'src/ui/theme/mushaf_theme_scope.dart';
 
+// Services
+export 'src/services/advanced_search_service.dart';
+
+// Utilities
+export 'src/utils/arabic_normalizer.dart';
+
 // Quran Data
 export 'src/data/quran/quran_data_provider.dart';
 export 'src/data/quran/quran_metadata.dart';

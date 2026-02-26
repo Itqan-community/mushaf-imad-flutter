@@ -10,12 +10,18 @@ import '../../domain/repository/bookmark_repository.dart';
 import '../../domain/repository/chapter_repository.dart';
 import '../../domain/repository/search_history_repository.dart';
 import '../../domain/repository/verse_repository.dart';
+import '../../services/advanced_search_service.dart';
 import 'search_view_model.dart';
 
 /// Full search page with unified verse/chapter/bookmark search.
 ///
-/// Matches Android's `SearchView.kt` — FilterChips for type selection,
-/// search history, results grouped by type, error and empty states.
+/// Features:
+/// - Autocomplete suggestions with Arabic support
+/// - Debounced search (300ms)
+/// - Arabic text normalization
+/// - Support for surah:ayah syntax (e.g., "2:255" for Ayat Al-Kursi)
+/// - Filter chips for type selection
+/// - Search history
 class SearchPage extends StatefulWidget {
   /// Called when user taps a verse result.
   final void Function(int pageNumber)? onVerseSelected;
@@ -33,6 +39,7 @@ class _SearchPageState extends State<SearchPage> {
   late final SearchViewModel _viewModel;
   late final TextEditingController _searchController;
   late final FocusNode _searchFocus;
+  bool _showAutocomplete = false;
 
   @override
   void initState() {
@@ -46,6 +53,8 @@ class _SearchPageState extends State<SearchPage> {
     _searchController = TextEditingController();
     _searchFocus = FocusNode();
     _viewModel.initialize();
+    
+    _searchFocus.addListener(_onFocusChange);
   }
 
   @override
@@ -56,14 +65,36 @@ class _SearchPageState extends State<SearchPage> {
     super.dispose();
   }
 
+  void _onFocusChange() {
+    setState(() {
+      _showAutocomplete = _searchFocus.hasFocus && _searchController.text.length >= 2;
+    });
+  }
+
   void _performSearch(String query) {
-    _viewModel.search(query);
+    _viewModel.search(query, debounce: false);
+    setState(() => _showAutocomplete = false);
+    _searchFocus.unfocus();
+  }
+
+  void _onSearchChanged(String value) {
+    setState(() {
+      _showAutocomplete = value.length >= 2;
+    });
+    _viewModel.updateAutocomplete(value);
   }
 
   void _clearSearch() {
     _searchController.clear();
     _viewModel.clearResults();
+    _viewModel.clearAutocomplete();
+    setState(() => _showAutocomplete = false);
     _searchFocus.requestFocus();
+  }
+
+  void _onSuggestionSelected(String text) {
+    _searchController.text = text;
+    _performSearch(text);
   }
 
   @override
@@ -71,16 +102,29 @@ class _SearchPageState extends State<SearchPage> {
     return ListenableBuilder(
       listenable: _viewModel,
       builder: (context, _) {
-        return Column(
+        return Stack(
           children: [
-            // Search bar (matching Android SearchBar)
-            _buildSearchBar(context),
+            Column(
+              children: [
+                // Search bar
+                _buildSearchBar(context),
 
-            // Filter chips (matching Android SearchFilters)
-            _buildFilterChips(context),
+                // Filter chips
+                _buildFilterChips(context),
 
-            // Content
-            Expanded(child: _buildContent(context)),
+                // Content
+                Expanded(child: _buildContent(context)),
+              ],
+            ),
+            
+            // Autocomplete overlay
+            if (_showAutocomplete)
+              Positioned(
+                top: 80,
+                left: 16,
+                right: 16,
+                child: _buildAutocompletePanel(context),
+              ),
           ],
         );
       },
@@ -101,7 +145,7 @@ class _SearchPageState extends State<SearchPage> {
         focusNode: _searchFocus,
         textDirection: TextDirection.rtl,
         decoration: InputDecoration(
-          hintText: 'Search verses or chapters...',
+          hintText: 'Search verses, chapters, or use "2:255" format...',
           hintTextDirection: TextDirection.ltr,
           prefixIcon: const Icon(Icons.search_rounded),
           suffixIcon: _searchController.text.isNotEmpty
@@ -123,14 +167,100 @@ class _SearchPageState extends State<SearchPage> {
             vertical: 12,
           ),
         ),
-        onChanged: (value) => setState(() {}),
+        onChanged: _onSearchChanged,
         onSubmitted: _performSearch,
       ),
     );
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Filter Chips (matches Android SearchFilters)
+  // Autocomplete Panel
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Widget _buildAutocompletePanel(BuildContext context) {
+    final theme = Theme.of(context);
+    final suggestions = _viewModel.autocompleteSuggestions;
+
+    if (suggestions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Material(
+      elevation: 4,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        constraints: const BoxConstraints(maxHeight: 280),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: ListView.separated(
+          shrinkWrap: true,
+          padding: EdgeInsets.zero,
+          itemCount: suggestions.length,
+          separatorBuilder: (_, __) => const Divider(height: 1),
+          itemBuilder: (context, index) {
+            final suggestion = suggestions[index];
+            return _buildSuggestionTile(context, suggestion);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSuggestionTile(BuildContext context, AutocompleteSuggestion suggestion) {
+    final theme = Theme.of(context);
+    
+    IconData icon;
+    Color? iconColor;
+    
+    switch (suggestion.type) {
+      case AutocompleteSuggestionType.chapter:
+        icon = Icons.menu_book_rounded;
+        iconColor = theme.colorScheme.primary;
+        break;
+      case AutocompleteSuggestionType.verse:
+        icon = Icons.format_quote_rounded;
+        iconColor = theme.colorScheme.secondary;
+        break;
+      case AutocompleteSuggestionType.bookmark:
+        icon = Icons.bookmark_rounded;
+        iconColor = Colors.amber;
+        break;
+      case AutocompleteSuggestionType.recentSearch:
+        icon = Icons.history_rounded;
+        iconColor = theme.colorScheme.onSurfaceVariant;
+        break;
+      case AutocompleteSuggestionType.suggestion:
+        icon = Icons.search_rounded;
+        iconColor = theme.colorScheme.onSurfaceVariant;
+        break;
+    }
+
+    return ListTile(
+      dense: true,
+      leading: Icon(icon, color: iconColor, size: 20),
+      title: Text(
+        suggestion.text,
+        textDirection: TextDirection.rtl,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      subtitle: suggestion.secondaryText != null
+          ? Text(
+              suggestion.secondaryText!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            )
+          : null,
+      onTap: () => _onSuggestionSelected(suggestion.text),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Filter Chips
   // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildFilterChips(BuildContext context) {
@@ -161,7 +291,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Content Router (matches Android SearchView when/else blocks)
+  // Content Router
   // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildContent(BuildContext context) {
@@ -186,7 +316,7 @@ class _SearchPageState extends State<SearchPage> {
       );
     }
 
-    // Error state (matching Android ErrorView)
+    // Error state
     if (_viewModel.error != null) {
       return _buildErrorView(context);
     }
@@ -201,12 +331,12 @@ class _SearchPageState extends State<SearchPage> {
       return _buildSearchResults(context);
     }
 
-    // Initial state — search history (matching Android SearchHistoryView)
+    // Initial state — search history
     return _buildPreSearchContent(context);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Error View (matching Android ErrorView)
+  // Error View
   // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildErrorView(BuildContext context) {
@@ -244,7 +374,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Empty Results View (matching Android EmptyResultsView)
+  // Empty Results View
   // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildEmptyResultsView(BuildContext context) {
@@ -267,10 +397,19 @@ class _SearchPageState extends State<SearchPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Try different keywords',
+            'Try different keywords or use "2:255" format',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
             ),
+          ),
+          const SizedBox(height: 16),
+          TextButton.icon(
+            onPressed: () {
+              _searchController.text = '2:255';
+              _performSearch('2:255');
+            },
+            icon: const Icon(Icons.lightbulb_outline),
+            label: const Text('Try: 2:255 (Ayat Al-Kursi)'),
           ),
         ],
       ),
@@ -278,7 +417,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Pre-Search Content (matching Android SearchHistoryView)
+  // Pre-Search Content
   // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildPreSearchContent(BuildContext context) {
@@ -287,10 +426,15 @@ class _SearchPageState extends State<SearchPage> {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       children: [
+        // Search tips
+        _buildSearchTips(context),
+        
+        const SizedBox(height: 16),
+        
         // Recent Searches
         if (_viewModel.recentSearches.isNotEmpty) ...[
           Padding(
-            padding: const EdgeInsets.only(top: 16, bottom: 8),
+            padding: const EdgeInsets.only(top: 8, bottom: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -313,10 +457,7 @@ class _SearchPageState extends State<SearchPage> {
               .map(
                 (entry) => _RecentSearchTile(
                   entry: entry,
-                  onTap: () {
-                    _searchController.text = entry.query;
-                    _performSearch(entry.query);
-                  },
+                  onTap: () => _onSuggestionSelected(entry.query),
                 ),
               ),
         ],
@@ -339,10 +480,7 @@ class _SearchPageState extends State<SearchPage> {
             children: _viewModel.suggestions.map((suggestion) {
               return ActionChip(
                 label: Text(suggestion.query),
-                onPressed: () {
-                  _searchController.text = suggestion.query;
-                  _performSearch(suggestion.query);
-                },
+                onPressed: () => _onSuggestionSelected(suggestion.query),
               );
             }).toList(),
           ),
@@ -385,7 +523,82 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Search Results (matching Android SearchResults)
+  // Search Tips
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Widget _buildSearchTips(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return Card(
+      margin: const EdgeInsets.only(top: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.lightbulb_outline, 
+                  size: 18, 
+                  color: theme.colorScheme.primary
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Search Tips',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _buildTip(context, '2:255', 'Find Ayat Al-Kursi'),
+            _buildTip(context, 'Al-Fatiha', 'Find by chapter name'),
+            _buildTip(context, 'الفاتحة', 'Search in Arabic'),
+            _buildTip(context, 'الرحمن', 'Search verse text'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTip(BuildContext context, String example, String description) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: () => _onSuggestionSelected(example),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                example,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontFamily: 'monospace',
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              description,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Search Results
   // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildSearchResults(BuildContext context) {
@@ -397,6 +610,18 @@ class _SearchPageState extends State<SearchPage> {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       children: [
+        // Results summary
+        if (_viewModel.query.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 4),
+            child: Text(
+              'Found ${_viewModel.totalResults} results for "${_viewModel.query}"',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+
         // Chapter results section
         if (hasChapters) ...[
           Padding(
@@ -493,7 +718,7 @@ class _RecentSearchTile extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Chapter Result Tile (matching Android ChapterResultItem)
+// Chapter Result Tile
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _ChapterResultTile extends StatelessWidget {
@@ -539,7 +764,7 @@ class _ChapterResultTile extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Verse Result Tile (matching Android VerseResultItem)
+// Verse Result Tile
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _VerseResultTile extends StatelessWidget {
