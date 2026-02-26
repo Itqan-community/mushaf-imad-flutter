@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import '../../domain/models/audio_player_state.dart';
 import '../../domain/models/reciter_info.dart';
 import '../../domain/models/reciter_timing.dart';
@@ -7,8 +6,6 @@ import '../../domain/repository/audio_repository.dart';
 import '../audio/ayah_timing_service.dart';
 import '../audio/flutter_audio_player.dart';
 import '../audio/reciter_service.dart';
-
-/// Default implementation of AudioRepository.
 class DefaultAudioRepository implements AudioRepository {
   final ReciterService _reciterService;
   final AyahTimingService _ayahTimingService;
@@ -32,7 +29,11 @@ class DefaultAudioRepository implements AudioRepository {
   Future<List<ReciterInfo>> searchReciters(
     String query, {
     String languageCode = 'en',
-  }) async => _reciterService.searchReciters(query, languageCode: languageCode);
+  }) async =>
+      _reciterService.searchReciters(
+        query,
+        languageCode: languageCode,
+      );
 
   @override
   Future<List<ReciterInfo>> getHafsReciters() async =>
@@ -54,13 +55,17 @@ class DefaultAudioRepository implements AudioRepository {
   Stream<AudioPlayerState> getPlayerStateStream() async* {
     await for (final state in _audioPlayer.domainStateStream) {
       int? verse;
-      if (state.currentReciterId != null && state.currentChapter != null) {
+
+      if (state.currentReciterId != null &&
+          state.currentChapter != null &&
+          state.currentPositionMs >= 0) {
         verse = await _ayahTimingService.getCurrentVerse(
           state.currentReciterId!,
           state.currentChapter!,
           state.currentPositionMs,
         );
       }
+
       yield state.copyWith(currentVerse: verse);
     }
   }
@@ -72,13 +77,13 @@ class DefaultAudioRepository implements AudioRepository {
     bool autoPlay = false,
   }) async {
     final reciter = await _reciterService.getReciterById(reciterId);
-    if (reciter != null) {
-      await _audioPlayer.loadChapter(
-        chapterNumber,
-        reciter,
-        autoPlay: autoPlay,
-      );
-    }
+    if (reciter == null) return;
+
+    await _audioPlayer.loadChapter(
+      chapterNumber,
+      reciter,
+      autoPlay: autoPlay,
+    );
   }
 
   @override
@@ -95,19 +100,17 @@ class DefaultAudioRepository implements AudioRepository {
       _audioPlayer.seek(Duration(milliseconds: positionMs));
 
   @override
-  void setPlaybackSpeed(double speed) => _audioPlayer.setSpeed(speed);
+  void setPlaybackSpeed(double speed) =>
+      _audioPlayer.setSpeed(speed);
 
   @override
-  void setRepeatMode(bool enabled) => _audioPlayer.setRepeatModeBool(enabled);
+  void setRepeatMode(bool enabled) =>
+      _audioPlayer.setRepeatModeBool(enabled);
 
   @override
-  bool isRepeatEnabled() => _audioPlayer.isRepeatMode();
+  bool isRepeatEnabled() =>
+      _audioPlayer.isRepeatMode();
 
-  // These synchronous getters might need an async await if audio_service is isolated,
-  // but just_audio within BaseAudioHandler holds synchronous state if in same isolate.
-  // For now, these are not strictly available synchronously from base handler, so we can stub
-  // or return default if we don't store them locally anymore. We'll return 0 for now since
-  // UI mostly relies on the Stream<AudioPlayerState>.
   @override
   int getCurrentPosition() => 0;
 
@@ -122,24 +125,34 @@ class DefaultAudioRepository implements AudioRepository {
     int reciterId,
     int chapterNumber,
     int ayahNumber,
-  ) => _ayahTimingService.getAyahTiming(reciterId, chapterNumber, ayahNumber);
+  ) =>
+      _ayahTimingService.getAyahTiming(
+        reciterId,
+        chapterNumber,
+        ayahNumber,
+      );
 
   @override
   Future<int?> getCurrentVerse(
     int reciterId,
     int chapterNumber,
     int currentTimeMs,
-  ) => _ayahTimingService.getCurrentVerse(
-    reciterId,
-    chapterNumber,
-    currentTimeMs,
-  );
+  ) =>
+      _ayahTimingService.getCurrentVerse(
+        reciterId,
+        chapterNumber,
+        currentTimeMs,
+      );
 
   @override
   Future<List<AyahTiming>> getChapterTimings(
     int reciterId,
     int chapterNumber,
-  ) => _ayahTimingService.getChapterTimings(reciterId, chapterNumber);
+  ) =>
+      _ayahTimingService.getChapterTimings(
+        reciterId,
+        chapterNumber,
+      );
 
   @override
   bool hasTimingForReciter(int reciterId) =>
