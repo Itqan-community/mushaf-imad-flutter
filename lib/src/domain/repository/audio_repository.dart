@@ -32,8 +32,13 @@ abstract class AudioRepository {
   /// Observe audio player state.
   Stream<AudioPlayerState> getPlayerStateStream();
 
-  /// Load and optionally play a chapter.
-  void loadChapter(int chapterNumber, int reciterId, {bool autoPlay = false});
+  /// ✅ تحديث: دعم البدء من آية محددة عند تحميل السورة
+  void loadChapter(
+    int chapterNumber, 
+    int reciterId, {
+    bool autoPlay = false, 
+    int? startAyahNumber, // المعامل الجديد
+  });
 
   /// Start or resume playback.
   void play();
