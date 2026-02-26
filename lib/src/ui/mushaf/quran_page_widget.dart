@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../domain/models/page_verse_data.dart';
+import '../../domain/models/page_verse_data.dart'; 
 import 'quran_line_image.dart';
 
 class QuranPageWidget extends StatefulWidget {
@@ -7,6 +7,7 @@ class QuranPageWidget extends StatefulWidget {
   final List<PageVerseData> verses;
   final List<PageVerseData> markers;
   final int? highlightedVerseKey;
+  final ThemeData themeData; 
   final Function(int chapter, int verse)? onVerseTap;
   final Function(int chapter, int verse)? onVerseLongPress;
 
@@ -15,6 +16,7 @@ class QuranPageWidget extends StatefulWidget {
     required this.pageNumber,
     required this.verses,
     required this.markers,
+    required this.themeData,  
     this.highlightedVerseKey,
     this.onVerseTap,
     this.onVerseLongPress,
@@ -27,12 +29,12 @@ class QuranPageWidget extends StatefulWidget {
 class _QuranPageWidgetState extends State<QuranPageWidget> {
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final theme = widget.themeData; // نستخدم الثيم الممرر من الأب
     
     return Container(
       color: theme.scaffoldBackgroundColor,
       child: ListView.builder(
-        itemCount: 15, // standard 15 lines per page
+        itemCount: 15,
         physics: const NeverScrollableScrollPhysics(),
         itemBuilder: (context, index) {
           final line = index + 1;
@@ -48,7 +50,6 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
               onLongPressStart: (details) {
                 if (widget.onVerseLongPress == null || versesOnLine.isEmpty) return;
 
-                // ✅ الحصول على الـ RenderBox للسطر الحالي فقط لضمان دقة الـ Ratio
                 final RenderBox box = lineContext.findRenderObject() as RenderBox;
                 final localOffset = box.globalToLocal(details.globalPosition);
                 final tapRatio = 1.0 - (localOffset.dx / box.size.width);
@@ -87,6 +88,6 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
         if (tapRatio >= h.left && tapRatio <= h.right) return verse;
       }
     }
-    return markers.isNotEmpty ? markers.last : verses.isNotEmpty ? verses.last : null;
+    return markers.isNotEmpty ? markers.last : (verses.isNotEmpty ? verses.last : null);
   }
 }
