@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../di/core_module.dart';
 import '../../domain/repository/audio_repository.dart';
+import '../../domain/repository/preferences_repository.dart';
 import '../../data/quran/quran_data_provider.dart';
 import '../../data/quran/verse_data_provider.dart';
 import '../player/audio_player_bar.dart';
@@ -58,12 +59,14 @@ class MushafPageViewState extends State<MushafPageView> {
   int _currentPage = 1;
   int? _selectedVerseKey; // chapterNumber * 1000 + verseNumber
   bool _showControls = true;
+  bool _isAudioPlayerVisible = true;
   StreamSubscription? _audioSubscription;
 
   @override
   void initState() {
     super.initState();
     _currentPage = widget.initialPage.clamp(1, QuranDataProvider.totalPages);
+    _isAudioPlayerVisible = widget.showAudioPlayer;
     _pageController = PageController(
       initialPage: QuranDataProvider.totalPages - _currentPage,
     );
@@ -144,6 +147,64 @@ class MushafPageViewState extends State<MushafPageView> {
     setState(() => _showControls = !_showControls);
   }
 
+  Future<void> _showVerseContextMenu(int chapter, int verse) async {
+    final action = await showModalBottomSheet<_VerseMenuAction>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        final showPlayerText = _isAudioPlayerVisible ? 'Play Audio' : 'Show Player';
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(
+                  _isAudioPlayerVisible
+                      ? Icons.play_circle_outline_rounded
+                      : Icons.keyboard_arrow_up_rounded,
+                ),
+                title: Text(showPlayerText),
+                subtitle: Text('Surah $chapter, Ayah $verse'),
+                onTap: () {
+                  Navigator.of(context).pop(_VerseMenuAction.playAudio);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (!mounted || action != _VerseMenuAction.playAudio) return;
+    await _showPlayerAndPlayVerse(chapter, verse);
+  }
+
+  Future<void> _showPlayerAndPlayVerse(int chapter, int verse) async {
+    if (!_isAudioPlayerVisible && mounted) {
+      setState(() {
+        _isAudioPlayerVisible = true;
+      });
+    }
+
+    final audioRepository = mushafGetIt<AudioRepository>();
+    final preferencesRepository = mushafGetIt<PreferencesRepository>();
+
+    int reciterId;
+    try {
+      reciterId = await preferencesRepository.getSelectedReciterId();
+    } catch (_) {
+      final defaultReciter = await audioRepository.getDefaultReciter();
+      reciterId = defaultReciter.id;
+    }
+
+    audioRepository.loadChapter(chapter, reciterId, autoPlay: false);
+    final ayahTiming = await audioRepository.getAyahTiming(reciterId, chapter, verse);
+    if (ayahTiming != null) {
+      audioRepository.seekTo(ayahTiming.startTime);
+    }
+    audioRepository.play();
+  }
+
   @override
   Widget build(BuildContext context) {
     final dataProvider = QuranDataProvider.instance;
@@ -181,11 +242,15 @@ class MushafPageViewState extends State<MushafPageView> {
                             : null,
                         onVerseTap: (chapter, verse) {
                           final key = chapter * 1000 + verse;
+                          final shouldOpenMenu = _selectedVerseKey != key;
                           setState(() {
                             _selectedVerseKey = _selectedVerseKey == key
                                 ? null
                                 : key;
                           });
+                          if (shouldOpenMenu) {
+                            _showVerseContextMenu(chapter, verse);
+                          }
                         },
                       );
                     },
@@ -257,7 +322,7 @@ class MushafPageViewState extends State<MushafPageView> {
               ), // Closes Stack
             ), // Closes GestureDetector
           ), // Closes Expanded
-          if (widget.showAudioPlayer)
+          if (_isAudioPlayerVisible)
             AudioPlayerBar(
               chapterNumber: chapters.isNotEmpty ? chapters.first.number : 1,
               chapterName: chapterName,
@@ -267,6 +332,8 @@ class MushafPageViewState extends State<MushafPageView> {
     ); // Closes Scaffold
   }
 }
+
+enum _VerseMenuAction { playAudio }
 
 /// Bottom navigation bar with page arrows and chapter index button.
 class _NavigationBar extends StatelessWidget {
