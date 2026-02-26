@@ -112,6 +112,12 @@ export 'src/data/quran/quran_data_provider.dart';
 export 'src/data/quran/quran_metadata.dart';
 export 'src/data/quran/verse_data_provider.dart';
 
+// Mushaf Font Service
+export 'src/data/fonts/mushaf_font_service.dart';
+
+// 1421 Mushaf Support
+export 'src/ui/mushaf/mushaf_page_widget.dart';
+
 // Hive Database Implementations
 export 'src/data/local/hive_database_service.dart';
 export 'src/data/local/dao/hive/hive_bookmark_dao.dart';

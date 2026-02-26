@@ -28,7 +28,7 @@ class SettingsViewModel extends ChangeNotifier {
   bool get isImporting => _isImporting;
 
   // ─── Preferences state ───
-  MushafType _mushafType = MushafType.hafs1441;
+  MushafType _mushafType = MushafType.hafs_1441;
   int _currentPage = 1;
   int _selectedReciterId = 1;
   double _playbackSpeed = 1.0;
@@ -50,6 +50,14 @@ class SettingsViewModel extends ChangeNotifier {
     _playbackSpeed = await _preferencesRepository.getPlaybackSpeed();
     _repeatMode = await _preferencesRepository.getRepeatMode();
     _themeConfig = await _preferencesRepository.getThemeConfig();
+    notifyListeners();
+  }
+
+  /// Set the Mushaf type (layout).
+  Future<void> setMushafType(MushafType type) async {
+    if (_mushafType == type) return;
+    _mushafType = type;
+    await _preferencesRepository.setMushafType(type);
     notifyListeners();
   }
 

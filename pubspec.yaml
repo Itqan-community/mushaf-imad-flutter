@@ -635,7 +635,12 @@ flutter:
     - assets/quran-images/603/
     - assets/quran-images/604/
 
+    - assets/fonts/1421/
+
   fonts:
     - family: QuranNumbers
       fonts:
         - asset: assets/fonts/QuranNumbers.ttf
+    - family: Hafs1421
+      fonts:
+        - asset: assets/fonts/1421/Hafs1421.ttf

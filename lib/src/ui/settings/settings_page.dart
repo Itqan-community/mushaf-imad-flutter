@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/audio/reciter_data_provider.dart';
 import '../../di/core_module.dart';
+import '../../domain/models/mushaf_type.dart';
 import '../../domain/repository/data_export_repository.dart';
 import '../../domain/repository/preferences_repository.dart';
 import '../theme/theme_picker_widget.dart';
@@ -62,10 +63,28 @@ class _SettingsPageState extends State<SettingsPage> {
               Card(
                 child: Column(
                   children: [
-                    _PreferenceTile(
-                      icon: Icons.menu_book_rounded,
-                      label: 'Mushaf Type',
-                      value: _viewModel.mushafType.name.toUpperCase(),
+                    ListTile(
+                      leading: const Icon(Icons.menu_book_rounded),
+                      title: const Text('Mushaf Type'),
+                      subtitle: Text(_getMushafTypeDescription(_viewModel.mushafType)),
+                      trailing: DropdownButton<MushafType>(
+                        value: _viewModel.mushafType,
+                        underline: const SizedBox.shrink(),
+                        items: MushafType.values.map((type) {
+                          return DropdownMenuItem<MushafType>(
+                            value: type,
+                            child: Text(
+                              _getMushafTypeLabel(type),
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (type) {
+                          if (type != null) {
+                            _viewModel.setMushafType(type);
+                          }
+                        },
+                      ),
                     ),
                     const Divider(height: 1, indent: 56),
                     _PreferenceTile(
@@ -215,6 +234,22 @@ class _SettingsPageState extends State<SettingsPage> {
     } catch (_) {
       return 'Reciter #$reciterId';
     }
+  }
+
+  String _getMushafTypeLabel(MushafType type) {
+    return switch (type) {
+      MushafType.hafs1441 => 'Hafs 1441',
+      MushafType.hafs1405 => 'Hafs 1405',
+      MushafType.hafs1421 => 'Hafs 1421',
+    };
+  }
+
+  String _getMushafTypeDescription(MushafType type) {
+    return switch (type) {
+      MushafType.hafs1441 => 'Modern Madani Mushaf (15-line)',
+      MushafType.hafs1405 => 'Traditional Madani Mushaf',
+      MushafType.hafs1421 => 'Madani Mushaf 1421 Edition',
+    };
   }
 
   Future<void> _handleExport(BuildContext context) async {

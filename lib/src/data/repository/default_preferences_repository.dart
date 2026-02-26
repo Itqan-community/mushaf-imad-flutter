@@ -12,7 +12,7 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   // Values are currently written via setters and emitted to StreamControllers.
   // Will be persisted via Hive when integrated.
   // ignore: unused_field
-  MushafType _mushafType = MushafType.hafs1441;
+  MushafType _mushafType = MushafType.hafs_1441;
   // ignore: unused_field
   int _currentPage = 1;
   // ignore: unused_field
@@ -230,7 +230,7 @@ class DefaultPreferencesRepository implements PreferencesRepository {
 
   @override
   Future<void> clearAll() async {
-    _mushafType = MushafType.hafs1441;
+    _mushafType = MushafType.hafs_1441;
     _currentPage = 1;
     _lastReadChapter = null;
     _lastReadVerse = null;

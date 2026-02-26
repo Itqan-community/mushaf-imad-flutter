@@ -7,7 +7,7 @@ abstract class VerseRepository {
   /// Get all verses for a specific page.
   Future<List<Verse>> getVersesForPage(
     int pageNumber, {
-    MushafType mushafType = MushafType.hafs1441,
+    MushafType mushafType = MushafType.hafs_1441,
   });
 
   /// Get all verses for a specific chapter.

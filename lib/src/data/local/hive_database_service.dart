@@ -156,7 +156,7 @@ class HiveDatabaseService implements DatabaseService {
   @override
   Future<PageHeaderInfo?> getPageHeaderInfo(
     int pageNumber, {
-    MushafType mushafType = MushafType.hafs1441,
+    MushafType mushafType = MushafType.hafs_1441,
   }) async {
     final juz = _dataProvider.getJuzForPage(pageNumber);
     final chaptersOnPage = _dataProvider.getChaptersForPage(pageNumber);
@@ -188,7 +188,7 @@ class HiveDatabaseService implements DatabaseService {
   @override
   Future<List<Verse>> getVersesForPage(
     int pageNumber, {
-    MushafType mushafType = MushafType.hafs1441,
+    MushafType mushafType = MushafType.hafs_1441,
   }) async => []; // TODO: Load from quran_data.json when available
 
   @override

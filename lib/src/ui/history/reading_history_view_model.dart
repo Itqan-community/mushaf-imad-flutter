@@ -28,7 +28,7 @@ class ReadingHistoryViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   /// Initialize the ViewModel.
-  Future<void> initialize({MushafType mushafType = MushafType.hafs1441}) async {
+  Future<void> initialize({MushafType mushafType = MushafType.hafs_1441}) async {
     _isLoading = true;
     notifyListeners();
 

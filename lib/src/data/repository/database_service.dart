@@ -45,7 +45,7 @@ abstract class DatabaseService {
   /// Get page header information for a specific page.
   Future<PageHeaderInfo?> getPageHeaderInfo(
     int pageNumber, {
-    MushafType mushafType = MushafType.hafs1441,
+    MushafType mushafType = MushafType.hafs_1441,
   });
 
   // MARK: - Verse Operations
@@ -53,7 +53,7 @@ abstract class DatabaseService {
   /// Get all verses for a specific page.
   Future<List<Verse>> getVersesForPage(
     int pageNumber, {
-    MushafType mushafType = MushafType.hafs1441,
+    MushafType mushafType = MushafType.hafs_1441,
   });
 
   /// Get all verses for a specific chapter.

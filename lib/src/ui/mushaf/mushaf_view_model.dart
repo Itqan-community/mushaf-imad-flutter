@@ -32,7 +32,7 @@ class MushafViewModel extends ChangeNotifier {
   final int _totalPages = 604;
   List<Verse> _versesForPage = [];
   PageHeaderInfo? _pageHeaderInfo;
-  MushafType _mushafType = MushafType.hafs1441;
+  MushafType _mushafType = MushafType.hafs_1441;
   LastReadPosition? _lastReadPosition;
   bool _isLoading = false;
 

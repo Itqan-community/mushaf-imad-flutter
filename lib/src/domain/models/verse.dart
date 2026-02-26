@@ -18,8 +18,10 @@ class Verse {
   final int hizbNumber;
   final VerseMarker? marker1441;
   final VerseMarker? marker1405;
+  final VerseMarker? marker1421;
   final List<VerseHighlight> highlights1441;
   final List<VerseHighlight> highlights1405;
+  final List<VerseHighlight> highlights1421;
 
   const Verse({
     required this.verseID,
@@ -36,7 +38,9 @@ class Verse {
     this.hizbNumber = 0,
     this.marker1441,
     this.marker1405,
+    this.marker1421,
     this.highlights1441 = const [],
     this.highlights1405 = const [],
+    this.highlights1421 = const [],
   });
 }

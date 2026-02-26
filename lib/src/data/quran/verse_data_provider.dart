@@ -55,7 +55,9 @@ class PageVerseData {
   final String textWithoutTashkil;
   final String searchableText;
   final VerseMarkerData? marker1441;
+  final VerseMarkerData? marker1421;
   final List<VerseHighlightData> highlights1441;
+  final List<VerseHighlightData> highlights1421;
 
   const PageVerseData({
     required this.verseID,
@@ -65,7 +67,9 @@ class PageVerseData {
     this.textWithoutTashkil = '',
     this.searchableText = '',
     this.marker1441,
+    this.marker1421,
     this.highlights1441 = const [],
+    this.highlights1421 = const [],
   });
 
   factory PageVerseData.fromJson(Map<String, dynamic> json) {
@@ -79,8 +83,18 @@ class PageVerseData {
       marker1441: json['marker1441'] != null
           ? VerseMarkerData.fromJson(json['marker1441'] as Map<String, dynamic>)
           : null,
+      marker1421: json['marker1421'] != null
+          ? VerseMarkerData.fromJson(json['marker1421'] as Map<String, dynamic>)
+          : null,
       highlights1441:
           (json['highlights1441'] as List?)
+              ?.map(
+                (h) => VerseHighlightData.fromJson(h as Map<String, dynamic>),
+              )
+              .toList() ??
+          [],
+      highlights1421:
+          (json['highlights1421'] as List?)
               ?.map(
                 (h) => VerseHighlightData.fromJson(h as Map<String, dynamic>),
               )
@@ -89,9 +103,32 @@ class PageVerseData {
     );
   }
 
-  /// Check if this verse occupies the given line.
+  /// Check if this verse occupies the given line (1441 layout).
   bool occupiesLine(int lineNumber) {
     return highlights1441.any((h) => h.line == lineNumber);
+  }
+
+  /// Check if this verse occupies the given line (1421 layout).
+  bool occupiesLine1421(int lineNumber) {
+    return highlights1421.any((h) => h.line == lineNumber);
+  }
+
+  /// Get marker for specific mushaf type.
+  VerseMarkerData? getMarkerForMushafType(String mushafType) {
+    return switch (mushafType) {
+      'hafs1421' => marker1421,
+      'hafs1441' => marker1441,
+      _ => marker1441,
+    };
+  }
+
+  /// Get highlights for specific mushaf type.
+  List<VerseHighlightData> getHighlightsForMushafType(String mushafType) {
+    return switch (mushafType) {
+      'hafs1421' => highlights1421,
+      'hafs1441' => highlights1441,
+      _ => highlights1441,
+    };
   }
 }
 

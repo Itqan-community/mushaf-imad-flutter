@@ -21,7 +21,7 @@ class DefaultPageRepository implements PageRepository {
   @override
   Future<PageHeaderInfo?> getPageHeaderInfo(
     int pageNumber, {
-    MushafType mushafType = MushafType.hafs1441,
+    MushafType mushafType = MushafType.hafs_1441,
   }) async {
     final cached = _cacheService.getCachedPageHeader(pageNumber);
     if (cached != null) return cached;

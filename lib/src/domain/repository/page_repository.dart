@@ -14,7 +14,7 @@ abstract class PageRepository {
   /// Get page header information.
   Future<PageHeaderInfo?> getPageHeaderInfo(
     int pageNumber, {
-    MushafType mushafType = MushafType.hafs1441,
+    MushafType mushafType = MushafType.hafs_1441,
   });
 
   /// Pre-cache a specific page.

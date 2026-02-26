@@ -14,7 +14,7 @@ class DefaultVerseRepository implements VerseRepository {
   @override
   Future<List<Verse>> getVersesForPage(
     int pageNumber, {
-    MushafType mushafType = MushafType.hafs1441,
+    MushafType mushafType = MushafType.hafs_1441,
   }) async {
     // Check cache first
     final cached = _cacheService.getCachedVerses(pageNumber);
