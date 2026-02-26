@@ -123,39 +123,41 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
                       }
                     }
 
-                    // ✅ Wrap with GestureDetector to handle Long Press since QuranLineImage doesn't support it natively
+                    // ✅ FIX: Use Builder to get the specific context of the line for accurate RenderBox measurement
                     return Expanded(
-                      child: GestureDetector(
-                        onLongPressStart: (details) {
-                          if (widget.onVerseLongPress == null || versesOnLine.isEmpty) return;
-                          
-                          // Calculate tap ratio manually for long press
-                          final RenderBox box = context.findRenderObject() as RenderBox;
-                          final localOffset = box.globalToLocal(details.globalPosition);
-                          final tapRatio = 1.0 - (localOffset.dx / box.size.width);
+                      child: Builder(
+                        builder: (lineContext) => GestureDetector(
+                          onLongPressStart: (details) {
+                            if (widget.onVerseLongPress == null || versesOnLine.isEmpty) return;
+                            
+                            // ✅ Now measuring the RenderBox of the line itself, not the entire page
+                            final RenderBox box = lineContext.findRenderObject() as RenderBox;
+                            final localOffset = box.globalToLocal(details.globalPosition);
+                            final tapRatio = 1.0 - (localOffset.dx / box.size.width);
 
-                          final target = _resolveVerse(tapRatio, versesOnLine, markers, line);
-                          widget.onVerseLongPress!(target.chapter, target.number);
-                        },
-                        child: QuranLineImage(
-                          page: widget.pageNumber,
-                          line: line,
-                          highlights: highlights,
-                          markers: markers,
-                          highlightColor: theme.highlightColor,
-                          textColor: theme.textColor,
-
-                          /// TAP = select verse
-                          onTapUpExact: (tapRatio) {
-                            if (widget.onVerseTap == null ||
-                                versesOnLine.isEmpty) return;
-
-                            final target =
-                                _resolveVerse(tapRatio, versesOnLine, markers, line);
-
-                            widget.onVerseTap!(
-                                target.chapter, target.number);
+                            final target = _resolveVerse(tapRatio, versesOnLine, markers, line);
+                            widget.onVerseLongPress!(target.chapter, target.number);
                           },
+                          child: QuranLineImage(
+                            page: widget.pageNumber,
+                            line: line,
+                            highlights: highlights,
+                            markers: markers,
+                            highlightColor: theme.highlightColor,
+                            textColor: theme.textColor,
+
+                            /// TAP = select verse
+                            onTapUpExact: (tapRatio) {
+                              if (widget.onVerseTap == null ||
+                                  versesOnLine.isEmpty) return;
+
+                              final target =
+                                  _resolveVerse(tapRatio, versesOnLine, markers, line);
+
+                              widget.onVerseTap!(
+                                  target.chapter, target.number);
+                            },
+                          ),
                         ),
                       ),
                     );
@@ -169,7 +171,7 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
     );
   }
 
-  /// ✅ Logic to find which verse was touched based on horizontal position (ratio)
+  /// Logic to find which verse was touched based on horizontal position (ratio)
   PageVerseData _resolveVerse(
     double tapRatio,
     List<PageVerseData> versesOnLine,
