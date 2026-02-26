@@ -59,9 +59,9 @@ class MushafPageViewState extends State<MushafPageView> {
     await VerseDataProvider.instance.initialize();
     if (!mounted) return;
 
-    _audioSubscription = mushafGetIt<AudioRepository>()
-        .getPlayerStateStream()
-        .listen((state) {
+    // ✅ Cleanly handle subscription to avoid memory leaks
+    final stream = mushafGetIt<AudioRepository>().getPlayerStateStream();
+    _audioSubscription = stream.listen((state) {
       if (!mounted) return;
       _currentReciterId = state.currentReciterId;
 
@@ -168,9 +168,11 @@ class MushafPageViewState extends State<MushafPageView> {
                           final reciterId = _currentReciterId;
                           if (reciterId == null) return;
 
+                          // ✅ Corrected loadChapter signature: chapter, reciterId, startAyah, autoPlay
                           mushafGetIt<AudioRepository>().loadChapter(
                             chapter,
                             reciterId,
+                            startAyahNumber: verse,
                             autoPlay: true,
                           );
                         },
@@ -314,14 +316,22 @@ class _NavButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: enabled ? onTap : null,
-      child: Icon(
-        icon,
-        size: 26,
-        color: enabled
-            ? (isAccent ? Colors.blueAccent : themeData.textColor)
-            : Colors.grey,
+    // ✅ Better touch feedback with Material, Padding and BorderRadius
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: enabled ? onTap : null,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Icon(
+            icon,
+            size: 26,
+            color: enabled
+                ? (isAccent ? Colors.blueAccent : themeData.textColor)
+                : Colors.grey,
+          ),
+        ),
       ),
     );
   }
