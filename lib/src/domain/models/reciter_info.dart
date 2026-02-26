@@ -1,5 +1,4 @@
-/// Information about a Quran reciter.
-/// Public API - exposed to library consumers.
+
 class ReciterInfo {
   final int id;
   final String nameArabic;
@@ -14,29 +13,19 @@ class ReciterInfo {
     required this.rewaya,
     required this.folderUrl,
   });
-
-  /// Get reciter display name based on language.
   String getDisplayName({String languageCode = 'en'}) {
     return languageCode == 'ar' ? nameArabic : nameEnglish;
   }
-
-  /// Get audio URL for a specific chapter (surah).
   String getAudioUrl(int chapterNumber) {
     final paddedChapter = chapterNumber.toString().padLeft(3, '0');
     return '$folderUrl$paddedChapter.mp3';
   }
-
-  /// ✅ NEW: Get audio URL for a specific ayah.
-  /// This builds a URL pattern like: folderUrl/001002.mp3 (Chapter 1, Ayah 2)
   String getAyahUrl({required int chapterNumber, required int ayahNumber}) {
     final paddedChapter = chapterNumber.toString().padLeft(3, '0');
     final paddedAyah = ayahNumber.toString().padLeft(3, '0');
-    return '$folderUrl$paddedChapter$paddedAyah.mp3';
+    final baseUrl = folderUrl.endsWith('/') ? folderUrl : '$folderUrl/';
+    return '$baseUrl$paddedChapter$paddedAyah.mp3';
   }
-
-  /// ✅ NEW: Get verse count for a chapter.
-  /// This is a helper. In a real app, you might fetch this from a metadata list.
-  /// For now, we use a standard list of verse counts for the 114 surahs.
   int getChapterVerseCount(int chapterNumber) {
     if (chapterNumber < 1 || chapterNumber > 114) return 0;
     const surahVerseCounts = [
@@ -50,13 +39,9 @@ class ReciterInfo {
     ];
     return surahVerseCounts[chapterNumber - 1];
   }
-
-  /// Check if this reciter uses Hafs recitation.
   bool get isHafs =>
       rewaya.toLowerCase().contains('حفص') ||
       rewaya.toLowerCase().contains('hafs');
-
-  /// Check if this reciter uses Warsh recitation.
   bool get isWarsh =>
       rewaya.toLowerCase().contains('ورش') ||
       rewaya.toLowerCase().contains('warsh');
