@@ -1,4 +1,3 @@
-
 class ReciterInfo {
   final int id;
   final String nameArabic;
@@ -13,19 +12,35 @@ class ReciterInfo {
     required this.rewaya,
     required this.folderUrl,
   });
+
+  // إضافة دالة البحث بالـ ID التي طلبها الـ CodeRabbit
+  static ReciterInfo byId(int id) {
+    // قائمة افتراضية للبحث، يفضل أن تكون مرتبطة بـ ReciterDataProvider مستقبلاً
+    return allReciters.firstWhere(
+      (r) => r.id == id,
+      orElse: () => allReciters.first, // العودة للقارئ الأول كحماية
+    );
+  }
+
   String getDisplayName({String languageCode = 'en'}) {
     return languageCode == 'ar' ? nameArabic : nameEnglish;
   }
+
   String getAudioUrl(int chapterNumber) {
     final paddedChapter = chapterNumber.toString().padLeft(3, '0');
-    return '$folderUrl$paddedChapter.mp3';
+    final baseUrl = folderUrl.endsWith('/') ? folderUrl : '$folderUrl/';
+    return '$baseUrl$paddedChapter.mp3';
   }
+
+  // الدالة التي طلبها الـ AI لتشغيل آية محددة
   String getAyahUrl({required int chapterNumber, required int ayahNumber}) {
     final paddedChapter = chapterNumber.toString().padLeft(3, '0');
     final paddedAyah = ayahNumber.toString().padLeft(3, '0');
     final baseUrl = folderUrl.endsWith('/') ? folderUrl : '$folderUrl/';
     return '$baseUrl$paddedChapter$paddedAyah.mp3';
   }
+
+  // الدالة التي طلبها الـ AI لمعرفة عدد الآيات
   int getChapterVerseCount(int chapterNumber) {
     if (chapterNumber < 1 || chapterNumber > 114) return 0;
     const surahVerseCounts = [
@@ -39,10 +54,23 @@ class ReciterInfo {
     ];
     return surahVerseCounts[chapterNumber - 1];
   }
+
   bool get isHafs =>
       rewaya.toLowerCase().contains('حفص') ||
       rewaya.toLowerCase().contains('hafs');
+
   bool get isWarsh =>
       rewaya.toLowerCase().contains('ورش') ||
       rewaya.toLowerCase().contains('warsh');
+
+  // قائمة تجريبية لضمان عمل دالة byId (عدلها حسب بياناتك)
+  static const List<ReciterInfo> allReciters = [
+    ReciterInfo(
+      id: 1,
+      nameArabic: "مشاري العفاسي",
+      nameEnglish: "Mishary Alafasy",
+      rewaya: "حفص عن عاصم",
+      folderUrl: "https://everyayah.com/data/Alafasy_128kbps/",
+    ),
+  ];
 }
