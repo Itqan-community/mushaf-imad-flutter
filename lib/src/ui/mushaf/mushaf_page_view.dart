@@ -1,12 +1,14 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
-import '../../di/core_module.dart';
-import '../../domain/repository/audio_repository.dart';
+
 import '../../data/quran/quran_data_provider.dart';
 import '../../data/quran/verse_data_provider.dart';
+import '../../di/core_module.dart';
+import '../../domain/repository/audio_repository.dart';
 import '../player/audio_player_bar.dart';
-import '../theme/reading_theme.dart';
 import '../theme/mushaf_theme_scope.dart';
+import '../theme/reading_theme.dart';
 import 'quran_page_widget.dart';
 
 /// MushafPageView — the main Mushaf reader screen.
@@ -38,6 +40,9 @@ class MushafPageView extends StatefulWidget {
   /// Reading theme for the Mushaf pages. Defaults to light.
   final ReadingTheme readingTheme;
 
+  /// Color used to highlight the currently playing verse during audio playback.
+  final Color? audioHighlightsColor;
+
   const MushafPageView({
     super.key,
     this.initialPage = 1,
@@ -47,6 +52,7 @@ class MushafPageView extends StatefulWidget {
     this.showAudioPlayer = true,
     this.onOpenChapterIndex,
     this.readingTheme = ReadingTheme.light,
+    this.audioHighlightsColor,
   });
 
   @override
@@ -57,6 +63,7 @@ class MushafPageViewState extends State<MushafPageView> {
   late PageController _pageController;
   int _currentPage = 1;
   int? _selectedVerseKey; // chapterNumber * 1000 + verseNumber
+  int? _audioVerseKey;
   bool _showControls = true;
   StreamSubscription? _audioSubscription;
 
@@ -79,14 +86,14 @@ class MushafPageViewState extends State<MushafPageView> {
           if (!mounted) return;
           if (state.currentChapter != null && state.currentVerse != null) {
             final key = state.currentChapter! * 1000 + state.currentVerse!;
-            if (_selectedVerseKey != key) {
+            if (_audioVerseKey != key) {
               setState(() {
-                _selectedVerseKey = key;
+                _audioVerseKey = key;
               });
             }
-          } else if (state.isPlaying && _selectedVerseKey != null) {
+          } else if (state.isPlaying && _audioVerseKey != null) {
             setState(() {
-              _selectedVerseKey = null;
+              _audioVerseKey = null;
             });
           }
         });
@@ -176,9 +183,14 @@ class MushafPageViewState extends State<MushafPageView> {
                       return QuranPageWidget(
                         pageNumber: pageNumber,
                         themeData: effectiveThemeData,
+
                         selectedVerseKey: pageNumber == _currentPage
                             ? _selectedVerseKey
                             : null,
+                        audioVerseKey: pageNumber == _currentPage
+                            ? _audioVerseKey
+                            : null,
+                        audioHighlightsColor: widget.audioHighlightsColor,
                         onVerseTap: (chapter, verse) {
                           final key = chapter * 1000 + verse;
                           setState(() {

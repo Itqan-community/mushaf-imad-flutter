@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../data/quran/quran_data_provider.dart';
 import '../../data/quran/verse_data_provider.dart';
 import 'verse_fasel.dart';
@@ -14,7 +15,12 @@ import 'verse_fasel.dart';
 class QuranLineImage extends StatelessWidget {
   final int page;
   final int line;
-  final List<VerseHighlightData> highlights;
+  final List<VerseHighlightData> audioHighlights;
+
+  final Color? audioHighlightsColor;
+
+  final List<VerseHighlightData> selectionHighlights;
+
   final VoidCallback? onTap;
 
   /// Optional highlight color — defaults to gold if not provided.
@@ -35,7 +41,9 @@ class QuranLineImage extends StatelessWidget {
     super.key,
     required this.page,
     required this.line,
-    this.highlights = const [],
+    this.audioHighlights = const [],
+    this.audioHighlightsColor,
+    this.selectionHighlights = const [],
     this.onTap,
     this.onTapUpExact,
     this.markers = const [],
@@ -76,54 +84,11 @@ class QuranLineImage extends StatelessWidget {
             return Stack(
               fit: StackFit.expand,
               children: [
-                // Highlight background (precise bounding boxes)
-                if (highlights.isNotEmpty)
-                  ...highlights.map((h) {
-                    // `h.left` and `h.right` are physical coordinates (0.0 = left edge, 1.0 = right edge)
-                    final leftPos = lineWidth * h.left;
-                    final width = lineWidth * (h.right - h.left);
+                // 👆 Selection Highlight background (precise bounding boxes)
+                ..._buildSelectionHighlights(lineWidth),
 
-                    return Positioned(
-                      left: leftPos,
-                      width: width,
-                      top: 0,
-                      bottom: 0,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: (highlightColor ?? const Color(0xFFD4A574))
-                              .withValues(alpha: 0.25),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                    );
-                  }),
-
-                // Line image — loaded from package assets
-                Image.asset(
-                  assetPath,
-                  package: 'imad_flutter',
-                  fit: BoxFit.contain,
-                  color: textColor,
-                  colorBlendMode: textColor != null ? BlendMode.srcIn : null,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          '⚠️ Missing quran-images/\n'
-                          'Download from: github.com/Itqan-community/mushaf-imad-flutter',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 9,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.error.withValues(alpha: 0.7),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                // 🎧 Audio Highlight (animated fill)
+                ..._buildAudioHighlights(assetPath, lineWidth),
 
                 // Verse separators (VerseFasel markers)
                 if (markers.isNotEmpty) _buildMarkers(lineWidth, lineHeight),
@@ -133,6 +98,154 @@ class QuranLineImage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  List<Widget> _buildAudioHighlights(String assetPath, double lineWidth) {
+    if (audioHighlights.isEmpty) {
+      return [
+        Image.asset(
+          assetPath,
+          package: 'imad_flutter',
+          fit: BoxFit.contain,
+          color: textColor,
+          colorBlendMode: textColor != null ? BlendMode.srcIn : null,
+          errorBuilder: (context, error, stackTrace) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  '⚠️ Missing quran-images/\n'
+                  'Download from: github.com/Itqan-community/mushaf-imad-flutter',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 9,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.error.withValues(alpha: 0.7),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ];
+    }
+
+    return audioHighlights.map((h) {
+      return Stack(
+        children: [
+          ClipRect(
+            clipper: _VerseClipper(0, h.left),
+            child: Image.asset(
+              assetPath,
+              package: 'imad_flutter',
+              fit: BoxFit.contain,
+              color: textColor,
+              colorBlendMode: textColor != null ? BlendMode.srcIn : null,
+              errorBuilder: (context, error, stackTrace) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      '⚠️ Missing quran-images/\n'
+                      'Download from: github.com/Itqan-community/mushaf-imad-flutter',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.error.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          ClipRect(
+            clipper: _VerseClipper(h.left, h.right),
+            child: Image.asset(
+              assetPath,
+              package: 'imad_flutter',
+              fit: BoxFit.contain,
+              color: audioHighlightsColor ?? Colors.blue,
+              colorBlendMode: BlendMode.srcIn,
+              errorBuilder: (context, error, stackTrace) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      '⚠️ Missing quran-images/\n'
+                      'Download from: github.com/Itqan-community/mushaf-imad-flutter',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.error.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          ClipRect(
+            clipper: _VerseClipper(h.right, 1),
+            child: Image.asset(
+              assetPath,
+              package: 'imad_flutter',
+              fit: BoxFit.contain,
+              color: textColor,
+              colorBlendMode: textColor != null ? BlendMode.srcIn : null,
+              errorBuilder: (context, error, stackTrace) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      '⚠️ Missing quran-images/\n'
+                      'Download from: github.com/Itqan-community/mushaf-imad-flutter',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.error.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      );
+    }).toList();
+  }
+
+  List<Widget> _buildSelectionHighlights(double lineWidth) {
+    if (selectionHighlights.isEmpty) return [];
+
+    return selectionHighlights.map((h) {
+      // `h.left` and `h.right` are physical coordinates (0.0 = left edge, 1.0 = right edge)
+      final leftPos = lineWidth * h.left;
+      final width = lineWidth * (h.right - h.left);
+
+      return Positioned(
+        left: leftPos,
+        width: width,
+        top: 0,
+        bottom: 0,
+        child: Container(
+          decoration: BoxDecoration(
+            color: (highlightColor ?? const Color(0xFFD4A574)).withValues(
+              alpha: 0.25,
+            ),
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+      );
+    }).toList();
   }
 
   /// Build verse separator markers positioned on this line.
@@ -162,5 +275,26 @@ class QuranLineImage extends StatelessWidget {
         );
       }).toList(),
     );
+  }
+}
+
+class _VerseClipper extends CustomClipper<Rect> {
+  final double leftRatio;
+  final double rightRatio;
+
+  _VerseClipper(this.leftRatio, this.rightRatio);
+
+  @override
+  Rect getClip(Size size) {
+    final left = size.width * leftRatio;
+    final right = size.width * rightRatio;
+
+    return Rect.fromLTRB(left, 0, right, size.height);
+  }
+
+  @override
+  bool shouldReclip(_VerseClipper oldClipper) {
+    return oldClipper.leftRatio != leftRatio ||
+        oldClipper.rightRatio != rightRatio;
   }
 }
