@@ -187,5 +187,52 @@ void main() {
         expect(audioUrl, 'https://cdn.example.test/001.mp3');
       },
     );
+
+    test('fetchChapterAudioUrl trims audio_url value', () async {
+      final client = MockClient((request) async {
+        if (request.url.path.endsWith('/recitations/')) {
+          return http.Response(
+            jsonEncode({
+              'count': 1,
+              'results': [
+                {
+                  'id': 11,
+                  'reciter': {'id': 1, 'name': 'Abdul Basit'},
+                  'riwayah': {'id': 1, 'name': 'Hafs'},
+                },
+              ],
+            }),
+            200,
+          );
+        }
+
+        if (request.url.path.endsWith('/recitations/11/')) {
+          return http.Response(
+            jsonEncode({
+              'count': 1,
+              'results': [
+                {
+                  'surah_number': 1,
+                  'surah_name': 'Al-Fatihah',
+                  'audio_url': '  https://cdn.example.test/001.mp3  ',
+                  'ayahs_timings': [],
+                },
+              ],
+            }),
+            200,
+          );
+        }
+
+        return http.Response('{}', 404);
+      });
+
+      final source = CmsItqanAudioDataSource(
+        config: const CmsAudioSourceConfig(apiBaseUrl: 'https://example.test'),
+        client: client,
+      );
+
+      final audioUrl = await source.fetchChapterAudioUrl(11, 1);
+      expect(audioUrl, 'https://cdn.example.test/001.mp3');
+    });
   });
 }

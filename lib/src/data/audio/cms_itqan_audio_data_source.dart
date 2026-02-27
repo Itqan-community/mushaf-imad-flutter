@@ -128,7 +128,7 @@ class CmsItqanAudioDataSource implements MushafAudioDataSource {
 
     for (final row in rows) {
       final surahNumber = _asInt(row['surah_number']);
-      final audioUrl = row['audio_url']?.toString();
+      final audioUrl = row['audio_url']?.toString().trim();
       if (surahNumber == null || audioUrl == null || audioUrl.isEmpty) {
         continue;
       }
