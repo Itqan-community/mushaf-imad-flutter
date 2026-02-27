@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-// ⚠️ السطر ده هو مفتاح الحل، تأكد من مسار الملف الصحيح في مشروعك
 import '../../domain/models/page_verse_data.dart'; 
 import 'quran_line_image.dart';
 
 class QuranPageWidget extends StatefulWidget {
   final int pageNumber;
-  final List<PageVerseData> verses; // الآن سيعرف أن لها line و chapter
+  final List<PageVerseData> verses; 
   final List<PageVerseData> markers;
   final int? highlightedVerseKey;
   final ThemeData themeData;
@@ -40,7 +39,6 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
         itemBuilder: (context, index) {
           final line = index + 1;
           
-          // هنا Dart سيفهم الـ v والـ m لأننا حددنا النوع في الـ List فوق
           final versesOnLine = widget.verses.where((v) => v.line == line).toList();
           final markersOnLine = widget.markers.where((m) => m.line == line).toList();
           
@@ -50,11 +48,15 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
 
           return Builder(
             builder: (lineContext) => GestureDetector(
+              // تحسين تحديد مكان الضغطة المطولة (ملاحظة الـ AI رقم 128-161)
               onLongPressStart: (details) {
                 if (widget.onVerseLongPress == null || versesOnLine.isEmpty) return;
 
+                // الحصول على الـ RenderBox الخاص بالسطر الحالي فقط لضمان الدقة
                 final RenderBox box = lineContext.findRenderObject() as RenderBox;
                 final localOffset = box.globalToLocal(details.globalPosition);
+                
+                // حساب النسبة المئوية لمكان الضغطة من اليمين لليسار (Tap Ratio)
                 final tapRatio = 1.0 - (localOffset.dx / box.size.width);
 
                 final target = _resolveVerse(tapRatio, versesOnLine, markersOnLine, line);
@@ -84,7 +86,7 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
     );
   }
 
-  // تحديد النوع هنا يمنع خطأ "PageVerseData isn't a type"
+  // دالة ذكية لتحديد الآية بناءً على إحداثيات الضغطة
   PageVerseData? _resolveVerse(double tapRatio, List<PageVerseData> verses, List<PageVerseData> markers, int line) {
     for (final verse in verses) {
       final hList = verse.highlights1441.where((h) => h.line == line);
@@ -92,6 +94,7 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
         if (tapRatio >= h.left && tapRatio <= h.right) return verse;
       }
     }
+    // إذا لم تكن الضغطة فوق آية محددة، نختار أقرب علامة نهاية آية أو آخر آية في السطر
     return markers.isNotEmpty ? markers.last : (verses.isNotEmpty ? verses.last : null);
   }
 }
