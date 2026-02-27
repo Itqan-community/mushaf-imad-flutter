@@ -1,35 +1,78 @@
 import 'dart:async';
 
 import '../../domain/models/reciter_info.dart';
-import 'reciter_data_provider.dart';
+import 'audio_source_config.dart';
 
 /// Service for managing reciter selection and persistence.
 /// Internal implementation.
 class ReciterService {
+  final MushafAudioDataSource _audioDataSource;
   ReciterInfo? _selectedReciter;
+  List<ReciterInfo>? _recitersCache;
   final StreamController<ReciterInfo?> _selectedReciterController =
       StreamController<ReciterInfo?>.broadcast();
 
-  ReciterService();
+  ReciterService(this._audioDataSource);
 
   /// Get all available reciters.
-  List<ReciterInfo> getAllReciters() => ReciterDataProvider.allReciters;
+  Future<List<ReciterInfo>> getAllReciters() async {
+    _recitersCache ??= await _audioDataSource.fetchAllReciters();
+    return _recitersCache!;
+  }
 
   /// Get reciter by ID.
-  ReciterInfo? getReciterById(int reciterId) =>
-      ReciterDataProvider.getReciterById(reciterId);
+  Future<ReciterInfo?> getReciterById(int reciterId) async {
+    final all = await getAllReciters();
+    try {
+      return all.firstWhere((r) => r.id == reciterId);
+    } catch (_) {
+      return null;
+    }
+  }
 
   /// Search reciters by name.
-  List<ReciterInfo> searchReciters(
+  Future<List<ReciterInfo>> searchReciters(
     String query, {
     String languageCode = 'en',
-  }) => ReciterDataProvider.searchReciters(query, languageCode: languageCode);
+  }) async {
+    final all = await getAllReciters();
+    final normalizedQuery = query.trim().toLowerCase();
+
+    return all.where((reciter) {
+      if (languageCode == 'ar') {
+        return reciter.nameArabic.toLowerCase().contains(normalizedQuery);
+      }
+      return reciter.nameEnglish.toLowerCase().contains(normalizedQuery);
+    }).toList();
+  }
 
   /// Get all Hafs reciters.
-  List<ReciterInfo> getHafsReciters() => ReciterDataProvider.getHafsReciters();
+  Future<List<ReciterInfo>> getHafsReciters() async {
+    final all = await getAllReciters();
+    return all.where((r) => r.isHafs).toList();
+  }
 
   /// Get default reciter.
-  ReciterInfo getDefaultReciter() => ReciterDataProvider.getDefaultReciter();
+  Future<ReciterInfo> getDefaultReciter() async {
+    final all = await getAllReciters();
+    if (all.isEmpty) {
+      throw StateError('No reciters available');
+    }
+    return all.first;
+  }
+
+  /// Clear reciters cache to force refresh from the source on next query.
+  void invalidateRecitersCache() {
+    _recitersCache = null;
+  }
+
+  /// Get chapter audio URL (if provided by source).
+  Future<String?> getChapterAudioUrl(int reciterId, int chapterNumber) async {
+    return await _audioDataSource.fetchChapterAudioUrl(
+      reciterId,
+      chapterNumber,
+    );
+  }
 
   /// Get selected reciter.
   ReciterInfo? get selectedReciter => _selectedReciter;
@@ -46,6 +89,8 @@ class ReciterService {
 
   /// Dispose resources.
   void dispose() {
-    _selectedReciterController.close();
+    if (!_selectedReciterController.isClosed) {
+      _selectedReciterController.close();
+    }
   }
 }

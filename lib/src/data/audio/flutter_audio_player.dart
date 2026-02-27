@@ -106,15 +106,19 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
   Future<void> loadChapter(
     int chapterNumber,
     ReciterInfo reciter, {
+    String? audioUrl,
     bool autoPlay = false,
   }) async {
     _currentChapter = chapterNumber;
     _currentReciterId = reciter.id;
 
     // Use CORS proxy for web to bypass restrictive mp3quran headers
-    final url = kIsWeb
-        ? 'https://corsproxy.io/?${Uri.encodeComponent(reciter.getAudioUrl(chapterNumber))}'
+    final resolvedAudioUrl = (audioUrl != null && audioUrl.trim().isNotEmpty)
+        ? audioUrl
         : reciter.getAudioUrl(chapterNumber);
+    final url = kIsWeb
+        ? 'https://corsproxy.io/?${Uri.encodeComponent(resolvedAudioUrl)}'
+        : resolvedAudioUrl;
 
     final title = 'Surah ${chapterNumber.toString().padLeft(3, "0")}';
     print('[FlutterAudioPlayer] Loading chapter: $title from URL: $url');
