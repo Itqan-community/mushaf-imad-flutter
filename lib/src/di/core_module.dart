@@ -167,6 +167,7 @@ Future<void> setupMushafDependencies({
       mushafGetIt<ReciterService>(),
       mushafGetIt<AyahTimingService>(),
       audioPlayer,
+      mushafGetIt<MushafLogger>(),
     ),
   );
 

@@ -17,14 +17,10 @@ class AyahTimingService {
       return _timingCache[reciterId];
     }
 
-    try {
-      final timing = await _audioDataSource.fetchReciterTiming(reciterId);
-      if (timing == null) return null;
-      _timingCache[reciterId] = timing;
-      return timing;
-    } catch (_) {
-      return null;
-    }
+    final timing = await _audioDataSource.fetchReciterTiming(reciterId);
+    if (timing == null) return null;
+    _timingCache[reciterId] = timing;
+    return timing;
   }
 
   /// Get verse timing for a specific ayah.

@@ -14,7 +14,7 @@ class CmsAudioSourceConfig {
     this.apiBaseUrl = 'https://api.cms.itqan.dev/cms-api',
     this.pageSize = 100,
     this.timeout = const Duration(seconds: 15),
-  });
+  }) : assert(pageSize > 0, 'pageSize must be > 0');
 }
 
 /// Contract for resolving reciters, chapter URLs, and timing data.

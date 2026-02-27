@@ -57,6 +57,63 @@ void main() {
     });
 
     test(
+      'fetchAllReciters continues pagination when count is missing',
+      () async {
+        var pageCalls = 0;
+        final client = MockClient((request) async {
+          if (!request.url.path.endsWith('/recitations/')) {
+            return http.Response('{}', 404);
+          }
+
+          pageCalls += 1;
+          if (pageCalls == 1) {
+            return http.Response(
+              jsonEncode({
+                'results': [
+                  {
+                    'id': 11,
+                    'reciter': {'id': 1, 'name': 'Abdul Basit'},
+                    'riwayah': {'id': 1, 'name': 'Hafs'},
+                  },
+                ],
+              }),
+              200,
+            );
+          }
+
+          if (pageCalls == 2) {
+            return http.Response(
+              jsonEncode({
+                'results': [
+                  {
+                    'id': 22,
+                    'reciter': {'id': 2, 'name': 'Minshawi'},
+                    'riwayah': {'id': 1, 'name': 'Hafs'},
+                  },
+                ],
+              }),
+              200,
+            );
+          }
+
+          return http.Response(jsonEncode({'results': []}), 200);
+        });
+
+        final source = CmsItqanAudioDataSource(
+          config: const CmsAudioSourceConfig(
+            apiBaseUrl: 'https://example.test',
+            pageSize: 1,
+          ),
+          client: client,
+        );
+
+        final reciters = await source.fetchAllReciters();
+        expect(reciters.length, 2);
+        expect(reciters.map((r) => r.id).toSet(), {11, 22});
+      },
+    );
+
+    test(
       'fetchReciterTiming and fetchChapterAudioUrl parse tracks payload',
       () async {
         final client = MockClient((request) async {
@@ -81,10 +138,10 @@ void main() {
               jsonEncode({
                 'count': 1,
                 'results': [
-                {
-                  'surah_number': 1,
-                  'surah_name': 'Al-Fatihah',
-                  'surah_name_en': 'Al-Fatihah',
+                  {
+                    'surah_number': 1,
+                    'surah_name': 'Al-Fatihah',
+                    'surah_name_en': 'Al-Fatihah',
                     'audio_url': 'https://cdn.example.test/001.mp3',
                     'ayahs_timings': [
                       {

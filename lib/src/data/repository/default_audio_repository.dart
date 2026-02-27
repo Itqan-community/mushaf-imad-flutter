@@ -7,17 +7,20 @@ import '../../domain/repository/audio_repository.dart';
 import '../audio/ayah_timing_service.dart';
 import '../audio/flutter_audio_player.dart';
 import '../audio/reciter_service.dart';
+import '../../logging/mushaf_logger.dart';
 
 /// Default implementation of AudioRepository.
 class DefaultAudioRepository implements AudioRepository {
   final ReciterService _reciterService;
   final AyahTimingService _ayahTimingService;
   final FlutterAudioPlayer _audioPlayer;
+  final MushafLogger _logger;
 
   DefaultAudioRepository(
     this._reciterService,
     this._ayahTimingService,
     this._audioPlayer,
+    this._logger,
   );
 
   @override
@@ -72,8 +75,15 @@ class DefaultAudioRepository implements AudioRepository {
     int reciterId, {
     bool autoPlay = false,
   }) async {
-    final reciter = await _reciterService.getReciterById(reciterId);
-    if (reciter != null) {
+    try {
+      final reciter = await _reciterService.getReciterById(reciterId);
+      if (reciter == null) {
+        _logger.warning(
+          'Failed to load chapter: reciter not found (reciterId=$reciterId).',
+        );
+        return;
+      }
+
       final chapterAudioUrl = await _reciterService.getChapterAudioUrl(
         reciterId,
         chapterNumber,
@@ -83,6 +93,12 @@ class DefaultAudioRepository implements AudioRepository {
         reciter,
         audioUrl: chapterAudioUrl,
         autoPlay: autoPlay,
+      );
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Failed to load chapter $chapterNumber.',
+        error: error,
+        stackTrace: stackTrace,
       );
     }
   }

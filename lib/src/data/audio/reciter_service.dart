@@ -40,7 +40,7 @@ class ReciterService {
 
     return all.where((reciter) {
       if (languageCode == 'ar') {
-        return reciter.nameArabic.contains(normalizedQuery);
+        return reciter.nameArabic.toLowerCase().contains(normalizedQuery);
       }
       return reciter.nameEnglish.toLowerCase().contains(normalizedQuery);
     }).toList();
@@ -61,9 +61,17 @@ class ReciterService {
     return all.first;
   }
 
+  /// Clear reciters cache to force refresh from the source on next query.
+  void invalidateRecitersCache() {
+    _recitersCache = null;
+  }
+
   /// Get chapter audio URL (if provided by source).
-  Future<String?> getChapterAudioUrl(int reciterId, int chapterNumber) {
-    return _audioDataSource.fetchChapterAudioUrl(reciterId, chapterNumber);
+  Future<String?> getChapterAudioUrl(int reciterId, int chapterNumber) async {
+    return await _audioDataSource.fetchChapterAudioUrl(
+      reciterId,
+      chapterNumber,
+    );
   }
 
   /// Get selected reciter.
@@ -81,6 +89,8 @@ class ReciterService {
 
   /// Dispose resources.
   void dispose() {
-    _selectedReciterController.close();
+    if (!_selectedReciterController.isClosed) {
+      _selectedReciterController.close();
+    }
   }
 }

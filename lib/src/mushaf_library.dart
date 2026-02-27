@@ -55,7 +55,7 @@ class MushafLibrary {
     if (logger != null) _logger = logger;
     if (analytics != null) _analytics = analytics;
 
-    setupMushafDependencies(
+    await setupMushafDependencies(
       databaseService: databaseService,
       bookmarkDao: bookmarkDao,
       readingHistoryDao: readingHistoryDao,

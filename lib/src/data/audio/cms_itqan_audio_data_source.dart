@@ -170,29 +170,42 @@ class CmsItqanAudioDataSource implements MushafAudioDataSource {
   Future<List<Map<String, dynamic>>> _fetchPaged(String path) async {
     final result = <Map<String, dynamic>>[];
     var page = 1;
+    final pageSize = _config.pageSize;
 
     while (true) {
-      final uri = Uri.parse('${_config.apiBaseUrl}$path').replace(
-        queryParameters: {'page': '$page', 'page_size': '${_config.pageSize}'},
-      );
+      final uri = Uri.parse(
+        '${_config.apiBaseUrl}$path',
+      ).replace(queryParameters: {'page': '$page', 'page_size': '$pageSize'});
 
       final response = await _client.get(uri).timeout(_config.timeout);
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        break;
+        throw StateError(
+          'CMS request failed (${response.statusCode}) for ${uri.path}',
+        );
       }
 
       final decoded = jsonDecode(response.body);
-      if (decoded is! Map<String, dynamic>) break;
+      if (decoded is! Map<String, dynamic>) {
+        throw const FormatException('CMS response is not a JSON object');
+      }
 
       final rows = decoded['results'];
-      final count = _asInt(decoded['count']) ?? 0;
-      if (rows is! List<dynamic>) break;
+      final count = _asInt(decoded['count']);
+      if (rows is! List<dynamic>) {
+        throw const FormatException('CMS response is missing results list');
+      }
 
       for (final row in rows) {
         if (row is Map<String, dynamic>) result.add(row);
       }
 
-      if (rows.isEmpty || result.length >= count) {
+      if (rows.isEmpty) {
+        break;
+      }
+      if (count != null && result.length >= count) {
+        break;
+      }
+      if (count == null && rows.length < pageSize) {
         break;
       }
       page += 1;

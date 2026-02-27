@@ -113,7 +113,9 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
     _currentReciterId = reciter.id;
 
     // Use CORS proxy for web to bypass restrictive mp3quran headers
-    final resolvedAudioUrl = audioUrl ?? reciter.getAudioUrl(chapterNumber);
+    final resolvedAudioUrl = (audioUrl != null && audioUrl.trim().isNotEmpty)
+        ? audioUrl
+        : reciter.getAudioUrl(chapterNumber);
     final url = kIsWeb
         ? 'https://corsproxy.io/?${Uri.encodeComponent(resolvedAudioUrl)}'
         : resolvedAudioUrl;
