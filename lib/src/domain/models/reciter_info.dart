@@ -6,6 +6,7 @@ class ReciterInfo {
   final String nameEnglish;
   final String rewaya; // Recitation style (e.g., "حفص عن عاصم")
   final String folderUrl; // Base URL for audio files
+  final Map<int, String> chapterAudioUrls;
 
   const ReciterInfo({
     required this.id,
@@ -13,6 +14,7 @@ class ReciterInfo {
     required this.nameEnglish,
     required this.rewaya,
     required this.folderUrl,
+    this.chapterAudioUrls = const {},
   });
 
   /// Get reciter display name based on language.
@@ -22,6 +24,10 @@ class ReciterInfo {
 
   /// Get audio URL for a specific chapter (surah).
   String getAudioUrl(int chapterNumber) {
+    final chapterUrl = chapterAudioUrls[chapterNumber];
+    if (chapterUrl != null && chapterUrl.isNotEmpty) {
+      return chapterUrl;
+    }
     final paddedChapter = chapterNumber.toString().padLeft(3, '0');
     return '$folderUrl$paddedChapter.mp3';
   }

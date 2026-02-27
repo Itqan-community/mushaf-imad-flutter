@@ -1,14 +1,15 @@
 import 'dart:async';
-import 'dart:convert';
-
-import 'package:flutter/services.dart';
 
 import '../../domain/models/reciter_timing.dart';
+import 'audio_source_config.dart';
 
 /// Service for loading and querying verse timing data for audio sync.
 /// Internal implementation.
 class AyahTimingService {
+  final MushafAudioDataSource _audioDataSource;
   final Map<int, ReciterTiming> _timingCache = {};
+
+  AyahTimingService(this._audioDataSource);
 
   /// Load timing data for a specific reciter from assets.
   Future<ReciterTiming?> loadTimingData(int reciterId) async {
@@ -17,14 +18,11 @@ class AyahTimingService {
     }
 
     try {
-      final jsonString = await rootBundle.loadString(
-        'packages/imad_flutter/assets/ayah_timing/read_$reciterId.json',
-      );
-      final json = jsonDecode(jsonString) as Map<String, dynamic>;
-      final timing = ReciterTiming.fromJson(json);
+      final timing = await _audioDataSource.fetchReciterTiming(reciterId);
+      if (timing == null) return null;
       _timingCache[reciterId] = timing;
       return timing;
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }

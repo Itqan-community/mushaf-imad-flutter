@@ -22,25 +22,26 @@ class DefaultAudioRepository implements AudioRepository {
 
   @override
   Future<List<ReciterInfo>> getAllReciters() async =>
-      _reciterService.getAllReciters();
+      await _reciterService.getAllReciters();
 
   @override
   Future<ReciterInfo?> getReciterById(int reciterId) async =>
-      _reciterService.getReciterById(reciterId);
+      await _reciterService.getReciterById(reciterId);
 
   @override
   Future<List<ReciterInfo>> searchReciters(
     String query, {
     String languageCode = 'en',
-  }) async => _reciterService.searchReciters(query, languageCode: languageCode);
+  }) async =>
+      await _reciterService.searchReciters(query, languageCode: languageCode);
 
   @override
   Future<List<ReciterInfo>> getHafsReciters() async =>
-      _reciterService.getHafsReciters();
+      await _reciterService.getHafsReciters();
 
   @override
   Future<ReciterInfo> getDefaultReciter() async =>
-      _reciterService.getDefaultReciter();
+      await _reciterService.getDefaultReciter();
 
   @override
   void saveSelectedReciter(ReciterInfo reciter) =>
@@ -73,9 +74,14 @@ class DefaultAudioRepository implements AudioRepository {
   }) async {
     final reciter = await _reciterService.getReciterById(reciterId);
     if (reciter != null) {
+      final chapterAudioUrl = await _reciterService.getChapterAudioUrl(
+        reciterId,
+        chapterNumber,
+      );
       await _audioPlayer.loadChapter(
         chapterNumber,
         reciter,
+        audioUrl: chapterAudioUrl,
         autoPlay: autoPlay,
       );
     }

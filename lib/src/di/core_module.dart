@@ -2,6 +2,9 @@ import 'package:get_it/get_it.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../data/audio/ayah_timing_service.dart';
+import '../data/audio/audio_source_config.dart';
+import '../data/audio/bundled_audio_data_source.dart';
+import '../data/audio/cms_itqan_audio_data_source.dart';
 import '../data/audio/reciter_service.dart';
 import '../data/cache/chapters_data_cache.dart';
 import '../data/cache/quran_data_cache_service.dart';
@@ -63,6 +66,9 @@ Future<void> setupMushafDependencies({
   required BookmarkDao bookmarkDao,
   required ReadingHistoryDao readingHistoryDao,
   required SearchHistoryDao searchHistoryDao,
+  MushafAudioSource audioSource = MushafAudioSource.bundledAssets,
+  CmsAudioSourceConfig cmsAudioSourceConfig = const CmsAudioSourceConfig(),
+  MushafAudioDataSource? audioDataSource,
   MushafLogger? logger,
 }) async {
   // Guard: if already registered, skip entirely
@@ -78,9 +84,21 @@ Future<void> setupMushafDependencies({
   mushafGetIt.registerSingleton<ChaptersDataCache>(ChaptersDataCache());
   mushafGetIt.registerSingleton<QuranDataCacheService>(QuranDataCacheService());
 
+  // Audio data source
+  final resolvedAudioDataSource =
+      audioDataSource ??
+      (audioSource == MushafAudioSource.cmsItqanDev
+          ? CmsItqanAudioDataSource(config: cmsAudioSourceConfig)
+          : const BundledAudioDataSource());
+  mushafGetIt.registerSingleton<MushafAudioDataSource>(resolvedAudioDataSource);
+
   // Audio services
-  mushafGetIt.registerSingleton<AyahTimingService>(AyahTimingService());
-  mushafGetIt.registerSingleton<ReciterService>(ReciterService());
+  mushafGetIt.registerSingleton<AyahTimingService>(
+    AyahTimingService(mushafGetIt<MushafAudioDataSource>()),
+  );
+  mushafGetIt.registerSingleton<ReciterService>(
+    ReciterService(mushafGetIt<MushafAudioDataSource>()),
+  );
 
   // DAOs
   mushafGetIt.registerSingleton<BookmarkDao>(bookmarkDao);
@@ -171,7 +189,12 @@ Future<void> setupMushafDependencies({
 /// ```dart
 /// await setupMushafWithHive();
 /// ```
-Future<void> setupMushafWithHive({MushafLogger? logger}) async {
+Future<void> setupMushafWithHive({
+  MushafAudioSource audioSource = MushafAudioSource.bundledAssets,
+  CmsAudioSourceConfig cmsAudioSourceConfig = const CmsAudioSourceConfig(),
+  MushafAudioDataSource? audioDataSource,
+  MushafLogger? logger,
+}) async {
   // Initialize Hive
   await Hive.initFlutter();
 
@@ -184,6 +207,9 @@ Future<void> setupMushafWithHive({MushafLogger? logger}) async {
     bookmarkDao: HiveBookmarkDao(),
     readingHistoryDao: HiveReadingHistoryDao(),
     searchHistoryDao: HiveSearchHistoryDao(),
+    audioSource: audioSource,
+    cmsAudioSourceConfig: cmsAudioSourceConfig,
+    audioDataSource: audioDataSource,
     logger: logger,
   );
 }
