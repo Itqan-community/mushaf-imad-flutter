@@ -57,6 +57,7 @@ class DefaultAudioRepository implements AudioRepository {
     await for (final state in _audioPlayer.domainStateStream) {
       int? verse;
 
+      // حماية إضافية: التأكد أن الموقع الزمني ليس سالباً (ملاحظة الـ AI)
       if (state.currentReciterId != null &&
           state.currentChapter != null &&
           state.currentPositionMs >= 0) {
@@ -71,13 +72,12 @@ class DefaultAudioRepository implements AudioRepository {
     }
   }
 
-  /// ✅ تم تحديث الدالة لتتطابق تماماً مع الـ Interface وتدعم الـ startAyahNumber
   @override
   void loadChapter(
     int chapterNumber,
     int reciterId, {
     bool autoPlay = false,
-    int? startAyahNumber, // هذا هو المعامل الذي كان ينقصك ويسبب الخطأ
+    int? startAyahNumber,
   }) async {
     final reciter = await _reciterService.getReciterById(reciterId);
     if (reciter == null) return;
@@ -103,7 +103,6 @@ class DefaultAudioRepository implements AudioRepository {
   void seekTo(int positionMs) =>
       _audioPlayer.seek(Duration(milliseconds: positionMs));
 
-  /// ✅ استخدام دالة setSpeed التي أضفناها في FlutterAudioPlayer
   @override
   void setPlaybackSpeed(double speed) =>
       _audioPlayer.setSpeed(speed);
@@ -167,9 +166,15 @@ class DefaultAudioRepository implements AudioRepository {
   Future<void> preloadTiming(int reciterId) =>
       _ayahTimingService.preloadTiming(reciterId);
 
+  // تحديث دالة الـ Dispose الرسمية (ملاحظة الـ AI رقم 9)
+  @override
+  Future<void> dispose() async {
+    await _audioPlayer.dispose();
+    _reciterService.dispose();
+  }
+
   @override
   void release() {
-    _audioPlayer.stop();
-    _reciterService.dispose();
+    dispose();
   }
 }
