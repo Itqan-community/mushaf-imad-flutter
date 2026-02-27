@@ -141,3 +141,100 @@ Once Phase 1 is complete, a new section will be added here summarizing:
 - Any differences found between docs and actual responses.
 - The final credential-handling approach agreed upon. 
 
+## Phase 1 – API research & decisions
+
+**Date:** 26th Feb 2026
+
+Spent the day exploring the Quran Foundation documentation and exercising
+the two endpoints that will power the audio feature.
+
+### Steps performed
+
+- Created a Postman environment `QuranPrelive` containing:
+  - `QF_CLIENT_ID` / `QF_CLIENT_SECRET` (current values only).
+  - `QF_TOKEN_URL` = `https://prelive-oauth2.quran.foundation/oauth2/token`
+  - `QF_API_BASE` = `https://apis-prelive.quran.foundation/content/api/v4`
+- Sent a token request using Basic Auth (client id/secret) and form body
+  `grant_type=client_credentials&scope=content`.
+- Copied `access_token` into `QF_ACCESS_TOKEN` and calculated
+  `QF_TOKEN_EXPIRES_AT` (now + `expires_in` ms).
+- Called `GET {{QF_API_BASE}}/recitations?language=en` with headers
+  `x-auth-token` and `x-client-id`.
+- Saved one sample JSON response locally (see separate scratch note).
+- Called `GET {{QF_API_BASE}}/chapter_recitations/7/1?segments=true`
+  (Mishari al‑`Afasy, chapter 1) and saved sample.
+
+### Observations & answers
+
+- **Response shapes**
+
+  - `/recitations` returns an object with `recitations` array. Each
+    element has: `id` (int), `reciter_name` (string), `style` (nullable
+    string), `translated_name` object, e.g.
+
+  ```json
+  {
+    "id": 6,
+    "reciter_name": "Mahmoud Khalil Al-Husary",
+    "style": null,
+    "translated_name": { "name":"Mahmoud…","language_name":"english" }
+  }
+  ```
+
+  - `language` query‑parameter selects the language for the names; if a
+    translation is unavailable the server falls back to English. We will
+    surface both the base name and the `translated_name` map in our model and
+    let callers pick the appropriate string based on their current locale.
+
+  - `/chapter_recitations/{reciterId}/{chapter}` returns an `audio_file`
+    object. Its `timings` array holds verse‑level entries:
+
+  ```json
+  {
+    "verse_number": 2,
+    "start_time_ms": 3500,
+    "end_time_ms": 7200,
+    "segments": [ [0,3500,4000], [1,4000,4500], … ] // only when ?segments=true
+  }
+  ```
+
+  Times are in **milliseconds**. With `segments=true` each timing gains a
+  `segments` list of `[wordIndex, startMs, endMs]` triplets.
+
+- **URL format** for audio files is supplied as `audio_url` (e.g.
+  `https://download.quranicaudio.com/qdc/khalil_al_husary/murattal/2.mp3`).
+  There is also an unrelated `/chapter_recitations/:id` endpoint that lists
+  all files; we won't need it for this feature.
+
+- **Rate limits & pagination**
+
+  - No pagination is used for the two endpoints we care about; the API returns
+    the complete list in one shot.
+  - The docs do not specify exact quotas. We observed normal HTTP codes and
+    assume a standard rate limit (429 with `Retry-After` if abused). Our
+    client will cache results aggressively so this isn't a concern.
+
+- **Authentication**
+
+  - Access token *is required* for all content endpoints. Public browsing of
+    the docs might suggest unauthenticated access, but every call we made
+    returned `401` without the `x-auth-token` header. The client‑credentials
+    flow is mandatory.
+
+- **Timing structure**
+
+  - As shown above: an array of objects with `verse_number`,
+    `start_time_ms`, `end_time_ms`, and optional `segments`. There is no
+    nested paging. A typical chapter returns 50–200 timing entries depending
+    on length.
+
+### Next
+
+With the above understanding and saved JSON samples, Phase 1 is effectively
+complete. The decisions regarding environment use (prelive only for development),
+credential handling (local secrets + placeholders), and token lifecycle are
+documented in the checklist. Phase 2 can now begin by writing the Dart models
+matching these shapes.
+
+
+

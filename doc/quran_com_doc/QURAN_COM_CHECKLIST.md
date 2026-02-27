@@ -42,43 +42,76 @@ Each checkbox is a small, focused step that can usually be its own commit.
 
 - [x] **Create dev log file**
   - [x] Create `doc/QURAN_COM_DEVELOPMENT_LOG.md` (or `DEVELOPMENT_LOG.md`).
-  - [ ] Add an **Overview** section (issue #8, branch name, goal).
+  - [x] Add an **Overview** section (issue #8, branch name, goal).
   - [x] Add `## Phase 0 – Setup` section ready to fill.
 - [x] **Fill Phase 0 entry**
   - [x] Describe the commands you ran and any issues you solved.
-- [ ] **Commit**
-  - [ ] Commit message: `docs(qurancom): add development log and initial setup`.
+- [x] **Commit**
+  - [x] Commit message: `docs(qurancom): add development log and initial setup`.
 
 ---
 
-## Phase 1 – API Research & Credential Strategy
+## Phase 1 – API Research, Environments & Credential Strategy
 
-### 1.1 – Understand the API
+### 1.1 – Understand the API shape (content endpoints)
 
-- [ ] **Read docs**
-  - [ ] Re-read docs for `GET /recitations`.
-  - [ ] Re-read docs for `GET /chapter_recitations/{id}/{chapter_number}`.
-- [ ] **Capture sample responses (local only)**
-  - [ ] Call `/recitations` (Postman/curl) and save one JSON sample locally.
-  - [ ] Call `/chapter_recitations/{id}/{chapter_number}` and save one JSON sample.
-- [ ] **Compare docs vs real JSON**
-  - [ ] List key fields for reciters (id, names, any URL fields).
-  - [ ] List key fields for chapter audio + timings.
-  - [ ] Note any differences or surprises.
+- [x] **Re-read Quran Foundation docs**
+  - [x] Re-read docs for `GET /recitations` (reciter list).
+  - [x] Re-read docs for `GET /chapter_recitations/{id}/{chapter_number}` (audio + timings).
+- [x] **Capture sample responses (local only, not committed)**
+  - [x] Using Postman/cURL **against the pre-production environment only**, call `/recitations` and save one JSON sample for reference.
+  - [x] Call `/chapter_recitations/{id}/{chapter_number}` with a valid reciter id + a simple chapter (e.g. 1) and save one JSON sample.
+- [x] **Compare docs vs real JSON**
+  - [x] List key fields for reciters (e.g. id, English/Arabic names, style, any base path/url fields).
+  - [x] List key fields for chapter audio/timings (chapter number, url, duration, verse timings).
+  - [ ] Note any differences or surprises to guide the Dart models in Phase 2.
 
-### 1.2 – Credential handling
+### 1.2 – Environment selection (prelive vs production)
 
-- [ ] **Decide how to store real keys locally**
-  - [ ] Choose a pattern (e.g. `lib/src/secrets/qurancom_secrets.dart` + `.gitignore`, or env-style).
-- [ ] **Decide placeholder format for repo**
-  - [ ] Choose strings like `"YOUR_CLIENT_ID_HERE"` and `"YOUR_AUTH_TOKEN_HERE"`.
-- [ ] **Document Phase 1**
-  - [ ] In the dev log, add `## Phase 1 – API research & decisions` summarizing:
-    - [ ] Endpoints used.
-    - [ ] Key JSON shapes.
-    - [ ] Credential strategy.
+- [ ] **Decide environment usage for development**
+  - [ ] Confirm that all development and testing will target **Pre-Production (prelive)** only.
+  - [ ] Record the official base URLs from the docs:
+    - [ ] Prelive auth: `https://prelive-oauth2.quran.foundation`
+    - [ ] Prelive API:  `https://apis-prelive.quran.foundation`
+    - [ ] Production auth: `https://oauth2.quran.foundation`
+    - [ ] Production API:  `https://apis.quran.foundation`
+- [ ] **Define an environment enum/config concept**
+  - [ ] Plan for a small Dart enum or config flag (e.g. `QuranComEnvironment.prelive` / `production`) that will later map to these URLs in `QuranComApiConfig`.
+
+### 1.3 – Credential handling (client id/secret) and placeholders
+
+- [ ] **Decide how to store real keys locally (never committed)**
+  - [ ] Choose a pattern such as:
+    - [ ] A local, gitignored Dart file (e.g. `example/lib/qurancom_secrets.dart`) exporting constants, **or**
+    - [ ] `--dart-define` values passed at run time.
+- [ ] **Confirm what should be passed into the library**
+  - [ ] Decide that real `clientId`, `clientSecret` and environment will be supplied via a `QuranComApiConfig` object created by the host app (or its backend), not hard-coded inside the package.
+- [ ] **Decide placeholder format for repo and docs**
+  - [ ] Choose clear placeholders for tracked code, e.g.:
+    - [ ] `"YOUR_QURAN_CLIENT_ID_HERE"`
+    - [ ] `"YOUR_QURAN_CLIENT_SECRET_HERE"`
+    - [ ] `"YOUR_QURAN_ENVIRONMENT_HERE (prelive/production)"`
+
+### 1.4 – Token lifecycle understanding (for later implementation)
+
+- [ ] **Review token flow in official docs**
+  - [ ] Confirm the flow is **OAuth2 Client Credentials** (no refresh token).
+  - [ ] Note that tokens are valid for ~1 hour (`expires_in`), then must be **re-requested** using the same `/oauth2/token` endpoint.
+  - [ ] Note that the content scope to request is `scope=content`.
+- [ ] **Plan caching behaviour for Phase 2**
+  - [ ] Decide to cache `{ accessToken, expiresAtMs }` in memory and re-request 30 seconds before expiry.
+  - [ ] Decide to clear cache and re-request once on a `401` from the API.
+
+### 1.5 – Document Phase 1
+
+- [ ] **Update development log**
+  - [ ] In `QURAN_COM_DEVELOPMENT_LOG.md`, add `## Phase 1 – API research & decisions` summarizing:
+    - [ ] The specific endpoints and example responses you inspected.
+    - [ ] The environment strategy (prelive only for dev; production reserved for real deployments).
+    - [ ] The credential storage strategy (local-only secrets + placeholders in tracked code).
+    - [ ] The planned token lifecycle and caching behaviour for the Dart client.
 - [ ] **Commit (if you changed tracked files, e.g. docs or .gitignore)**
-  - [ ] Commit message: `docs(qurancom): document api research and credential strategy`.
+  - [ ] Commit message: `docs(qurancom): document api research, envs, and credential strategy`.
 
 ---
 
