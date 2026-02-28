@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../domain/models/page_verse_data.dart';
 import 'quran_line_image.dart';
 
 class QuranPageWidget extends StatefulWidget {
   final int pageNumber;
-  final List<PageVerseData> verses;
-  final List<PageVerseData> markers;
+  final List<dynamic> verses;
+  final List<dynamic> markers;
   final int? highlightedVerseKey;
   final ThemeData themeData;
   final Function(int chapter, int verse)? onVerseTap;
@@ -40,21 +39,22 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
           final line = index + 1;
 
           final versesOnLine =
-              widget.verses.where((v) => v.line == line).toList();
+              widget.verses.where((v) => (v as dynamic).line == line).toList();
           final markersOnLine =
-              widget.markers.where((m) => m.line == line).toList();
+              widget.markers.where((m) => (m as dynamic).line == line).toList();
 
-          final highlights = versesOnLine
-              .where((v) =>
-                  ((v.chapter * 1000) + v.number) ==
-                  widget.highlightedVerseKey)
-              .toList();
+          final highlights = versesOnLine.where((v) {
+            final d = v as dynamic;
+            return ((d.chapter * 1000) + d.number) == widget.highlightedVerseKey;
+          }).toList();
 
           return Builder(
             builder: (lineContext) => GestureDetector(
               onLongPressStart: (details) {
                 if (widget.onVerseLongPress == null ||
-                    versesOnLine.isEmpty) return;
+                    versesOnLine.isEmpty) {
+                  return;
+                }
 
                 final RenderBox box =
                     lineContext.findRenderObject() as RenderBox;
@@ -63,18 +63,11 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
                 final tapRatio =
                     1.0 - (localOffset.dx / box.size.width);
 
-                final target = _resolveVerse(
-                  tapRatio,
-                  versesOnLine,
-                  markersOnLine,
-                  line,
-                );
-
+                final target =
+                    _resolveVerse(tapRatio, versesOnLine, markersOnLine, line);
                 if (target != null) {
                   widget.onVerseLongPress!(
-                    target.chapter,
-                    target.number,
-                  );
+                      target.chapter, target.number);
                 }
               },
               child: QuranLineImage(
@@ -87,20 +80,14 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
                     theme.textTheme.bodyLarge?.color ?? Colors.black,
                 onTapUpExact: (tapRatio) {
                   if (widget.onVerseTap == null ||
-                      versesOnLine.isEmpty) return;
-
+                      versesOnLine.isEmpty) {
+                    return;
+                  }
                   final target = _resolveVerse(
-                    tapRatio,
-                    versesOnLine,
-                    markersOnLine,
-                    line,
-                  );
-
+                      tapRatio, versesOnLine, markersOnLine, line);
                   if (target != null) {
                     widget.onVerseTap!(
-                      target.chapter,
-                      target.number,
-                    );
+                        target.chapter, target.number);
                   }
                 },
               ),
@@ -111,23 +98,20 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
     );
   }
 
-  PageVerseData? _resolveVerse(
-    double tapRatio,
-    List<PageVerseData> verses,
-    List<PageVerseData> markers,
-    int line,
-  ) {
+  dynamic _resolveVerse(double tapRatio, List<dynamic> verses,
+      List<dynamic> markers, int line) {
     for (final verse in verses) {
+      final d = verse as dynamic;
       final hList =
-          verse.highlights1441.where((h) => h.line == line);
+          d.highlights1441.where((h) => h.line == line);
       for (final h in hList) {
         if (tapRatio >= h.left && tapRatio <= h.right) {
-          return verse;
+          return d;
         }
       }
     }
-    return markers.isNotEmpty
-        ? markers.last
-        : (verses.isNotEmpty ? verses.last : null);
+    if (markers.isNotEmpty) return markers.last;
+    if (verses.isNotEmpty) return verses.last;
+    return null;
   }
 }
