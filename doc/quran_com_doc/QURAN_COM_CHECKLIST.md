@@ -68,7 +68,7 @@ Each checkbox is a small, focused step that can usually be its own commit.
 
 ### 1.2 – Environment selection (prelive vs production)
 
-- [ ] **Decide environment usage for development**
+- [x] **Decide environment usage for development**
   - [x] Confirm that all development and testing will target **Pre-Production (prelive)** only.
   - [x] Record the official base URLs from the docs:
     - [x] Prelive auth: `https://prelive-oauth2.quran.foundation`
@@ -80,35 +80,35 @@ Each checkbox is a small, focused step that can usually be its own commit.
 
 ### 1.3 – Credential handling (client id/secret) and placeholders
 
-- [ ] **Decide how to store real keys locally (never committed)**
-  - [ ] Choose a pattern such as:
-    - [ ] A local, gitignored Dart file (e.g. `example/lib/qurancom_secrets.dart`) exporting constants, **or**
-    - [ ] `--dart-define` values passed at run time.
-- [ ] **Confirm what should be passed into the library**
-  - [ ] Decide that real `clientId`, `clientSecret` and environment will be supplied via a `QuranComApiConfig` object created by the host app (or its backend), not hard-coded inside the package.
-- [ ] **Decide placeholder format for repo and docs**
-  - [ ] Choose clear placeholders for tracked code, e.g.:
-    - [ ] `"YOUR_QURAN_CLIENT_ID_HERE"`
-    - [ ] `"YOUR_QURAN_CLIENT_SECRET_HERE"`
-    - [ ] `"YOUR_QURAN_ENVIRONMENT_HERE (prelive/production)"`
+- [x] **Decide how to store real keys locally (never committed)**
+  - [x] Choose a pattern such as (I decided to provide placeholders in tracked code) possibly combined with either:
+    -  A local, gitignored Dart file (e.g. `example/lib/qurancom_secrets.dart`) exporting constants, **or**
+    - `--dart-define` values passed at run time.
+- [x] **Confirm what should be passed into the library**
+  - [x] Decide that real `clientId`, `clientSecret` and environment will be supplied via a `QuranComApiConfig` object created by the host app (or its backend), not hard-coded inside the package.
+- [x] **Decide placeholder format for repo and docs**
+  - [x] Choose clear placeholders for tracked code, e.g.:
+    - [x] `"YOUR_QURAN_CLIENT_ID_HERE"`
+    - [x] `"YOUR_QURAN_CLIENT_SECRET_HERE"`
+    - [x] `"YOUR_QURAN_ENVIRONMENT_HERE (prelive/production)"`
 
 ### 1.4 – Token lifecycle understanding (for later implementation)
 
-- [ ] **Review token flow in official docs**
-  - [ ] Confirm the flow is **OAuth2 Client Credentials** (no refresh token).
-  - [ ] Note that tokens are valid for ~1 hour (`expires_in`), then must be **re-requested** using the same `/oauth2/token` endpoint.
-  - [ ] Note that the content scope to request is `scope=content`.
-- [ ] **Plan caching behaviour for Phase 2**
-  - [ ] Decide to cache `{ accessToken, expiresAtMs }` in memory and re-request 30 seconds before expiry.
-  - [ ] Decide to clear cache and re-request once on a `401` from the API.
+- [x] **Review token flow in official docs**
+  - [x] Confirm the flow is **OAuth2 Client Credentials** (no refresh token).
+  - [x] Note that tokens are valid for ~1 hour (`expires_in`), then must be **re-requested** using the same `/oauth2/token` endpoint.
+  - [x] Note that the content scope to request is `scope=content`.
+- [x] **Plan caching behaviour for Phase 2**
+  - [x] Decide to cache `{ accessToken, expiresAtMs }` in memory and re-request 30 seconds before expiry.
+  - [x] Decide to clear cache and re-request once on a `401` from the API.
 
 ### 1.5 – Document Phase 1
 
 - [ ] **Update development log**
   - [ ] In `QURAN_COM_DEVELOPMENT_LOG.md`, add `## Phase 1 – API research & decisions` summarizing:
-    - [ ] The specific endpoints and example responses you inspected.
-    - [ ] The environment strategy (prelive only for dev; production reserved for real deployments).
-    - [ ] The credential storage strategy (local-only secrets + placeholders in tracked code).
+    - [x] The specific endpoints and example responses you inspected.
+    - [x] The environment strategy (prelive only for dev; production reserved for real deployments).
+    - [x] The credential storage strategy (local-only secrets + placeholders in tracked code).
     - [ ] The planned token lifecycle and caching behaviour for the Dart client.
 - [ ] **Commit (if you changed tracked files, e.g. docs or .gitignore)**
   - [ ] Commit message: `docs(qurancom): document api research, envs, and credential strategy`.

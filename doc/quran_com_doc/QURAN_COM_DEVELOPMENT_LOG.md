@@ -3,6 +3,21 @@
 This log documents the journey of implementing **Quran.com API as an audio source** for the `mushaf-imad-flutter` package (issue `#8`).  
 It is meant for both **reviewers** and **future contributors** to understand the reasoning and steps taken.
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Phase 0 – Setup & Baseline](#phase-0--setup--baseline)
+  - [0.1 – Repository setup and remotes](#01--repository-setup-and-remotes)
+  - [0.2 – Syncing main and creating the feature branch](#02--syncing-main-and-creating-the-feature-branch)
+  - [0.3 – Dependency resolution and static analysis](#03--dependency-resolution-and-static-analysis)
+  - [0.4 – Checklists and logging setup](#04--checklists-and-logging-setup)
+- [Next Phase – Phase 1: API Research & Credential Strategy](#next-phase--phase-1-api-research--credential-strategy)
+- [Phase 1 – API research & decisions](#phase-1--api-research--decisions)
+  - [Steps performed](#steps-performed)
+  - [Observations & answers](#observations--answers)
+  - [Next](#next)
+
+
 ---
 
 ## Overview
@@ -187,19 +202,29 @@ the two endpoints that will power the audio feature.
     let callers pick the appropriate string based on their current locale.
 
   - `/chapter_recitations/{reciterId}/{chapter}` returns an `audio_file`
-    object. Its `timings` array holds verse‑level entries:
+    object. Older documentation referred to this key as `timings`, but the
+    real response uses a `timestamps` array. Each entry contains verse-level
+    information; a truncated example follows:
 
   ```json
   {
-    "verse_number": 2,
-    "start_time_ms": 3500,
-    "end_time_ms": 7200,
-    "segments": [ [0,3500,4000], [1,4000,4500], … ] // only when ?segments=true
+    "verse_key": "1:2",
+    "timestamp_from": 4072,
+    "timestamp_to": 9705,
+    "duration": -5633,
+    "segments": [
+      [1, 4072.0, 5312.0],
+      [2, 5312.0, 6322.0],
+      [3, 6322.0, 6882.0],
+      [4, 6882.0, 9307.0]
+    ]
   }
   ```
 
-  Times are in **milliseconds**. With `segments=true` each timing gains a
-  `segments` list of `[wordIndex, startMs, endMs]` triplets.
+  All time values (from/to and segment boundaries) are in **milliseconds**.
+  The `duration` field is present but seems to be a negative difference (not
+  needed). When the `segments` array is present it uses `[wordIndex, startMs,
+  endMs]` triplets.
 
 - **URL format** for audio files is supplied as `audio_url` (e.g.
   `https://download.quranicaudio.com/qdc/khalil_al_husary/murattal/2.mp3`).
@@ -232,6 +257,13 @@ the two endpoints that will power the audio feature.
   - Chose to represent the two sets of URLs with a small enum.
   All development and tests will default to prelive; production will be
   selectable via the config object when the host app supplies real credentials.
+
+- **Credential handling**
+  - Policy: 
+    - >“we need a placeholder of the credentials of course, i believe it is against quran.com's terms to leak their api key and secret. we do not want to break any rules”
+  - All example code and docs will therefore show "YOUR_CLIENT_ID" etc.
+  The host app is responsible for providing real values via QuranComApiConfig (from env, secrets file, backend, …).
+
 
 ### Next
 
