@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../imad_flutter.dart';
 import '../../di/core_module.dart';
 import '../../domain/repository/audio_repository.dart';
 import '../../data/quran/quran_data_provider.dart';
@@ -54,11 +55,13 @@ class MushafPageView extends StatefulWidget {
 }
 
 class MushafPageViewState extends State<MushafPageView> {
-  late PageController _pageController;
+  PageController? _pageController;
   int _currentPage = 1;
   int? _selectedVerseKey; // chapterNumber * 1000 + verseNumber
   bool _showControls = true;
   StreamSubscription? _audioSubscription;
+  late final PreferencesRepository _preferencesRepository;
+  bool _isRestored = false;
 
   @override
   void initState() {
@@ -67,7 +70,31 @@ class MushafPageViewState extends State<MushafPageView> {
     _pageController = PageController(
       initialPage: QuranDataProvider.totalPages - _currentPage,
     );
+    _preferencesRepository = mushafGetIt<PreferencesRepository>();
+
+    _restoreLastPage();
     _loadVerseData();
+  }
+
+  Future<void> _restoreLastPage() async {
+    final savedPage =
+    await _preferencesRepository.getCurrentPageStream().first;
+
+    final restoredPage = savedPage <= 0
+        ? widget.initialPage
+        : savedPage.clamp(1, QuranDataProvider.totalPages);
+
+    _currentPage = restoredPage;
+
+    _pageController = PageController(
+      initialPage: QuranDataProvider.totalPages - _currentPage,
+    );
+
+    if (mounted) {
+      setState(() {
+        _isRestored = true;
+      });
+    }
   }
 
   Future<void> _loadVerseData() async {
@@ -99,7 +126,7 @@ class MushafPageViewState extends State<MushafPageView> {
   @override
   void dispose() {
     _audioSubscription?.cancel();
-    _pageController.dispose();
+    _pageController?.dispose();
     super.dispose();
   }
 
@@ -110,7 +137,7 @@ class MushafPageViewState extends State<MushafPageView> {
       _currentPage = clampedPage;
       _selectedVerseKey = null;
     });
-    _pageController.jumpToPage(QuranDataProvider.totalPages - clampedPage);
+    _pageController?.jumpToPage(QuranDataProvider.totalPages - clampedPage);
   }
 
   void _onPageChanged(int pageIndex) {
@@ -119,12 +146,13 @@ class MushafPageViewState extends State<MushafPageView> {
       _currentPage = newPage;
       _selectedVerseKey = null;
     });
+    _preferencesRepository.setCurrentPage(newPage);
     widget.onPageChanged?.call(newPage);
   }
 
   void _goToNextPage() {
     if (_currentPage < QuranDataProvider.totalPages) {
-      _pageController.previousPage(
+      _pageController?.previousPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
@@ -133,7 +161,7 @@ class MushafPageViewState extends State<MushafPageView> {
 
   void _goToPreviousPage() {
     if (_currentPage > 1) {
-      _pageController.nextPage(
+      _pageController?.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
@@ -156,6 +184,7 @@ class MushafPageViewState extends State<MushafPageView> {
     final effectiveTheme = scopeNotifier?.readingTheme ?? widget.readingTheme;
     final effectiveThemeData = ReadingThemeData.fromTheme(effectiveTheme);
 
+    //  !_isRestored ? const SizedBox.shrink() :
     return Scaffold(
       backgroundColor: effectiveThemeData.backgroundColor,
       body: Column(
@@ -165,6 +194,8 @@ class MushafPageViewState extends State<MushafPageView> {
               onTap: _toggleControls,
               child: Stack(
                 children: [
+                   (_pageController == null)?
+             const SizedBox.shrink():
                   // Main page view (RTL page order)
                   PageView.builder(
                     controller: _pageController,
