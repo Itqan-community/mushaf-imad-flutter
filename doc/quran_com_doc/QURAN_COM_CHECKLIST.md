@@ -105,13 +105,13 @@ Each checkbox is a small, focused step that can usually be its own commit.
 ### 1.5 – Document Phase 1
 
 - [ ] **Update development log**
-  - [ ] In `QURAN_COM_DEVELOPMENT_LOG.md`, add `## Phase 1 – API research & decisions` summarizing:
+  - [x] In `QURAN_COM_DEVELOPMENT_LOG.md`, add `## Phase 1 – API research & decisions` summarizing:
     - [x] The specific endpoints and example responses you inspected.
     - [x] The environment strategy (prelive only for dev; production reserved for real deployments).
     - [x] The credential storage strategy (local-only secrets + placeholders in tracked code).
-    - [ ] The planned token lifecycle and caching behaviour for the Dart client.
-- [ ] **Commit (if you changed tracked files, e.g. docs or .gitignore)**
-  - [ ] Commit message: `docs(qurancom): document api research, envs, and credential strategy`.
+    - [x] The planned token lifecycle and caching behaviour for the Dart client.
+- [x] **Commit (if you changed tracked files, e.g. docs or .gitignore)**
+  - [x] Commit message: `docs(qurancom): document api research, envs, and credential strategy`.
 
 ---
 
@@ -119,15 +119,15 @@ Each checkbox is a small, focused step that can usually be its own commit.
 
 ### 2.1 – Folder and dependencies
 
-- [ ] **Create Quran.com folder**
-  - [ ] Under `lib/src/data/audio/`, create `qurancom/`.
-- [ ] **Dependencies**
-  - [ ] In `pubspec.yaml`, ensure `http` is in `dependencies`.
-  - [ ] (Optional) Add `json_annotation` to `dependencies`.
-  - [ ] (Optional) Add `build_runner` and `json_serializable` to `dev_dependencies`.
-  - [ ] Run `flutter pub get`.
-- [ ] **Commit**
-  - [ ] Commit message: `chore(qurancom): add http dependency and qurancom folder`.
+- [x] **Create Quran.com folder**
+  - [x] Under `lib/src/data/audio/`, create `qurancom/`.
+- [x] **Dependencies**
+  - [x] In `pubspec.yaml`, ensure `http` is in `dependencies`.
+  - (Optional) Add `json_annotation` to `dependencies`.
+  - (Optional) Add `build_runner` and `json_serializable` to `dev_dependencies`.
+  - [x] Run `flutter pub get`.
+- [x] **Commit**
+  - [x] Commit message: `chore(qurancom): add http dependency and qurancom folder`.
 
 ### 2.2 – Reciter models
 
