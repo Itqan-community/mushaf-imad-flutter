@@ -64,19 +64,19 @@ Each checkbox is a small, focused step that can usually be its own commit.
 - [x] **Compare docs vs real JSON**
   - [x] List key fields for reciters (e.g. id, English/Arabic names, style, any base path/url fields).
   - [x] List key fields for chapter audio/timings (chapter number, url, duration, verse timings).
-  - [ ] Note any differences or surprises to guide the Dart models in Phase 2.
+  - [x] Note any differences or surprises to guide the Dart models in Phase 2.
 
 ### 1.2 – Environment selection (prelive vs production)
 
 - [ ] **Decide environment usage for development**
-  - [ ] Confirm that all development and testing will target **Pre-Production (prelive)** only.
-  - [ ] Record the official base URLs from the docs:
-    - [ ] Prelive auth: `https://prelive-oauth2.quran.foundation`
-    - [ ] Prelive API:  `https://apis-prelive.quran.foundation`
-    - [ ] Production auth: `https://oauth2.quran.foundation`
-    - [ ] Production API:  `https://apis.quran.foundation`
-- [ ] **Define an environment enum/config concept**
-  - [ ] Plan for a small Dart enum or config flag (e.g. `QuranComEnvironment.prelive` / `production`) that will later map to these URLs in `QuranComApiConfig`.
+  - [x] Confirm that all development and testing will target **Pre-Production (prelive)** only.
+  - [x] Record the official base URLs from the docs:
+    - [x] Prelive auth: `https://prelive-oauth2.quran.foundation`
+    - [x] Prelive API:  `https://apis-prelive.quran.foundation`
+    - [x] Production auth: `https://oauth2.quran.foundation`
+    - [x] Production API:  `https://apis.quran.foundation`
+- [x] **Define an environment enum/config concept**
+  - [x] Plan for a small Dart enum or config flag (e.g. `QuranComEnvironment.prelive` / `production`) that will later map to these URLs in `QuranComApiConfig`.
 
 ### 1.3 – Credential handling (client id/secret) and placeholders
 

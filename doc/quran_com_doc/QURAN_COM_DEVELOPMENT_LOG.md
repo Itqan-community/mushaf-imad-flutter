@@ -228,6 +228,11 @@ the two endpoints that will power the audio feature.
     nested paging. A typical chapter returns 50–200 timing entries depending
     on length.
 
+- **Environment URLs**
+  - Chose to represent the two sets of URLs with a small enum.
+  All development and tests will default to prelive; production will be
+  selectable via the config object when the host app supplies real credentials.
+
 ### Next
 
 With the above understanding and saved JSON samples, Phase 1 is effectively
