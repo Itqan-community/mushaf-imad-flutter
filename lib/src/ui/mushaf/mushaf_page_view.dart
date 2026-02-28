@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../imad_flutter.dart';
 import '../../di/core_module.dart';
 import '../../domain/repository/audio_repository.dart';
 import '../../data/quran/quran_data_provider.dart';
@@ -63,11 +64,33 @@ class MushafPageViewState extends State<MushafPageView> {
   @override
   void initState() {
     super.initState();
+
+    // 1. تهيئة فورية لمنع خطأ LateInitializationError
+    // نستخدم القيمة القادمة من الـ widget كبداية سريعة
     _currentPage = widget.initialPage.clamp(1, QuranDataProvider.totalPages);
     _pageController = PageController(
       initialPage: QuranDataProvider.totalPages - _currentPage,
     );
+
+    // 2. جلب الصفحة المحفوظة في الخلفية وتحديث الصفحة إذا كانت مختلفة
+    _initSavedPage();
     _loadVerseData();
+  }
+
+  Future<void> _initSavedPage() async {
+    // bring page from Repository
+    final prefs = mushafGetIt<PreferencesRepository>();
+    final savedPage = await prefs.getCurrentPage();
+
+    if (!mounted) return;
+    // check if the saved page is different from the current page
+    if (savedPage != _currentPage) {
+      setState(() {
+        _currentPage = savedPage;
+      });
+
+      _pageController.jumpToPage(QuranDataProvider.totalPages - savedPage);
+    }
   }
 
   Future<void> _loadVerseData() async {
@@ -76,20 +99,20 @@ class MushafPageViewState extends State<MushafPageView> {
     _audioSubscription = mushafGetIt<AudioRepository>()
         .getPlayerStateStream()
         .listen((state) {
-          if (!mounted) return;
-          if (state.currentChapter != null && state.currentVerse != null) {
-            final key = state.currentChapter! * 1000 + state.currentVerse!;
-            if (_selectedVerseKey != key) {
-              setState(() {
-                _selectedVerseKey = key;
-              });
-            }
-          } else if (state.isPlaying && _selectedVerseKey != null) {
-            setState(() {
-              _selectedVerseKey = null;
-            });
-          }
+      if (!mounted) return;
+      if (state.currentChapter != null && state.currentVerse != null) {
+        final key = state.currentChapter! * 1000 + state.currentVerse!;
+        if (_selectedVerseKey != key) {
+          setState(() {
+            _selectedVerseKey = key;
+          });
+        }
+      } else if (state.isPlaying && _selectedVerseKey != null) {
+        setState(() {
+          _selectedVerseKey = null;
         });
+      }
+    });
 
     if (mounted) {
       setState(() {});
@@ -119,6 +142,9 @@ class MushafPageViewState extends State<MushafPageView> {
       _currentPage = newPage;
       _selectedVerseKey = null;
     });
+    // save the current page in the preferences
+    mushafGetIt<PreferencesRepository>().setCurrentPage(newPage);
+
     widget.onPageChanged?.call(newPage);
   }
 
