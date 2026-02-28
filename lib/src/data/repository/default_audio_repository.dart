@@ -27,36 +27,9 @@ class DefaultAudioRepository implements AudioRepository {
       _reciterService.getReciterById(reciterId);
 
   @override
-  Future<List<ReciterInfo>> searchReciters(
-    String query, {
-    String languageCode = 'en',
-  }) async =>
-      _reciterService.searchReciters(
-        query,
-        languageCode: languageCode,
-      );
-
-  @override
-  Future<List<ReciterInfo>> getHafsReciters() async =>
-      _reciterService.getHafsReciters();
-
-  @override
-  Future<ReciterInfo> getDefaultReciter() async =>
-      _reciterService.getDefaultReciter();
-
-  @override
-  void saveSelectedReciter(ReciterInfo reciter) =>
-      _reciterService.selectReciter(reciter);
-
-  @override
-  Stream<ReciterInfo?> getSelectedReciterStream() =>
-      _reciterService.selectedReciterStream;
-
-  @override
   Stream<AudioPlayerState> getPlayerStateStream() async* {
     await for (final state in _audioPlayer.domainStateStream) {
       int? verse;
-
       if (state.currentReciterId != null &&
           state.currentChapter != null &&
           state.currentPositionMs >= 0) {
@@ -66,7 +39,6 @@ class DefaultAudioRepository implements AudioRepository {
           state.currentPositionMs,
         );
       }
-
       yield state.copyWith(currentVerse: verse);
     }
   }
@@ -78,7 +50,8 @@ class DefaultAudioRepository implements AudioRepository {
     bool autoPlay = false,
     int? startAyahNumber,
   }) async {
-    final reciter = await _reciterService.getReciterById(reciterId);
+    final reciter =
+        await _reciterService.getReciterById(reciterId);
     if (reciter == null) return;
 
     await _audioPlayer.loadChapter(
@@ -107,16 +80,15 @@ class DefaultAudioRepository implements AudioRepository {
       _audioPlayer.setSpeed(speed);
 
   @override
-  bool isRepeatEnabled() => false;
+  Future<void> dispose() async {
+    await _audioPlayer.dispose();
+    _reciterService.dispose();
+  }
 
   @override
-  int getCurrentPosition() => 0;
-
-  @override
-  int getDuration() => 0;
-
-  @override
-  bool isCurrentlyPlaying() => false;
+  void release() {
+    dispose();
+  }
 
   @override
   Future<AyahTiming?> getAyahTiming(
@@ -128,18 +100,6 @@ class DefaultAudioRepository implements AudioRepository {
         reciterId,
         chapterNumber,
         ayahNumber,
-      );
-
-  @override
-  Future<int?> getCurrentVerse(
-    int reciterId,
-    int chapterNumber,
-    int currentTimeMs,
-  ) =>
-      _ayahTimingService.getCurrentVerse(
-        reciterId,
-        chapterNumber,
-        currentTimeMs,
       );
 
   @override
@@ -159,15 +119,4 @@ class DefaultAudioRepository implements AudioRepository {
   @override
   Future<void> preloadTiming(int reciterId) =>
       _ayahTimingService.preloadTiming(reciterId);
-
-  @override
-  Future<void> dispose() async {
-    await _audioPlayer.dispose();
-    _reciterService.dispose();
-  }
-
-  @override
-  void release() {
-    dispose();
-  }
 }
