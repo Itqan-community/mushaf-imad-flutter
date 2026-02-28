@@ -131,16 +131,16 @@ Each checkbox is a small, focused step that can usually be its own commit.
 
 ### 2.2 – Reciter models
 
-- [ ] **Add `QuranComReciter`**
-  - [ ] Create `lib/src/data/audio/qurancom/qurancom_reciter.dart`.
-  - [ ] Add fields matching real reciter JSON (id, name, arName, style, etc.).
-  - [ ] Implement `fromJson`/`toJson` (manual or `json_serializable`).
-- [ ] **Optional wrapper**
-  - [ ] Add a `RecitationsResponse` if the API wraps reciters in a `recitations` array.
-- [ ] **Quick parse check**
-  - [ ] Parse your saved reciters JSON and assert at least one reciter with expected fields.
-- [ ] **Commit**
-  - [ ] Commit message: `feat(qurancom): add reciter api model`.
+- [x] **Add `QuranComReciter`**
+  - [x] Create `lib/src/data/audio/qurancom/qurancom_reciter.dart`.
+  - [x] Add fields matching real reciter JSON (id, name, arName, style, etc.).
+  - [x] Implement `fromJson`/`toJson` (manual or `json_serializable`).
+- [x] **Optional wrapper**
+  - [x] Add a `RecitationsResponse` if the API wraps reciters in a `recitations` array.
+- [x] **Quick parse check**
+  - [x] Parse your saved reciters JSON and assert at least one reciter with expected fields.
+- [x] **Commit**
+  - [x] Commit message: `feat(qurancom): add reciter api model`.
 
 ### 2.3 – Chapter audio + timing models
 

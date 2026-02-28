@@ -273,5 +273,25 @@ credential handling (local secrets + placeholders), and token lifecycle are
 documented in the checklist. Phase 2 can now begin by writing the Dart models
 matching these shapes.
 
+## Phase 2 – Data Models & API Client
+
+**Date:** 28th Feb 2026
+
+**Focus:** Implementing the core Data Models matching the Quran Foundation API shapes and verifying them with Unit Tests.
+
+### 2.1 – Folder and dependencies
+- Created `lib/src/data/audio/quran_com/` directory.
+- Confirmed `http` dependency in `pubspec.yaml`.
+
+### 2.2 – Reciter Model & Unit Tests
+- Implemented `QuranComReciter` and `QuranComTranslatedName` in `qurancom_reciter.dart`.
+- Added `QuranComRecitationsResponse` wrapper to handle the top-level API structure where reciters are returned in a `recitations` array.
+- Adhered to manual serialization for simplicity and to match existing project patterns.
+- Created comprehensive unit tests in `test/src/data/audio/quran_com/qurancom_reciter_test.dart`.
+- **Test Results:** 7 tests passed (JSON deserialization, serialization, and top-level response wrapper).
+
+### Next
+Proceeding to implement Chapter Audio and Timing models (Phase 2.3) followed by the API Client (Phase 2.4).
+
 
 
