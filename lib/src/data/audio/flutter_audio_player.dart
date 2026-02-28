@@ -31,32 +31,27 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
   }
 
   void _initStreams() {
-    _player.playbackEventStream.listen(
-      (_) {
-        final playing = _player.playing;
-
-        playbackState.add(
-          playbackState.value.copyWith(
-            controls: [
-              MediaControl.skipToPrevious,
-              if (playing) MediaControl.pause else MediaControl.play,
-              MediaControl.stop,
-              MediaControl.skipToNext,
-            ],
-            processingState: _getProcessingState(),
-            playing: playing,
-            updatePosition: _player.position,
-            bufferedPosition: _player.bufferedPosition,
-            speed: _player.speed,
-          ),
-        );
-
-        _broadcastDomainState();
-      },
-      onError: (Object e, StackTrace _) {
-        _broadcastDomainState(error: e.toString());
-      },
-    );
+    _player.playbackEventStream.listen((event) {
+      final playing = _player.playing;
+      playbackState.add(
+        playbackState.value.copyWith(
+          controls: [
+            MediaControl.skipToPrevious,
+            if (playing) MediaControl.pause else MediaControl.play,
+            MediaControl.stop,
+            MediaControl.skipToNext,
+          ],
+          processingState: _getProcessingState(),
+          playing: playing,
+          updatePosition: _player.position,
+          bufferedPosition: _player.bufferedPosition,
+          speed: _player.speed,
+        ),
+      );
+      _broadcastDomainState();
+    }, onError: (e, st) {
+      _broadcastDomainState(error: e.toString());
+    });
 
     _player.positionStream.listen((_) => _broadcastDomainState());
   }
@@ -98,7 +93,6 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
 
   void _broadcastDomainState({String? error}) {
     if (_domainStateController.isClosed) return;
-
     _domainStateController.add(
       domain.AudioPlayerState(
         playbackState: error != null
@@ -108,8 +102,9 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
         durationMs: _player.duration?.inMilliseconds ?? 0,
         currentChapter: _currentChapter,
         currentReciterId: _currentReciterId,
-        isBuffering: _player.processingState == ProcessingState.buffering ||
-            _player.processingState == ProcessingState.loading,
+        isBuffering:
+            _player.processingState == ProcessingState.buffering ||
+                _player.processingState == ProcessingState.loading,
         isRepeatEnabled: _player.loopMode != LoopMode.off,
         errorMessage: error,
       ),
@@ -125,33 +120,32 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
     _currentChapter = chapterNumber;
     _currentReciterId = reciter.id;
 
-    final verseCount = reciter.getChapterVerseCount(chapterNumber);
+    final verseCount =
+        reciter.getChapterVerseCount(chapterNumber);
 
-    final List<AudioSource> children = List.generate(
-      verseCount,
-      (index) {
-        final ayahNumber = index + 1;
-        final url = reciter.getAyahUrl(
-          chapterNumber: chapterNumber,
-          ayahNumber: ayahNumber,
-        );
-        return AudioSource.uri(Uri.parse(_resolveFinalUrl(url)));
-      },
-    );
+    final sources = <AudioSource>[];
+    for (int ayah = 1; ayah <= verseCount; ayah++) {
+      final url = reciter.getAyahUrl(
+        chapterNumber: chapterNumber,
+        ayahNumber: ayah,
+      );
+      sources.add(
+        AudioSource.uri(
+          Uri.parse(_resolveFinalUrl(url)),
+        ),
+      );
+    }
 
-    final int initialIndex = (startAyahNumber != null &&
-            startAyahNumber >= 1 &&
-            startAyahNumber <= verseCount)
-        ? startAyahNumber - 1
-        : 0;
-
-    final source = ConcatenatingAudioSource(
-      children: children,
-      initialIndex: initialIndex,
-    );
+    final source = ConcatenatingAudioSource(children: sources);
 
     try {
       await _player.setAudioSource(source);
+      if (startAyahNumber != null && startAyahNumber > 1) {
+        await _player.seek(
+          Duration.zero,
+          index: startAyahNumber - 1,
+        );
+      }
       if (autoPlay) {
         await _player.play();
       }
@@ -160,28 +154,13 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
     }
   }
 
-  Future<void> loadChapterByReciterId(
-    int chapterNumber,
-    int reciterId, {
-    bool autoPlay = false,
-    int? startAyahNumber,
-  }) async {
-    final reciter = ReciterInfo.byId(reciterId);
-    return loadChapter(
-      chapterNumber,
-      reciter,
-      autoPlay: autoPlay,
-      startAyahNumber: startAyahNumber,
-    );
-  }
+  @override
+  Future<void> setSpeed(double speed) =>
+      _player.setSpeed(speed);
 
   @override
-  Future<void> setSpeed(double speed) async {
-    await _player.setSpeed(speed);
-  }
-
-  @override
-  Future<void> setRepeatMode(AudioServiceRepeatMode repeatMode) async {
+  Future<void> setRepeatMode(
+      AudioServiceRepeatMode repeatMode) async {
     switch (repeatMode) {
       case AudioServiceRepeatMode.none:
         await _player.setLoopMode(LoopMode.off);
@@ -190,19 +169,14 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
         await _player.setLoopMode(LoopMode.one);
         break;
       case AudioServiceRepeatMode.all:
+      case AudioServiceRepeatMode.group:
         await _player.setLoopMode(LoopMode.all);
         break;
     }
   }
 
   @override
-  Future<void> play() async {
-    try {
-      await _player.play();
-    } catch (e) {
-      _broadcastDomainState(error: e.toString());
-    }
-  }
+  Future<void> play() => _player.play();
 
   @override
   Future<void> pause() => _player.pause();
@@ -214,5 +188,6 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
   }
 
   @override
-  Future<void> seek(Duration position) => _player.seek(position);
+  Future<void> seek(Duration position) =>
+      _player.seek(position);
 }
