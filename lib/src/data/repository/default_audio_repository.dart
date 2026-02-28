@@ -6,7 +6,6 @@ import '../../domain/repository/audio_repository.dart';
 import '../audio/ayah_timing_service.dart';
 import '../audio/flutter_audio_player.dart';
 import '../audio/reciter_service.dart';
-import 'package:audio_service/audio_service.dart';
 
 class DefaultAudioRepository implements AudioRepository {
   final ReciterService _reciterService;
@@ -108,18 +107,7 @@ class DefaultAudioRepository implements AudioRepository {
       _audioPlayer.setSpeed(speed);
 
   @override
-  void setRepeatMode(bool enabled) {
-    _audioPlayer.setRepeatMode(
-      enabled
-          ? AudioServiceRepeatMode.one
-          : AudioServiceRepeatMode.none,
-    );
-  }
-
-  @override
-  bool isRepeatEnabled() =>
-      _audioPlayer.playbackState.value.repeatMode !=
-      AudioServiceRepeatMode.none;
+  bool isRepeatEnabled() => false;
 
   @override
   int getCurrentPosition() => 0;
