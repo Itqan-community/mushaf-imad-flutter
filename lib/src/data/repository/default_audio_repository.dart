@@ -6,6 +6,7 @@ import '../../domain/repository/audio_repository.dart';
 import '../audio/ayah_timing_service.dart';
 import '../audio/flutter_audio_player.dart';
 import '../audio/reciter_service.dart';
+import 'package:audio_service/audio_service.dart';
 
 class DefaultAudioRepository implements AudioRepository {
   final ReciterService _reciterService;
@@ -57,7 +58,6 @@ class DefaultAudioRepository implements AudioRepository {
     await for (final state in _audioPlayer.domainStateStream) {
       int? verse;
 
-      // حماية إضافية: التأكد أن الموقع الزمني ليس سالباً (ملاحظة الـ AI)
       if (state.currentReciterId != null &&
           state.currentChapter != null &&
           state.currentPositionMs >= 0) {
@@ -108,12 +108,18 @@ class DefaultAudioRepository implements AudioRepository {
       _audioPlayer.setSpeed(speed);
 
   @override
-  void setRepeatMode(bool enabled) =>
-      _audioPlayer.setRepeatModeBool(enabled);
+  void setRepeatMode(bool enabled) {
+    _audioPlayer.setRepeatMode(
+      enabled
+          ? AudioServiceRepeatMode.one
+          : AudioServiceRepeatMode.none,
+    );
+  }
 
   @override
   bool isRepeatEnabled() =>
-      _audioPlayer.isRepeatMode();
+      _audioPlayer.playbackState.value.repeatMode !=
+      AudioServiceRepeatMode.none;
 
   @override
   int getCurrentPosition() => 0;
@@ -166,7 +172,6 @@ class DefaultAudioRepository implements AudioRepository {
   Future<void> preloadTiming(int reciterId) =>
       _ayahTimingService.preloadTiming(reciterId);
 
-  // تحديث دالة الـ Dispose الرسمية (ملاحظة الـ AI رقم 9)
   @override
   Future<void> dispose() async {
     await _audioPlayer.dispose();
