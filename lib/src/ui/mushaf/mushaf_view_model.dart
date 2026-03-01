@@ -3,35 +3,32 @@ import '../../domain/models/mushaf_type.dart';
 import '../../domain/models/verse.dart';
 import '../../domain/models/page_header_info.dart';
 import '../../domain/models/last_read_position.dart';
+import '../../domain/models/reciter_info.dart';
 import '../../domain/repository/verse_repository.dart';
 import '../../domain/repository/chapter_repository.dart';
 import '../../domain/repository/reading_history_repository.dart';
 import '../../domain/repository/preferences_repository.dart';
-// إضافة الاستيراد للمشغل والقارئ
-import '../../data/audio/flutter_audio_player.dart'; 
-import '../../domain/models/reciter_info.dart';
+import '../../domain/repository/audio_repository.dart';
 
 class MushafViewModel extends ChangeNotifier {
   final VerseRepository _verseRepository;
   final ChapterRepository _chapterRepository;
   final ReadingHistoryRepository _readingHistoryRepository;
   final PreferencesRepository _preferencesRepository;
-  // إضافة مرجع للمشغل
-  final FlutterAudioPlayer? _audioPlayer;
+  final AudioRepository _audioRepository;
 
   MushafViewModel({
     required VerseRepository verseRepository,
     required ChapterRepository chapterRepository,
     required ReadingHistoryRepository readingHistoryRepository,
     required PreferencesRepository preferencesRepository,
-    FlutterAudioPlayer? audioPlayer, // تمرير المشغل هنا
-  }) : _verseRepository = verseRepository,
-       _chapterRepository = chapterRepository,
-       _readingHistoryRepository = readingHistoryRepository,
-       _preferencesRepository = preferencesRepository,
-       _audioPlayer = audioPlayer;
+    required AudioRepository audioRepository,
+  })  : _verseRepository = verseRepository,
+        _chapterRepository = chapterRepository,
+        _readingHistoryRepository = readingHistoryRepository,
+        _preferencesRepository = preferencesRepository,
+        _audioRepository = audioRepository;
 
-  // State
   int _currentPage = 1;
   final int _totalPages = 604;
   List<Verse> _versesForPage = [];
@@ -40,7 +37,6 @@ class MushafViewModel extends ChangeNotifier {
   LastReadPosition? _lastReadPosition;
   bool _isLoading = false;
 
-  // Getters
   int get currentPage => _currentPage;
   int get totalPages => _totalPages;
   List<Verse> get versesForPage => _versesForPage;
@@ -53,7 +49,8 @@ class MushafViewModel extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      _lastReadPosition = await _readingHistoryRepository.getLastReadPosition(_mushafType);
+      _lastReadPosition =
+          await _readingHistoryRepository.getLastReadPosition(_mushafType);
       if (_lastReadPosition != null) {
         _currentPage = _lastReadPosition!.pageNumber;
       }
@@ -64,19 +61,23 @@ class MushafViewModel extends ChangeNotifier {
     }
   }
 
-  /// دالة جديدة لتشغيل الصوت من بداية الصفحة الحالية
   Future<void> playCurrentPageAudio(ReciterInfo reciter) async {
-    if (_versesForPage.isEmpty || _audioPlayer == null) return;
-
-    // الحصول على أول آية في الصفحة الحالية
+    if (_versesForPage.isEmpty) return;
     final firstVerse = _versesForPage.first;
-
-    // أمر المشغل بالبدء من هذه السورة وهذه الآية تحديداً
-    await _audioPlayer!.loadChapter(
+    _audioRepository.loadChapter(
       firstVerse.chapterNumber,
-      reciter,
+      reciter.id,
       autoPlay: true,
-      startAyahNumber: firstVerse.number, // تمرير رقم الآية
+      startAyahNumber: firstVerse.number,
+    );
+  }
+
+  Future<void> playVerseAudio(Verse verse, ReciterInfo reciter) async {
+    _audioRepository.loadChapter(
+      verse.chapterNumber,
+      reciter.id,
+      autoPlay: true,
+      startAyahNumber: verse.number,
     );
   }
 
@@ -96,11 +97,15 @@ class MushafViewModel extends ChangeNotifier {
   }
 
   Future<void> nextPage() async {
-    if (_currentPage < _totalPages) await goToPage(_currentPage + 1);
+    if (_currentPage < _totalPages) {
+      await goToPage(_currentPage + 1);
+    }
   }
 
   Future<void> previousPage() async {
-    if (_currentPage > 1) await goToPage(_currentPage - 1);
+    if (_currentPage > 1) {
+      await goToPage(_currentPage - 1);
+    }
   }
 
   Future<void> setMushafType(MushafType type) async {
@@ -110,12 +115,12 @@ class MushafViewModel extends ChangeNotifier {
   }
 
   Future<void> recordReading(int durationSeconds) async {
-    final verses = _versesForPage;
-    if (verses.isEmpty) return;
+    if (_versesForPage.isEmpty) return;
+    final verse = _versesForPage.first;
     await _readingHistoryRepository.updateLastReadPosition(
       mushafType: _mushafType,
-      chapterNumber: verses.first.chapterNumber,
-      verseNumber: verses.first.number,
+      chapterNumber: verse.chapterNumber,
+      verseNumber: verse.number,
       pageNumber: _currentPage,
     );
   }
