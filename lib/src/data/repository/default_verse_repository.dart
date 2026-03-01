@@ -56,4 +56,14 @@ class DefaultVerseRepository implements VerseRepository {
   @override
   Future<List<Verse>?> getCachedVersesForChapter(int chapterNumber) async =>
       _cacheService.getCachedChapterVerses(chapterNumber);
+
+  @override
+  Future<List<Verse>> getAllVerses() async {
+    final List<Verse> allVerses = [];
+    for (int chapter = 1; chapter <= 114; chapter++) {
+      final verses = await getVersesForChapter(chapter);
+      allVerses.addAll(verses);
+    }
+    return allVerses;
+  }
 }

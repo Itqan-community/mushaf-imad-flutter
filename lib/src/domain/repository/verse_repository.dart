@@ -19,6 +19,9 @@ abstract class VerseRepository {
   /// Get all verses that contain sajda (prostration).
   Future<List<Verse>> getSajdaVerses();
 
+  /// Get all verses (used for advanced local search).
+  Future<List<Verse>> getAllVerses();
+
   /// Search verses by query text.
   Future<List<Verse>> searchVerses(String query);
 

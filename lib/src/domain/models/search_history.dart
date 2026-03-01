@@ -9,6 +9,15 @@ enum SearchType {
 
   /// General search across all fields
   general,
+
+  /// Exact word match only
+  exact,
+
+  /// Root-based search (finds derived forms)
+  root,
+
+  /// Prefix match (finds words starting with query)
+  prefix,
 }
 
 /// Search history entry.
