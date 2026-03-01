@@ -11,6 +11,9 @@ import '../models/theme.dart';
 abstract class PreferencesRepository {
   // ========== Mushaf Reading Preferences ==========
 
+  /// Get the current page number.
+  Future<int> getCurrentPage();
+
   /// Get the selected Mushaf type as a Stream.
   Stream<MushafType> getMushafTypeStream();
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../../../imad_flutter.dart';
 import '../../domain/models/mushaf_type.dart';
 import '../../domain/models/theme.dart';
 import '../../domain/repository/preferences_repository.dart';
@@ -48,8 +49,21 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   final _lastAudioVerseController = StreamController<int?>.broadcast();
   final _lastAudioPositionController = StreamController<int>.broadcast();
   final _themeConfigController = StreamController<ThemeConfig>.broadcast();
+  final ReadingHistoryDao _readingHistoryDao;
+
+  DefaultPreferencesRepository(this._readingHistoryDao);
 
   // ========== Mushaf Reading Preferences ==========
+
+  @override
+  Future<int> getCurrentPage() async {
+    final lastPosition = await _readingHistoryDao.getLastReadPosition(_mushafType);
+    if (lastPosition != null) {
+      _currentPage = lastPosition.pageNumber;
+      return _currentPage;
+    }
+    return _currentPage;
+  }
 
   @override
   Stream<MushafType> getMushafTypeStream() => _mushafTypeController.stream;
@@ -67,8 +81,18 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   Future<void> setCurrentPage(int pageNumber) async {
     _currentPage = pageNumber;
     _currentPageController.add(pageNumber);
-  }
 
+
+    await _readingHistoryDao.saveLastReadPosition(
+      LastReadPosition(
+        mushafType: _mushafType,
+        pageNumber: pageNumber,
+        chapterNumber: 1,
+        verseNumber: 1,
+        lastReadAt: DateTime.now().millisecondsSinceEpoch,
+      ),
+    );
+  }
   @override
   Stream<int?> getLastReadChapterStream() => _lastReadChapterController.stream;
 

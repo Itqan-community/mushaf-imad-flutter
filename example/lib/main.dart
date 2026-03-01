@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:imad_flutter/imad_flutter.dart';
-import 'package:hive_flutter/hive_flutter.dart' show Box, Hive, HiveX;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Hive.initFlutter();
   await setupMushafWithHive();
-  await Hive.openBox<int>('lastPage');
   runApp(const MushafApp());
 }
 
@@ -41,24 +38,6 @@ class _MushafAppState extends State<MushafApp> {
         home: const LibraryHomePage(),
       ),
     );
-  }
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// LastPageRepository — Handles persisting and restoring the last read mushaf page using Hive
-// ──────────────────────────────────────────────────────────────────────────────
-class LastPageRepository {
-  final Box<int> _box = Hive.box<int>('lastPage');
-
-// save the last page
-  Future<void> setLastPage(int page) async {
-    await _box.put('lastPage', page);
-  }
-
-
-  //read last page (default 1)
-  int getLastPage() {
-    return _box.get('lastPage', defaultValue: 1)!;
   }
 }
 
@@ -247,21 +226,34 @@ class MushafViewPage extends StatefulWidget {
 
 class _MushafViewPageState extends State<MushafViewPage> {
   int _currentPage = 1;
+  bool _isLoading = true;
   final GlobalKey<MushafPageViewState> _mushafKey = GlobalKey();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
-  final LastPageRepository _repo = LastPageRepository();
 
   @override
   void initState() {
     super.initState();
+    _loadLastPage();
+  }
 
+  Future<void> _loadLastPage() async {
+    // bring page from repository
+    final prefs = mushafGetIt<PreferencesRepository>();
+    final lastPage = await prefs.getCurrentPage();
 
-    // restore last page when Mushaf starts
-    _currentPage = _repo.getLastPage();
+    if (mounted) {
+      setState(() {
+        _currentPage = lastPage;
+        _isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     return Scaffold(
       key: _scaffoldKey,
       drawer: ChapterIndexDrawer(
@@ -275,7 +267,6 @@ class _MushafViewPageState extends State<MushafViewPage> {
         initialPage: _currentPage,
         onPageChanged: (page) {
           setState(() => _currentPage = page);
-          _repo.setLastPage(page);
         },
         onOpenChapterIndex: () {
           _scaffoldKey.currentState?.openDrawer();
