@@ -2,29 +2,36 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
+
 import '../../domain/models/audio_player_state.dart' as domain;
 import '../../domain/models/reciter_info.dart';
 
-/// App-specific AudioHandler that connects just_audio to audio_service
 class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
   final AudioPlayer _player = AudioPlayer();
+  final _domainStateController =
+      StreamController<domain.AudioPlayerState>.broadcast();
 
   int? _currentChapter;
   int? _currentReciterId;
 
-  /// Expose the underlying just_audio player state as our domain state
-  final _domainStateController =
-      StreamController<domain.AudioPlayerState>.broadcast();
+  static const String _defaultProxy = 'https://corsproxy.io/?';
+
   Stream<domain.AudioPlayerState> get domainStateStream =>
       _domainStateController.stream;
+
+  int? get currentReciterId => _currentReciterId;
 
   FlutterAudioPlayer() {
     _initStreams();
   }
 
+  Future<void> dispose() async {
+    await _player.dispose();
+    await _domainStateController.close();
+  }
+
   void _initStreams() {
-    // Listen to just_audio state changes and broadcast to audio_service and domain
-    _player.playbackEventStream.listen((PlaybackEvent event) {
+    _player.playbackEventStream.listen((event) {
       final playing = _player.playing;
       playbackState.add(
         playbackState.value.copyWith(
@@ -34,25 +41,24 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
             MediaControl.stop,
             MediaControl.skipToNext,
           ],
-          systemActions: const {
-            MediaAction.seek,
-            MediaAction.seekForward,
-            MediaAction.seekBackward,
-          },
-          androidCompactActionIndices: const [0, 1, 3],
           processingState: _getProcessingState(),
           playing: playing,
           updatePosition: _player.position,
           bufferedPosition: _player.bufferedPosition,
           speed: _player.speed,
-          queueIndex: event.currentIndex,
         ),
       );
-
       _broadcastDomainState();
+    }, onError: (e, st) {
+      _broadcastDomainState(error: e.toString());
     });
 
     _player.positionStream.listen((_) => _broadcastDomainState());
+  }
+
+  String _resolveFinalUrl(String url) {
+    if (!kIsWeb) return url;
+    return '$_defaultProxy${Uri.encodeComponent(url)}';
   }
 
   AudioProcessingState _getProcessingState() {
@@ -85,111 +91,103 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
     }
   }
 
-  void _broadcastDomainState() {
+  void _broadcastDomainState({String? error}) {
+    if (_domainStateController.isClosed) return;
     _domainStateController.add(
       domain.AudioPlayerState(
-        playbackState: _getDomainPlaybackState(),
+        playbackState: error != null
+            ? domain.PlaybackState.error
+            : _getDomainPlaybackState(),
         currentPositionMs: _player.position.inMilliseconds,
         durationMs: _player.duration?.inMilliseconds ?? 0,
         currentChapter: _currentChapter,
         currentReciterId: _currentReciterId,
         isBuffering:
             _player.processingState == ProcessingState.buffering ||
-            _player.processingState == ProcessingState.loading,
+                _player.processingState == ProcessingState.loading,
         isRepeatEnabled: _player.loopMode != LoopMode.off,
-        errorMessage: null, // Hook up to stream errors if needed
+        errorMessage: error,
       ),
     );
   }
 
-  /// Custom extension to load a specific chapter from a reciter
   Future<void> loadChapter(
     int chapterNumber,
     ReciterInfo reciter, {
     bool autoPlay = false,
+    int? startAyahNumber,
   }) async {
     _currentChapter = chapterNumber;
     _currentReciterId = reciter.id;
 
-    // Use CORS proxy for web to bypass restrictive mp3quran headers
-    final url = kIsWeb
-        ? 'https://corsproxy.io/?${Uri.encodeComponent(reciter.getAudioUrl(chapterNumber))}'
-        : reciter.getAudioUrl(chapterNumber);
+    final verseCount =
+        reciter.getChapterVerseCount(chapterNumber);
 
-    final title = 'Surah ${chapterNumber.toString().padLeft(3, "0")}';
-    print('[FlutterAudioPlayer] Loading chapter: $title from URL: $url');
-
-    mediaItem.add(
-      MediaItem(id: url, album: reciter.getDisplayName(), title: title),
-    );
-
-    try {
-      print('[FlutterAudioPlayer] Calling setAudioSource...');
-      await _player.setAudioSource(AudioSource.uri(Uri.parse(url)));
-      print(
-        '[FlutterAudioPlayer] setAudioSource completed successfully. autoPlay=$autoPlay',
+    final sources = <AudioSource>[];
+    for (int ayah = 1; ayah <= verseCount; ayah++) {
+      final url = reciter.getAyahUrl(
+        chapterNumber: chapterNumber,
+        ayahNumber: ayah,
       );
-      if (autoPlay) {
-        play();
-      }
-    } catch (e, stack) {
-      print('[FlutterAudioPlayer] ERROR loading audio source: $e');
-      print(stack);
-      _domainStateController.add(
-        domain.AudioPlayerState(
-          playbackState: domain.PlaybackState.error,
-          errorMessage: e.toString(),
+      sources.add(
+        AudioSource.uri(
+          Uri.parse(_resolveFinalUrl(url)),
         ),
       );
     }
-  }
 
-  @override
-  Future<void> play() async {
-    print(
-      '[FlutterAudioPlayer] Play requested. Current state: ${_player.processingState}, playing: ${_player.playing}',
-    );
+    final source = ConcatenatingAudioSource(children: sources);
+
     try {
-      await _player.play();
-      print('[FlutterAudioPlayer] Play completed.');
-    } catch (e, stack) {
-      print('[FlutterAudioPlayer] ERROR during play(): $e');
-      print(stack);
+      await _player.setAudioSource(source);
+      if (startAyahNumber != null && startAyahNumber > 1) {
+        await _player.seek(
+          Duration.zero,
+          index: startAyahNumber - 1,
+        );
+      }
+      if (autoPlay) {
+        await _player.play();
+      }
+    } catch (e) {
+      _broadcastDomainState(error: e.toString());
     }
   }
 
   @override
-  Future<void> pause() async {
-    print('[FlutterAudioPlayer] Pause requested.');
-    await _player.pause();
+  Future<void> setSpeed(double speed) =>
+      _player.setSpeed(speed);
+
+  @override
+  Future<void> setRepeatMode(
+      AudioServiceRepeatMode repeatMode) async {
+    switch (repeatMode) {
+      case AudioServiceRepeatMode.none:
+        await _player.setLoopMode(LoopMode.off);
+        break;
+      case AudioServiceRepeatMode.one:
+        await _player.setLoopMode(LoopMode.one);
+        break;
+      case AudioServiceRepeatMode.all:
+      case AudioServiceRepeatMode.group:
+        await _player.setLoopMode(LoopMode.all);
+        break;
+    }
   }
 
   @override
+  Future<void> play() => _player.play();
+
+  @override
+  Future<void> pause() => _player.pause();
+
+  @override
   Future<void> stop() async {
-    print('[FlutterAudioPlayer] Stop requested.');
     await _player.stop();
     await super.stop();
   }
 
   @override
-  Future<void> seek(Duration position) => _player.seek(position);
-
-  @override
-  Future<void> setSpeed(double speed) => _player.setSpeed(speed);
-
-  @override
-  Future<void> setRepeatMode(AudioServiceRepeatMode repeatMode) async {
-    final loopMode =
-        repeatMode == AudioServiceRepeatMode.all ||
-            repeatMode == AudioServiceRepeatMode.one
-        ? LoopMode.one
-        : LoopMode.off;
-    await _player.setLoopMode(loopMode);
-  }
-
-  Future<void> setRepeatModeBool(bool enabled) => setRepeatMode(
-    enabled ? AudioServiceRepeatMode.one : AudioServiceRepeatMode.none,
-  );
-
-  bool isRepeatMode() => _player.loopMode != LoopMode.off;
+  Future<void> seek(Duration position) =>
+      _player.seek(position);
 }

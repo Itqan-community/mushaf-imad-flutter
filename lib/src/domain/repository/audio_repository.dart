@@ -32,8 +32,13 @@ abstract class AudioRepository {
   /// Observe audio player state.
   Stream<AudioPlayerState> getPlayerStateStream();
 
-  /// Load and optionally play a chapter.
-  void loadChapter(int chapterNumber, int reciterId, {bool autoPlay = false});
+  /// تحميل السورة مع دعم البدء من آية محددة.
+  void loadChapter(
+    int chapterNumber, 
+    int reciterId, {
+    bool autoPlay = false, 
+    int? startAyahNumber,
+  });
 
   /// Start or resume playback.
   void play();
@@ -88,6 +93,10 @@ abstract class AudioRepository {
   /// Preload timing data for better performance.
   Future<void> preloadTiming(int reciterId);
 
-  /// Release player resources.
+  /// Release player resources and close streams.
+  /// تم إضافة Future لضمان إغلاق الموارد بشكل صحيح (ملاحظة الـ AI رقم 9).
+  Future<void> dispose();
+
+  /// Legacy release method (optional: can call dispose internally).
   void release();
 }
