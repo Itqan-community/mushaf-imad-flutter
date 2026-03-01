@@ -24,17 +24,14 @@ class SearchEngine {
 
     Iterable<Verse> results = allVerses;
 
-    // 1. Apply scope filter first (narrows the list)
     if (params.scope != SearchScope.all && params.scopeValue != null) {
       results = results.where((v) => _matchesScope(v, params));
     }
 
-    // 2. Apply text matching based on search type
     results = results.where(
       (v) => _matchesType(v.searchableText, q, searchType),
     );
 
-    // 3. Optionally exclude negated verses (e.g. لا يؤمنون)
     if (params.excludeNegated) {
       results = results.where((v) => !_hasNegationBefore(v.searchableText, q));
     }
