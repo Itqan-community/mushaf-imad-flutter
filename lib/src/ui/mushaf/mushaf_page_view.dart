@@ -28,9 +28,8 @@ class _MushafPageViewState extends State<MushafPageView> {
   void _initAudioListener() {
     final audioRepo = mushafGetIt<AudioRepository>();
     _audioSubscription = audioRepo.getPlayerStateStream().listen((state) {
-      if (mounted &&
-          state.currentVerse != null &&
-          state.currentChapter != null) {
+      if (!mounted) return;
+      if (state.currentVerse != null && state.currentChapter != null) {
         setState(() {
           _selectedVerseKey =
               (state.currentChapter! * 1000) + state.currentVerse!;
@@ -39,45 +38,49 @@ class _MushafPageViewState extends State<MushafPageView> {
     });
   }
 
+  void _playFromVerse(int chapter, int verse) async {
+    final audioRepo = mushafGetIt<AudioRepository>();
+    final reciter = await audioRepo.getSelectedReciterStream().first;
+    if (reciter == null) return;
+
+    audioRepo.loadChapter(
+      chapter,
+      reciter.id,
+      autoPlay: true,
+      startAyahNumber: verse,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeData = Theme.of(context);
 
     return Scaffold(
       backgroundColor: themeData.scaffoldBackgroundColor,
-      body: Stack(
-        children: [
-          PageView.builder(
-            controller: _pageController,
-            reverse: true,
-            itemCount: 604,
-            onPageChanged: (page) {
-              setState(() => _currentPage = page + 1);
+      body: PageView.builder(
+        controller: _pageController,
+        reverse: true,
+        itemCount: 604,
+        onPageChanged: (page) {
+          setState(() => _currentPage = page + 1);
+        },
+        itemBuilder: (context, index) {
+          return QuranPageWidget(
+            pageNumber: index + 1,
+            verses: const [],
+            markers: const [],
+            highlightedVerseKey: _selectedVerseKey,
+            themeData: themeData,
+            onVerseTap: (chapter, verse) {
+              setState(() {
+                _selectedVerseKey = (chapter * 1000) + verse;
+              });
             },
-            itemBuilder: (context, index) {
-              return QuranPageWidget(
-                pageNumber: index + 1,
-                verses: const [],
-                markers: const [],
-                highlightedVerseKey: _selectedVerseKey,
-                themeData: themeData,
-                onVerseTap: (chapter, verse) {
-                  setState(() {
-                    _selectedVerseKey = (chapter * 1000) + verse;
-                  });
-                },
-                onVerseLongPress: (chapter, verse) {
-                  mushafGetIt<AudioRepository>().loadChapter(
-                    chapter,
-                    1,
-                    autoPlay: true,
-                    startAyahNumber: verse,
-                  );
-                },
-              );
+            onVerseLongPress: (chapter, verse) {
+              _playFromVerse(chapter, verse);
             },
-          ),
-        ],
+          );
+        },
       ),
     );
   }
