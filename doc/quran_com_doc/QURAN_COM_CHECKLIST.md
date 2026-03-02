@@ -104,7 +104,7 @@ Each checkbox is a small, focused step that can usually be its own commit.
 
 ### 1.5 – Document Phase 1
 
-- [ ] **Update development log**
+- [x] **Update development log**
   - [x] In `QURAN_COM_DEVELOPMENT_LOG.md`, add `## Phase 1 – API research & decisions` summarizing:
     - [x] The specific endpoints and example responses you inspected.
     - [x] The environment strategy (prelive only for dev; production reserved for real deployments).
@@ -144,13 +144,17 @@ Each checkbox is a small, focused step that can usually be its own commit.
 
 ### 2.3 – Chapter audio + timing models
 
-- [ ] **Add timing model**
-  - [ ] In `qurancom_chapter_audio.dart`, add a `QuranComVerseTiming` (or similar) with verse, start/end ms, optional segments.
-- [ ] **Add audio file model**
-  - [ ] Add `QuranComAudioFile` (chapter number, url, duration, list of timings).
-  - [ ] Add wrapper `ChapterAudioResponse` if API has an `audio_file` field.
-- [ ] **Quick parse check**
-  - [ ] Parse saved chapter JSON, check chapter number, URL, and timing count.
+- [x] **Add timing model**
+  - [x] In `qurancom_chapter_audio.dart`, add a `QuranComVerseTiming` (or similar) with `verse_key`, `timestamp_from`, `timestamp_to`, and optional `segments`.
+  - [x] unit test parsing this timing model from your saved chapter JSON.
+- [x] **Add audio file model**
+  - [x] Add `QuranComAudioFile` (chapter number, url, duration, list of `timestamps`).
+  - [x] Add unit tests for parsing this model from your saved chapter JSON.
+- [x] **Add wrapper `ChapterAudioResponse`**
+  - [x] Matches the `audio_file` top-level field returned by the API.
+  - [x] unit test parsing this wrapper as well.
+- [x] **Quick parse check**
+  - [x] Parse saved chapter JSON, check chapter number, URL, and timing count.
 - [ ] **Commit**
   - [ ] Commit message: `feat(qurancom): add chapter audio and timing models`.
 
