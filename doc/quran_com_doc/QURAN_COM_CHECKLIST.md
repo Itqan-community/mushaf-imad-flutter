@@ -155,8 +155,8 @@ Each checkbox is a small, focused step that can usually be its own commit.
   - [x] unit test parsing this wrapper as well.
 - [x] **Quick parse check**
   - [x] Parse saved chapter JSON, check chapter number, URL, and timing count.
-- [ ] **Commit**
-  - [ ] Commit message: `feat(qurancom): add chapter audio and timing models`.
+- [x] **Commit**
+  - [x] Commit message: `feat(qurancom): add chapter audio and timing models`.
 
 ### 2.4 – QuranComApiClient
 

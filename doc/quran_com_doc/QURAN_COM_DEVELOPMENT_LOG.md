@@ -290,8 +290,20 @@ matching these shapes.
 - Created comprehensive unit tests in `test/src/data/audio/quran_com/qurancom_reciter_test.dart`.
 - **Test Results:** 7 tests passed (JSON deserialization, serialization, and top-level response wrapper).
 
+### 2.3 – Chapter Audio & Verse Timing Models
+**Date:** 2nd Mar 2026
+
+- Implemented `QuranComVerseTiming`, `QuranComAudioFile`, and `QuranComChapterAudioResponse` in `lib/src/data/audio/quran_com/qurancom_chapter_audio.dart` and `qurancom_verse_timing.dart`.
+- **Optimization (Memory):** Used **Dart Named Records** `({int wordIndex, int startMs, int endMs})` for storing word-level segments. This reduces the memory footprint significantly compared to creating separate class objects for every word in the Quran.
+- **Optimization (Performance):** Used manual `for` loops in `fromJson` methods to maximize parsing speed, as recommended for high-frequency data structures like timings.
+- **Robustness:** Handled `num` to `int`/`double` casting to safely parse JSON values that might come as doubles from the API.
+- **Test Results:** Created comprehensive unit tests in `test/src/data/audio/quran_com/qurancom_chapter_audio_test.dart`. Verified:
+  - Successful parsing of complex verse timings with segment arrays.
+  - Correct handling of nullable fields (e.g., missing segments or timestamps).
+  - Accurate serialization back to JSON format.
+
 ### Next
-Proceeding to implement Chapter Audio and Timing models (Phase 2.3) followed by the API Client (Phase 2.4).
+With the data layer structure complete and verified, the next phase is to implement the `QuranComApiClient` (Phase 2.4). This will handle OAuth2 token management (client credentials flow) and the actual fetch logic.
 
 
 
