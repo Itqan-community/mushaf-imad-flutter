@@ -22,7 +22,6 @@ class QuranPageWidget extends StatefulWidget {
 
   /// Called when a verse is tapped. Provides (chapterNumber, verseNumber).
   final void Function(PageVerseData verse)? onVerseTap;
-  final void Function(PageVerseData verse)? onVerseLongPress;
 
   /// Reading theme data for colors. Defaults to light theme.
   final ReadingThemeData? themeData;
@@ -34,7 +33,6 @@ class QuranPageWidget extends StatefulWidget {
     this.audioVerseKey,
     this.audioHighlightsColor,
     this.onVerseTap,
-    this.onVerseLongPress,
     this.themeData,
   });
 
