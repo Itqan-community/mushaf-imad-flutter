@@ -43,6 +43,8 @@ class MushafPageView extends StatefulWidget {
   /// Color used to highlight the currently playing verse during audio playback.
   final Color? audioHighlightsColor;
 
+  final void Function(PageVerseData verse)? onSelectVerse;
+
   const MushafPageView({
     super.key,
     this.initialPage = 1,
@@ -53,6 +55,7 @@ class MushafPageView extends StatefulWidget {
     this.onOpenChapterIndex,
     this.readingTheme = ReadingTheme.light,
     this.audioHighlightsColor,
+    this.onSelectVerse,
   });
 
   @override
@@ -191,13 +194,14 @@ class MushafPageViewState extends State<MushafPageView> {
                             ? _currentAudioVerseKey
                             : null,
                         audioHighlightsColor: widget.audioHighlightsColor,
-                        onVerseTap: (chapter, verse) {
-                          final key = chapter * 1000 + verse;
+                        onVerseTap: (verse) {
+                          final key = verse.chapter * 1000 + verse.number;
                           setState(() {
                             _selectedVerseKey = _selectedVerseKey == key
                                 ? null
                                 : key;
                           });
+                          widget.onSelectVerse?.call(verse);
                         },
                       );
                     },
