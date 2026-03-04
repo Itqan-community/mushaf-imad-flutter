@@ -226,34 +226,16 @@ class MushafViewPage extends StatefulWidget {
 
 class _MushafViewPageState extends State<MushafViewPage> {
   int _currentPage = 1;
-  bool _isLoading = true;
   final GlobalKey<MushafPageViewState> _mushafKey = GlobalKey();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
-    _loadLastPage();
-  }
-
-  Future<void> _loadLastPage() async {
-    // bring page from repository
-    final prefs = mushafGetIt<PreferencesRepository>();
-    final lastPage = await prefs.getCurrentPage();
-
-    if (mounted) {
-      setState(() {
-        _currentPage = lastPage;
-        _isLoading = false;
-      });
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
     return Scaffold(
       key: _scaffoldKey,
       drawer: ChapterIndexDrawer(
@@ -264,7 +246,7 @@ class _MushafViewPageState extends State<MushafViewPage> {
       ),
       body: MushafPageView(
         key: _mushafKey,
-        initialPage: _currentPage,
+        initialPage: null,
         onPageChanged: (page) {
           setState(() => _currentPage = page);
         },

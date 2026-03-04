@@ -127,7 +127,7 @@ Future<void> setupMushafDependencies({
   );
 
   mushafGetIt.registerLazySingleton<PreferencesRepository>(
-        () => DefaultPreferencesRepository(mushafGetIt<ReadingHistoryDao>()),
+        () => DefaultPreferencesRepository(),
   );
 
   // Initialize AudioService for background playback

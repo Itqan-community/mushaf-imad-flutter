@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:hive/hive.dart';
+
 import '../../../imad_flutter.dart';
 import '../../domain/models/mushaf_type.dart';
 import '../../domain/models/theme.dart';
@@ -49,19 +51,15 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   final _lastAudioVerseController = StreamController<int?>.broadcast();
   final _lastAudioPositionController = StreamController<int>.broadcast();
   final _themeConfigController = StreamController<ThemeConfig>.broadcast();
-  final ReadingHistoryDao _readingHistoryDao;
 
-  DefaultPreferencesRepository(this._readingHistoryDao);
 
   // ========== Mushaf Reading Preferences ==========
 
+  DefaultPreferencesRepository();
   @override
   Future<int> getCurrentPage() async {
-    final lastPosition = await _readingHistoryDao.getLastReadPosition(_mushafType);
-    if (lastPosition != null) {
-      _currentPage = lastPosition.pageNumber;
-      return _currentPage;
-    }
+    final box = await Hive.openBox('settings');
+    _currentPage = box.get('current_page', defaultValue: 1);
     return _currentPage;
   }
 
@@ -82,17 +80,15 @@ class DefaultPreferencesRepository implements PreferencesRepository {
     _currentPage = pageNumber;
     _currentPageController.add(pageNumber);
 
+    final chapter = QuranDataProvider.instance.getChaptersForPage(pageNumber).firstOrNull?.number ?? 1;
+    final verse = VerseDataProvider.instance.getVersesForPage(pageNumber).firstOrNull?.number ?? 1;
 
-    await _readingHistoryDao.saveLastReadPosition(
-      LastReadPosition(
-        mushafType: _mushafType,
-        pageNumber: pageNumber,
-        chapterNumber: 1,
-        verseNumber: 1,
-        lastReadAt: DateTime.now().millisecondsSinceEpoch,
-      ),
-    );
+    final box = await Hive.openBox('settings');
+    await box.put('current_page', pageNumber);
+    await box.put('last_read_chapter', chapter);
+    await box.put('last_read_verse', [chapter, verse]);
   }
+
   @override
   Stream<int?> getLastReadChapterStream() => _lastReadChapterController.stream;
 
