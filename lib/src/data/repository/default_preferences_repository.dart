@@ -59,7 +59,10 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   @override
   Future<int> getCurrentPage() async {
     final box = await Hive.openBox('settings');
-    _currentPage = box.get('current_page', defaultValue: 1);
+    final rawPage = box.get('current_page', defaultValue: 1);
+
+    _currentPage = (rawPage as int).clamp(1, QuranDataProvider.totalPages);
+
     return _currentPage;
   }
 

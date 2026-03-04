@@ -55,7 +55,7 @@ class MushafPageView extends StatefulWidget {
 }
 
 class MushafPageViewState extends State<MushafPageView> {
-  late PageController _pageController;
+   PageController? _pageController;
   int _currentPage = 0;
   int? _selectedVerseKey; // chapterNumber * 1000 + verseNumber
   bool _showControls = true;
@@ -69,6 +69,11 @@ class MushafPageViewState extends State<MushafPageView> {
       _currentPage = widget.initialPage!.clamp(1, QuranDataProvider.totalPages);
       _initController();
       mushafGetIt<PreferencesRepository>().setCurrentPage(_currentPage);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          widget.onPageChanged?.call(_currentPage);
+        }
+      });
     } else {
       _initSavedPage();
     }
@@ -85,12 +90,22 @@ class MushafPageViewState extends State<MushafPageView> {
           _currentPage = savedPage.clamp(1, QuranDataProvider.totalPages);
           _initController();
         });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            widget.onPageChanged?.call(_currentPage);
+          }
+        });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _currentPage = 1;
           _initController();
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            widget.onPageChanged?.call(_currentPage);
+          }
         });
       }
     }
@@ -132,7 +147,7 @@ class MushafPageViewState extends State<MushafPageView> {
   @override
   void dispose() {
     _audioSubscription?.cancel();
-    _pageController.dispose();
+    _pageController?.dispose();
     super.dispose();
   }
 
@@ -143,9 +158,10 @@ class MushafPageViewState extends State<MushafPageView> {
       _currentPage = clampedPage;
       _selectedVerseKey = null;
     });
-    _pageController.jumpToPage(QuranDataProvider.totalPages - clampedPage);
-
+    _pageController?.jumpToPage(QuranDataProvider.totalPages - clampedPage);
     mushafGetIt<PreferencesRepository>().setCurrentPage(clampedPage);
+
+    widget.onPageChanged?.call(clampedPage);
   }
 
   void _onPageChanged(int pageIndex) {
@@ -162,7 +178,7 @@ class MushafPageViewState extends State<MushafPageView> {
 
   void _goToNextPage() {
     if (_currentPage < QuranDataProvider.totalPages) {
-      _pageController.previousPage(
+      _pageController?.previousPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
@@ -171,7 +187,7 @@ class MushafPageViewState extends State<MushafPageView> {
 
   void _goToPreviousPage() {
     if (_currentPage > 1) {
-      _pageController.nextPage(
+      _pageController?.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
