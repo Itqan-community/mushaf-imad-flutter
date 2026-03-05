@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
 import '../../data/quran/quran_data_provider.dart';
 import '../../data/quran/quran_metadata.dart';
 import '../../data/quran/verse_data_provider.dart';
@@ -15,6 +17,8 @@ class QuranPageWidget extends StatefulWidget {
   /// Currently selected verse (chapterNumber * 1000 + verseNumber).
   /// null means no selection.
   final int? selectedVerseKey;
+  final int? audioVerseKey;
+  final Color? audioHighlightsColor;
 
   /// Called when a verse is tapped. Provides (chapterNumber, verseNumber).
   final void Function(int chapterNumber, int verseNumber)? onVerseTap;
@@ -26,6 +30,8 @@ class QuranPageWidget extends StatefulWidget {
     super.key,
     required this.pageNumber,
     this.selectedVerseKey,
+    this.audioVerseKey,
+    this.audioHighlightsColor,
     this.onVerseTap,
     this.themeData,
   });
@@ -108,8 +114,9 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
                         .where((v) => v.occupiesLine(line))
                         .toList();
 
-                    // Calculate exact highlight regions for the selected verse
-                    final highlights = <VerseHighlightData>[];
+                    // Selection highlights
+                    final selectionHighlights = <VerseHighlightData>[];
+
                     if (widget.selectedVerseKey != null) {
                       final selectedVerse = versesOnLine
                           .where(
@@ -120,8 +127,29 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
                           .firstOrNull;
 
                       if (selectedVerse != null) {
-                        highlights.addAll(
+                        selectionHighlights.addAll(
                           selectedVerse.highlights1441.where(
+                            (h) => h.line == line,
+                          ),
+                        );
+                      }
+                    }
+
+                    // Audio highlights
+                    final audioHighlights = <VerseHighlightData>[];
+
+                    if (widget.audioVerseKey != null) {
+                      final audioVerse = versesOnLine
+                          .where(
+                            (v) =>
+                                v.chapter * 1000 + v.number ==
+                                widget.audioVerseKey,
+                          )
+                          .firstOrNull;
+
+                      if (audioVerse != null) {
+                        audioHighlights.addAll(
+                          audioVerse.highlights1441.where(
                             (h) => h.line == line,
                           ),
                         );
@@ -132,13 +160,18 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
                       child: QuranLineImage(
                         page: widget.pageNumber,
                         line: line,
-                        highlights: highlights,
+                        audioHighlights: audioHighlights,
+                        audioHighlightsColor: widget.audioHighlightsColor,
+                        selectionHighlights: selectionHighlights,
                         markers: markers,
                         highlightColor: theme.highlightColor,
+
                         textColor: theme.textColor,
                         onTapUpExact: (tapRatio) {
-                          if (widget.onVerseTap == null || versesOnLine.isEmpty)
+                          if (widget.onVerseTap == null ||
+                              versesOnLine.isEmpty) {
                             return;
+                          }
 
                           PageVerseData? target;
 
@@ -157,16 +190,16 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
                           }
 
                           // 2. Fallback if tapped on empty space or gap between verses
-                          if (target == null) {
-                            target = markers.isNotEmpty
-                                ? markers.last
-                                : versesOnLine.last;
-                          }
+                          target ??= markers.isNotEmpty
+                              ? markers.last
+                              : versesOnLine.last;
 
-                          print(
-                            "Calling onVerseTap with chapter: ${target?.chapter}, verse: ${target?.number}",
-                          );
-                          widget.onVerseTap!(target!.chapter, target.number);
+                          if (kDebugMode) {
+                            print(
+                              "Calling onVerseTap with chapter: ${target.chapter}, verse: ${target.number}",
+                            );
+                          }
+                          widget.onVerseTap!(target.chapter, target.number);
                         },
                       ),
                     );
