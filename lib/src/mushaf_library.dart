@@ -1,4 +1,5 @@
 import 'di/core_module.dart';
+import 'data/audio/audio_source_config.dart';
 import 'domain/repository/audio_repository.dart';
 import 'domain/repository/bookmark_repository.dart';
 import 'domain/repository/chapter_repository.dart';
@@ -43,6 +44,9 @@ class MushafLibrary {
     required dynamic bookmarkDao,
     required dynamic readingHistoryDao,
     required dynamic searchHistoryDao,
+    MushafAudioSource audioSource = MushafAudioSource.bundledAssets,
+    CmsAudioSourceConfig cmsAudioSourceConfig = const CmsAudioSourceConfig(),
+    MushafAudioDataSource? audioDataSource,
     MushafLogger? logger,
     MushafAnalytics? analytics,
   }) async {
@@ -51,11 +55,14 @@ class MushafLibrary {
     if (logger != null) _logger = logger;
     if (analytics != null) _analytics = analytics;
 
-    setupMushafDependencies(
+    await setupMushafDependencies(
       databaseService: databaseService,
       bookmarkDao: bookmarkDao,
       readingHistoryDao: readingHistoryDao,
       searchHistoryDao: searchHistoryDao,
+      audioSource: audioSource,
+      cmsAudioSourceConfig: cmsAudioSourceConfig,
+      audioDataSource: audioDataSource,
       logger: _logger,
     );
 
