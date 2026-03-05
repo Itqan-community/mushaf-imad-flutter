@@ -8,11 +8,9 @@ import '../../domain/repository/verse_repository.dart';
 import '../../domain/repository/chapter_repository.dart';
 import '../../domain/repository/bookmark_repository.dart';
 import '../../domain/repository/search_history_repository.dart';
+import 'models/search_params.dart';
+import 'search_engine.dart';
 
-/// ViewModel for unified Quran search functionality.
-///
-/// Matches Android's `SearchViewModel` — performs unified search across
-/// verses, chapters, and bookmarks with search history and suggestions.
 class SearchViewModel extends ChangeNotifier {
   final VerseRepository _verseRepository;
   final ChapterRepository _chapterRepository;
@@ -40,6 +38,7 @@ class SearchViewModel extends ChangeNotifier {
   bool _hasSearched = false;
   String? _error;
   SearchType _searchType = SearchType.general;
+  SearchParams _searchParams = const SearchParams();
 
   // Getters
   String get query => _query;
@@ -52,6 +51,7 @@ class SearchViewModel extends ChangeNotifier {
   bool get hasSearched => _hasSearched;
   String? get error => _error;
   SearchType get searchType => _searchType;
+  SearchParams get searchParams => _searchParams;
   int get totalResults =>
       _verseResults.length + _chapterResults.length + _bookmarkResults.length;
 
@@ -62,7 +62,25 @@ class SearchViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Perform unified search (matching Android SearchViewModel.search).
+  /// Update scope filter and re-run search if query exists.
+  void updateScope(SearchScope scope, {int? scopeValue}) {
+    _searchParams = _searchParams.copyWith(
+      scope: scope,
+      scopeValue: scopeValue,
+      clearScopeValue: scopeValue == null,
+    );
+    notifyListeners();
+    if (_query.isNotEmpty) search(_query);
+  }
+
+  /// Toggle negation exclusion and re-run search if query exists.
+  void toggleExcludeNegated(bool value) {
+    _searchParams = _searchParams.copyWith(excludeNegated: value);
+    notifyListeners();
+    if (_query.isNotEmpty) search(_query);
+  }
+
+  /// Perform unified search.
   Future<void> search(String query) async {
     if (query.trim().isEmpty) {
       clearResults();
@@ -87,14 +105,25 @@ class SearchViewModel extends ChangeNotifier {
           _bookmarkResults = [];
           break;
         case SearchType.general:
-          // Unified search across all types (matching Android searchAll)
           _verseResults = await _verseRepository.searchVerses(query);
           _chapterResults = await _chapterRepository.searchChapters(query);
           _bookmarkResults = await _bookmarkRepository.searchBookmarks(query);
           break;
+        case SearchType.exact:
+        case SearchType.root:
+        case SearchType.prefix:
+          final allVerses = await _verseRepository.getAllVerses();
+          _verseResults = SearchEngine.search(
+            allVerses: allVerses,
+            query: query,
+            searchType: _searchType,
+            params: _searchParams,
+          );
+          _chapterResults = [];
+          _bookmarkResults = [];
+          break;
       }
 
-      // Record search in history
       await _searchHistoryRepository.recordSearch(
         query: query,
         resultCount: totalResults,

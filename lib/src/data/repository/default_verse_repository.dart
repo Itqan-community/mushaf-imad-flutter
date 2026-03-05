@@ -3,6 +3,8 @@ import '../../domain/models/verse.dart';
 import '../../domain/repository/verse_repository.dart';
 import '../cache/quran_data_cache_service.dart';
 import 'database_service.dart';
+import '../quran/verse_data_provider.dart';
+import '../quran/quran_data_provider.dart';
 
 /// Default implementation of VerseRepository.
 class DefaultVerseRepository implements VerseRepository {
@@ -56,4 +58,32 @@ class DefaultVerseRepository implements VerseRepository {
   @override
   Future<List<Verse>?> getCachedVersesForChapter(int chapterNumber) async =>
       _cacheService.getCachedChapterVerses(chapterNumber);
+
+  @override
+  Future<List<Verse>> getAllVerses() async {
+    final verseProvider = VerseDataProvider.instance;
+    if (!verseProvider.isLoaded) await verseProvider.initialize();
+
+    final List<Verse> allVerses = [];
+    for (int page = 1; page <= QuranDataProvider.totalPages; page++) {
+      final verses = verseProvider.getVersesForPage(page);
+      for (final v in verses) {
+        allVerses.add(
+          Verse(
+            verseID: v.verseID,
+            humanReadableID: '${v.chapter}_${v.number}',
+            number: v.number,
+            text: v.text,
+            textWithoutTashkil: v.textWithoutTashkil,
+            uthmanicHafsText: '',
+            hafsSmartText: '',
+            searchableText: v.searchableText,
+            chapterNumber: v.chapter,
+            pageNumber: page,
+          ),
+        );
+      }
+    }
+    return allVerses;
+  }
 }

@@ -10,12 +10,10 @@ import '../../domain/repository/bookmark_repository.dart';
 import '../../domain/repository/chapter_repository.dart';
 import '../../domain/repository/search_history_repository.dart';
 import '../../domain/repository/verse_repository.dart';
+import 'models/search_params.dart';
 import 'search_view_model.dart';
 
 /// Full search page with unified verse/chapter/bookmark search.
-///
-/// Matches Android's `SearchView.kt` — FilterChips for type selection,
-/// search history, results grouped by type, error and empty states.
 class SearchPage extends StatefulWidget {
   /// Called when user taps a verse result.
   final void Function(int pageNumber)? onVerseSelected;
@@ -73,13 +71,8 @@ class _SearchPageState extends State<SearchPage> {
       builder: (context, _) {
         return Column(
           children: [
-            // Search bar (matching Android SearchBar)
             _buildSearchBar(context),
-
-            // Filter chips (matching Android SearchFilters)
             _buildFilterChips(context),
-
-            // Content
             Expanded(child: _buildContent(context)),
           ],
         );
@@ -130,44 +123,77 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Filter Chips (matches Android SearchFilters)
+  // Filter Chips
   // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildFilterChips(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          FilterChip(
-            selected: _viewModel.searchType == SearchType.general,
-            label: const Text('All'),
-            onSelected: (_) => _viewModel.setSearchType(SearchType.general),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                FilterChip(
+                  selected: _viewModel.searchType == SearchType.general,
+                  label: const Text('All'),
+                  onSelected: (_) =>
+                      _viewModel.setSearchType(SearchType.general),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  selected: _viewModel.searchType == SearchType.verse,
+                  label: const Text('Verses'),
+                  onSelected: (_) => _viewModel.setSearchType(SearchType.verse),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  selected: _viewModel.searchType == SearchType.chapter,
+                  label: const Text('Chapters'),
+                  onSelected: (_) =>
+                      _viewModel.setSearchType(SearchType.chapter),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  selected: _viewModel.searchType == SearchType.exact,
+                  label: const Text('مطابقة تامة'),
+                  onSelected: (_) => _viewModel.setSearchType(SearchType.exact),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  selected: _viewModel.searchType == SearchType.root,
+                  label: const Text('جذري'),
+                  onSelected: (_) => _viewModel.setSearchType(SearchType.root),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  selected: _viewModel.searchType == SearchType.prefix,
+                  label: const Text('بادئة'),
+                  onSelected: (_) =>
+                      _viewModel.setSearchType(SearchType.prefix),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(width: 8),
-          FilterChip(
-            selected: _viewModel.searchType == SearchType.verse,
-            label: const Text('Verses'),
-            onSelected: (_) => _viewModel.setSearchType(SearchType.verse),
-          ),
-          const SizedBox(width: 8),
-          FilterChip(
-            selected: _viewModel.searchType == SearchType.chapter,
-            label: const Text('Chapters'),
-            onSelected: (_) => _viewModel.setSearchType(SearchType.chapter),
-          ),
-        ],
-      ),
+        ),
+
+        // Advanced filters — only visible for new search types
+        if (_viewModel.searchType == SearchType.exact ||
+            _viewModel.searchType == SearchType.root ||
+            _viewModel.searchType == SearchType.prefix)
+          _AdvancedFiltersPanel(viewModel: _viewModel),
+      ],
     );
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Content Router (matches Android SearchView when/else blocks)
+  // Content Router
   // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildContent(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Loading state
     if (_viewModel.isSearching) {
       return Center(
         child: Column(
@@ -186,27 +212,23 @@ class _SearchPageState extends State<SearchPage> {
       );
     }
 
-    // Error state (matching Android ErrorView)
     if (_viewModel.error != null) {
       return _buildErrorView(context);
     }
 
-    // Empty results after search
     if (_viewModel.hasSearched && _viewModel.totalResults == 0) {
       return _buildEmptyResultsView(context);
     }
 
-    // Search results
     if (_viewModel.hasSearched) {
       return _buildSearchResults(context);
     }
 
-    // Initial state — search history (matching Android SearchHistoryView)
     return _buildPreSearchContent(context);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Error View (matching Android ErrorView)
+  // Error View
   // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildErrorView(BuildContext context) {
@@ -244,7 +266,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Empty Results View (matching Android EmptyResultsView)
+  // Empty Results View
   // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildEmptyResultsView(BuildContext context) {
@@ -278,7 +300,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Pre-Search Content (matching Android SearchHistoryView)
+  // Pre-Search Content
   // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildPreSearchContent(BuildContext context) {
@@ -287,7 +309,6 @@ class _SearchPageState extends State<SearchPage> {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       children: [
-        // Recent Searches
         if (_viewModel.recentSearches.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.only(top: 16, bottom: 8),
@@ -321,7 +342,6 @@ class _SearchPageState extends State<SearchPage> {
               ),
         ],
 
-        // Popular suggestions
         if (_viewModel.suggestions.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.only(top: 20, bottom: 8),
@@ -348,7 +368,6 @@ class _SearchPageState extends State<SearchPage> {
           ),
         ],
 
-        // Empty initial state
         if (_viewModel.recentSearches.isEmpty && _viewModel.suggestions.isEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 64),
@@ -385,7 +404,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Search Results (matching Android SearchResults)
+  // Search Results
   // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildSearchResults(BuildContext context) {
@@ -397,7 +416,6 @@ class _SearchPageState extends State<SearchPage> {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       children: [
-        // Chapter results section
         if (hasChapters) ...[
           Padding(
             padding: const EdgeInsets.only(top: 8, bottom: 4),
@@ -422,7 +440,6 @@ class _SearchPageState extends State<SearchPage> {
           if (hasVerses || hasBookmarks) const SizedBox(height: 16),
         ],
 
-        // Verse results section
         if (hasVerses) ...[
           Padding(
             padding: const EdgeInsets.only(top: 8, bottom: 4),
@@ -442,7 +459,6 @@ class _SearchPageState extends State<SearchPage> {
           if (hasBookmarks) const SizedBox(height: 16),
         ],
 
-        // Bookmark results section
         if (hasBookmarks) ...[
           Padding(
             padding: const EdgeInsets.only(top: 8, bottom: 4),
@@ -493,7 +509,7 @@ class _RecentSearchTile extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Chapter Result Tile (matching Android ChapterResultItem)
+// Chapter Result Tile
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _ChapterResultTile extends StatelessWidget {
@@ -539,7 +555,7 @@ class _ChapterResultTile extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Verse Result Tile (matching Android VerseResultItem)
+// Verse Result Tile
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _VerseResultTile extends StatelessWidget {
@@ -565,7 +581,6 @@ class _VerseResultTile extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Verse reference row
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -585,7 +600,6 @@ class _VerseResultTile extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              // Verse text
               Text(
                 verse.text.isNotEmpty ? verse.text : verse.textWithoutTashkil,
                 textDirection: TextDirection.rtl,
@@ -655,6 +669,89 @@ class _BookmarkResultTile extends StatelessWidget {
           ],
         ),
         onTap: onTap,
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Advanced Filters Panel
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AdvancedFiltersPanel extends StatelessWidget {
+  final SearchViewModel viewModel;
+  const _AdvancedFiltersPanel({required this.viewModel});
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: ExpansionTile(
+        title: const Text('تصفية النتائج'),
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: DropdownButtonFormField<SearchScope>(
+              initialValue: viewModel.searchParams.scope,
+              decoration: const InputDecoration(labelText: 'نطاق البحث'),
+              items: const [
+                DropdownMenuItem(
+                  value: SearchScope.all,
+                  child: Text('كل القرآن'),
+                ),
+                DropdownMenuItem(
+                  value: SearchScope.surah,
+                  child: Text('سورة (١-١١٤)'),
+                ),
+                DropdownMenuItem(
+                  value: SearchScope.juz,
+                  child: Text('جزء (١-٣٠)'),
+                ),
+                DropdownMenuItem(
+                  value: SearchScope.page,
+                  child: Text('صفحة (١-٦٠٤)'),
+                ),
+              ],
+              onChanged: (scope) {
+                if (scope != null) viewModel.updateScope(scope);
+              },
+            ),
+          ),
+
+          if (viewModel.searchParams.scope != SearchScope.all)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: TextFormField(
+                keyboardType: TextInputType.number,
+                initialValue: '',
+                decoration: InputDecoration(
+                  labelText: viewModel.searchParams.scope == SearchScope.surah
+                      ? 'رقم السورة'
+                      : viewModel.searchParams.scope == SearchScope.juz
+                      ? 'رقم الجزء'
+                      : 'رقم الصفحة',
+                ),
+                onChanged: (val) {
+                  final n = int.tryParse(val);
+                  if (n != null) {
+                    viewModel.updateScope(
+                      viewModel.searchParams.scope,
+                      scopeValue: n,
+                    );
+                  }
+                },
+              ),
+            ),
+
+          SwitchListTile(
+            title: const Text('استبعاد النتائج المنفية'),
+            subtitle: const Text('مثل: لا يؤمنون، لم يذكر'),
+            value: viewModel.searchParams.excludeNegated,
+            onChanged: viewModel.toggleExcludeNegated,
+          ),
+
+          const SizedBox(height: 8),
+        ],
       ),
     );
   }
