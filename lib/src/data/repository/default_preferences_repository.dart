@@ -55,17 +55,6 @@ class DefaultPreferencesRepository implements PreferencesRepository {
 
   // ========== Mushaf Reading Preferences ==========
 
-  DefaultPreferencesRepository();
-  @override
-  Future<int> getCurrentPage() async {
-    final box = await Hive.openBox('settings');
-    final rawPage = box.get('current_page', defaultValue: 1);
-
-    _currentPage = (rawPage as int).clamp(1, QuranDataProvider.totalPages);
-
-    return _currentPage;
-  }
-
   @override
   Stream<MushafType> getMushafTypeStream() => _mushafTypeController.stream;
 
@@ -82,14 +71,6 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   Future<void> setCurrentPage(int pageNumber) async {
     _currentPage = pageNumber;
     _currentPageController.add(pageNumber);
-
-    final chapter = QuranDataProvider.instance.getChaptersForPage(pageNumber).firstOrNull?.number ?? 1;
-    final verse = VerseDataProvider.instance.getVersesForPage(pageNumber).firstOrNull?.number ?? 1;
-
-    final box = await Hive.openBox('settings');
-    await box.put('current_page', pageNumber);
-    await box.put('last_read_chapter', chapter);
-    await box.put('last_read_verse', [chapter, verse]);
   }
 
   @override
