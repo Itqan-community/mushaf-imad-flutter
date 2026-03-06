@@ -91,7 +91,7 @@ class LibraryHomePage extends StatelessWidget {
             icon: Icons.mic,
             title: 'Reciters',
             subtitle:
-                'AudioRepository - ${ReciterDataProvider.allReciters.length} available reciters',
+            'AudioRepository - ${ReciterDataProvider.allReciters.length} available reciters',
             onTap: () => _push(context, const RecitersPage()),
           ),
           _MenuCard(
@@ -415,7 +415,7 @@ class _MushafAtPageState extends State<_MushafAtPage> {
 
     // Returns null if no bookmark found
     final existing = allBookmarks.firstWhereOrNull(
-      (b) => b.pageNumber == _currentPage,
+          (b) => b.pageNumber == _currentPage,
     );
 
     if (existing != null) {
@@ -468,11 +468,11 @@ class VersesPage extends StatelessWidget {
               SizedBox(height: 8),
               Text(
                 'Verse data will be available after Hive database integration.\n'
-                'The VerseRepository provides access to all 6,236 verses with:\n'
-                '• Full text with and without tashkil\n'
-                '• Uthmanic Hafs text\n'
-                '• Searchable text\n'
-                '• Page, chapter, part, hizb mappings',
+                    'The VerseRepository provides access to all 6,236 verses with:\n'
+                    '• Full text with and without tashkil\n'
+                    '• Uthmanic Hafs text\n'
+                    '• Searchable text\n'
+                    '• Page, chapter, part, hizb mappings',
                 textAlign: TextAlign.center,
               ),
             ],
@@ -598,7 +598,7 @@ class ReadingHistoryPage extends StatelessWidget {
               SizedBox(height: 8),
               Text(
                 'Reading history will be available after Hive DAO integration.\n'
-                'Features: Track reading progress, streaks, last-read position.',
+                    'Features: Track reading progress, streaks, last-read position.',
                 textAlign: TextAlign.center,
               ),
             ],
@@ -676,7 +676,7 @@ class _MushafTypePageState extends State<MushafTypePage> {
             padding: EdgeInsets.all(16),
             child: Text(
               'The Mushaf type determines which page layout is used.\n'
-              'Each type has different verse highlight and marker coordinates.',
+                  'Each type has different verse highlight and marker coordinates.',
               style: TextStyle(color: Colors.grey),
               textAlign: TextAlign.center,
             ),

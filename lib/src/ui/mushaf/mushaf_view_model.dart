@@ -50,28 +50,12 @@ class MushafViewModel extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    try {
-      // Load last read position
-      _lastReadPosition = await _readingHistoryRepository.getLastReadPosition(
-        _mushafType,
-      );
-      if (_lastReadPosition != null) {
-        _currentPage = _lastReadPosition!.pageNumber;
-      }
-
-      await loadPage(_currentPage);
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
   }
 
   /// Navigate to a specific page.
   Future<void> goToPage(int pageNumber) async {
     if (pageNumber < 1 || pageNumber > _totalPages) return;
     _currentPage = pageNumber;
-    await loadPage(pageNumber);
-    await _preferencesRepository.setCurrentPage(pageNumber);
   }
 
   /// Load data for a specific page.

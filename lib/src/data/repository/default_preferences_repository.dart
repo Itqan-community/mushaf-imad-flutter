@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import 'package:hive/hive.dart';
+
+import '../../../imad_flutter.dart';
 import '../../domain/models/mushaf_type.dart';
 import '../../domain/models/theme.dart';
 import '../../domain/repository/preferences_repository.dart';
@@ -48,6 +51,7 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   final _lastAudioVerseController = StreamController<int?>.broadcast();
   final _lastAudioPositionController = StreamController<int>.broadcast();
   final _themeConfigController = StreamController<ThemeConfig>.broadcast();
+
 
   // ========== Mushaf Reading Preferences ==========
 

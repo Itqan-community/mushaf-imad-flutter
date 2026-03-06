@@ -11,6 +11,8 @@ import '../models/theme.dart';
 abstract class PreferencesRepository {
   // ========== Mushaf Reading Preferences ==========
 
+
+
   /// Get the selected Mushaf type as a Stream.
   Stream<MushafType> getMushafTypeStream();
 
