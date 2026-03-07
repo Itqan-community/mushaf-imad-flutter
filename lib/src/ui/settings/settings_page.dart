@@ -74,6 +74,11 @@ class _SettingsPageState extends State<SettingsPage> {
                       value: '${_viewModel.currentPage}',
                     ),
                     const Divider(height: 1, indent: 56),
+                    _FontSizeTile(
+                      value: _viewModel.fontSizeMultiplier,
+                      onChanged: (v) => _viewModel.setFontSizeMultiplier(v),
+                    ),
+                    const Divider(height: 1, indent: 56),
                     _PreferenceTile(
                       icon: Icons.mic_rounded,
                       label: 'Selected Reciter',
@@ -381,6 +386,74 @@ class _PreferenceTile extends StatelessWidget {
           fontWeight: FontWeight.w600,
           color: theme.colorScheme.onSurfaceVariant,
         ),
+      ),
+    );
+  }
+}
+
+class _FontSizeTile extends StatelessWidget {
+  final double value;
+  final ValueChanged<double> onChanged;
+
+  const _FontSizeTile({required this.value, required this.onChanged});
+
+  String _label(double v) {
+    if (v <= 0.75) return 'Small';
+    if (v <= 1.0) return 'Normal';
+    if (v <= 1.25) return 'Large';
+    if (v <= 1.5) return 'X-Large';
+    return 'XX-Large';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          const Icon(Icons.text_fields_rounded),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text('Font Size', style: theme.textTheme.bodyLarge),
+                    const Spacer(),
+                    Text(
+                      _label(value),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+                Slider(
+                  value: value,
+                  min: 0.5,
+                  max: 2.0,
+                  divisions: 6,
+                  label: '${(value * 100).round()}%',
+                  onChanged: onChanged,
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Text(
+                    'بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ',
+                    style: TextStyle(
+                      fontSize: 16 * value,
+                      fontFamily: 'serif',
+                    ),
+                    textDirection: TextDirection.rtl,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
