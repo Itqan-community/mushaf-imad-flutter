@@ -1,6 +1,8 @@
+import '../../domain/error/failure.dart';
 import '../../domain/models/mushaf_type.dart';
 import '../../domain/models/page.dart';
 import '../../domain/models/page_header_info.dart';
+import '../../domain/models/result.dart';
 import '../../domain/repository/page_repository.dart';
 import '../cache/quran_data_cache_service.dart';
 import 'database_service.dart';
@@ -13,54 +15,77 @@ class DefaultPageRepository implements PageRepository {
   DefaultPageRepository(this._databaseService, this._cacheService);
 
   @override
-  Future<Page?> getPage(int number) => _databaseService.getPage(number);
+  Future<Result<Page?>> getPage(int number) => Result.runCatching(
+        () => _databaseService.getPage(number),
+        failureMapper: (e) => DatabaseFailure('Failed to fetch page $number', e),
+      );
 
   @override
-  Future<int> getTotalPages() => _databaseService.getTotalPages();
+  Future<Result<int>> getTotalPages() => Result.runCatching(
+        () => _databaseService.getTotalPages(),
+        failureMapper: (e) =>
+            DatabaseFailure('Failed to fetch total pages count', e),
+      );
 
   @override
-  Future<PageHeaderInfo?> getPageHeaderInfo(
+  Future<Result<PageHeaderInfo?>> getPageHeaderInfo(
     int pageNumber, {
     MushafType mushafType = MushafType.hafs1441,
   }) async {
-    final cached = _cacheService.getCachedPageHeader(pageNumber);
-    if (cached != null) return cached;
+    return Result.runCatching(
+      () async {
+        final cached = _cacheService.getCachedPageHeader(pageNumber);
+        if (cached != null) return cached;
 
-    final headerInfo = await _databaseService.getPageHeaderInfo(
-      pageNumber,
-      mushafType: mushafType,
+        final headerInfo = await _databaseService.getPageHeaderInfo(
+          pageNumber,
+          mushafType: mushafType,
+        );
+        if (headerInfo != null) {
+          _cacheService.cachePageHeader(pageNumber, headerInfo);
+        }
+        return headerInfo;
+      },
+      failureMapper: (e) => DatabaseFailure(
+          'Failed to fetch header info for page $pageNumber', e),
     );
-    if (headerInfo != null) {
-      _cacheService.cachePageHeader(pageNumber, headerInfo);
-    }
-    return headerInfo;
   }
 
   @override
-  Future<void> cachePage(int pageNumber) async {
-    final verses = await _databaseService.getVersesForPage(pageNumber);
-    _cacheService.cacheVersesForPage(pageNumber, verses);
-    final header = await _databaseService.getPageHeaderInfo(pageNumber);
-    if (header != null) {
-      _cacheService.cachePageHeader(pageNumber, header);
-    }
-  }
+  Future<Result<void>> cachePage(int pageNumber) => Result.runCatching(
+        () => _cacheService.cachePage(pageNumber),
+        failureMapper: (e) => CacheFailure('Failed to cache page $pageNumber', e),
+      );
 
   @override
-  Future<void> cachePageRange(int start, int end) async {
-    for (var i = start; i <= end; i++) {
-      await cachePage(i);
-    }
-  }
+  Future<Result<void>> cachePageRange(int start, int end) => Result.runCatching(
+        () async {
+          for (int i = start; i <= end; i++) {
+            await _cacheService.cachePage(i);
+          }
+        },
+        failureMapper: (e) =>
+            CacheFailure('Failed to cache page range $start-$end', e),
+      );
 
   @override
-  Future<bool> isPageCached(int pageNumber) async =>
-      _cacheService.isPageCached(pageNumber);
+  Future<Result<bool>> isPageCached(int pageNumber) => Result.runCatching(
+        () => _cacheService.isPageCached(pageNumber),
+        failureMapper: (e) =>
+            CacheFailure('Failed to check cache status for page $pageNumber', e),
+      );
 
   @override
-  Future<void> clearPageCache(int pageNumber) async =>
-      _cacheService.clearPageCache(pageNumber);
+  Future<Result<void>> clearPageCache(int pageNumber) => Result.runCatching(
+        () => _cacheService.clearPageCache(pageNumber),
+        failureMapper: (e) =>
+            CacheFailure('Failed to clear cache for page $pageNumber', e),
+      );
 
   @override
-  Future<void> clearAllPageCache() async => _cacheService.clearAllCache();
+  Future<Result<void>> clearAllPageCache() => Result.runCatching(
+        () => _cacheService.clearAllCache(),
+        failureMapper: (e) => CacheFailure('Failed to clear all page caches', e),
+      );
 }
+

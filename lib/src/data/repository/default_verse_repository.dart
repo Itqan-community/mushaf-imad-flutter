@@ -1,59 +1,64 @@
+import '../../domain/error/failure.dart';
 import '../../domain/models/mushaf_type.dart';
+import '../../domain/models/result.dart';
 import '../../domain/models/verse.dart';
 import '../../domain/repository/verse_repository.dart';
-import '../cache/quran_data_cache_service.dart';
 import 'database_service.dart';
 
 /// Default implementation of VerseRepository.
 class DefaultVerseRepository implements VerseRepository {
   final DatabaseService _databaseService;
-  final QuranDataCacheService _cacheService;
 
-  DefaultVerseRepository(this._databaseService, this._cacheService);
+  DefaultVerseRepository(this._databaseService);
 
   @override
-  Future<List<Verse>> getVersesForPage(
+  Future<Result<List<Verse>>> getVersesForPage(
     int pageNumber, {
     MushafType mushafType = MushafType.hafs1441,
-  }) async {
-    // Check cache first
-    final cached = _cacheService.getCachedVerses(pageNumber);
-    if (cached != null) return cached;
-
-    final verses = await _databaseService.getVersesForPage(
-      pageNumber,
-      mushafType: mushafType,
-    );
-    _cacheService.cacheVersesForPage(pageNumber, verses);
-    return verses;
-  }
+  }) =>
+      Result.runCatching(
+        () => _databaseService.getVersesForPage(pageNumber,
+            mushafType: mushafType),
+        failureMapper: (e) =>
+            DatabaseFailure('Failed to fetch verses for page $pageNumber', e),
+      );
 
   @override
-  Future<List<Verse>> getVersesForChapter(int chapterNumber) async {
-    final cached = _cacheService.getCachedChapterVerses(chapterNumber);
-    if (cached != null) return cached;
-
-    final verses = await _databaseService.getVersesForChapter(chapterNumber);
-    _cacheService.cacheChapterVerses(chapterNumber, verses);
-    return verses;
-  }
+  Future<Result<List<Verse>>> getVersesForChapter(int chapterNumber) =>
+      Result.runCatching(
+        () => _databaseService.getVersesForChapter(chapterNumber),
+        failureMapper: (e) => DatabaseFailure(
+            'Failed to fetch verses for chapter $chapterNumber', e),
+      );
 
   @override
-  Future<Verse?> getVerse(int chapterNumber, int verseNumber) =>
-      _databaseService.getVerse(chapterNumber, verseNumber);
+  Future<Result<Verse?>> getVerse(int chapterNumber, int verseNumber) =>
+      Result.runCatching(
+        () => _databaseService.getVerse(chapterNumber, verseNumber),
+        failureMapper: (e) => DatabaseFailure(
+            'Failed to fetch verse $chapterNumber:$verseNumber', e),
+      );
 
   @override
-  Future<List<Verse>> getSajdaVerses() => _databaseService.getSajdaVerses();
+  Future<Result<List<Verse>>> getSajdaVerses() => Result.runCatching(
+        () => _databaseService.getSajdaVerses(),
+        failureMapper: (e) => DatabaseFailure('Failed to fetch sajda verses', e),
+      );
 
   @override
-  Future<List<Verse>> searchVerses(String query) =>
-      _databaseService.searchVerses(query);
+  Future<Result<List<Verse>>> searchVerses(String query) => Result.runCatching(
+        () => _databaseService.searchVerses(query),
+        failureMapper: (e) =>
+            DatabaseFailure('Verse search failed for query: $query', e),
+      );
 
   @override
-  Future<List<Verse>?> getCachedVersesForPage(int pageNumber) async =>
-      _cacheService.getCachedVerses(pageNumber);
+  Future<Result<List<Verse>?>> getCachedVersesForPage(int pageNumber) async =>
+      const Success(null); // Not currently using cache for verses in repository
 
   @override
-  Future<List<Verse>?> getCachedVersesForChapter(int chapterNumber) async =>
-      _cacheService.getCachedChapterVerses(chapterNumber);
+  Future<Result<List<Verse>?>> getCachedVersesForChapter(
+          int chapterNumber) async =>
+      const Success(null); // Not currently using cache for verses in repository
 }
+

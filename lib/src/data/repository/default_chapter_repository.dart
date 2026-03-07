@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import '../../domain/error/failure.dart';
 import '../../domain/models/chapter.dart';
 import '../../domain/models/chapter_group.dart';
+import '../../domain/models/result.dart';
 import '../../domain/repository/chapter_repository.dart';
 import '../cache/chapters_data_cache.dart';
 import 'database_service.dart';
@@ -10,67 +12,109 @@ import 'database_service.dart';
 class DefaultChapterRepository implements ChapterRepository {
   final DatabaseService _databaseService;
   final ChaptersDataCache _chaptersDataCache;
-  final StreamController<List<Chapter>> _chaptersController =
-      StreamController<List<Chapter>>.broadcast();
 
   DefaultChapterRepository(this._databaseService, this._chaptersDataCache);
 
   @override
-  Stream<List<Chapter>> getAllChaptersStream() => _chaptersController.stream;
+  Stream<List<Chapter>> getAllChaptersStream() =>
+      _chaptersDataCache.allChaptersStream;
 
   @override
-  Future<List<Chapter>> getAllChapters() async {
-    if (_chaptersDataCache.isCached) return _chaptersDataCache.chapters!;
-    final chapters = await _databaseService.fetchAllChapters();
-    _chaptersDataCache.setChapters(chapters);
-    _chaptersController.add(chapters);
-    return chapters;
-  }
+  Future<Result<List<Chapter>>> getAllChapters() => Result.runCatching(
+        () async {
+          if (_chaptersDataCache.isCached) {
+            return _chaptersDataCache.allChapters!;
+          }
+          final chapters = await _databaseService.fetchAllChapters();
+          _chaptersDataCache.cacheAll(chapters);
+          return chapters;
+        },
+        failureMapper: (e) => DatabaseFailure('Failed to fetch chapters', e),
+      );
 
   @override
-  Future<Chapter?> getChapter(int number) =>
-      _databaseService.getChapter(number);
+  Future<Result<Chapter?>> getChapter(int number) => Result.runCatching(
+        () async {
+          if (_chaptersDataCache.isCached) {
+            return _chaptersDataCache.getById(number);
+          }
+          return _databaseService.getChapter(number);
+        },
+        failureMapper: (e) => DatabaseFailure('Failed to fetch chapter $number', e),
+      );
 
   @override
-  Future<Chapter?> getChapterForPage(int pageNumber) =>
-      _databaseService.getChapterForPage(pageNumber);
+  Future<Result<Chapter?>> getChapterForPage(int pageNumber) =>
+      Result.runCatching(
+        () => _databaseService.getChapterForPage(pageNumber),
+        failureMapper: (e) =>
+            DatabaseFailure('Failed to fetch chapter for page $pageNumber', e),
+      );
 
   @override
-  Future<List<Chapter>> getChaptersOnPage(int pageNumber) =>
-      _databaseService.getChaptersOnPage(pageNumber);
+  Future<Result<List<Chapter>>> getChaptersOnPage(int pageNumber) =>
+      Result.runCatching(
+        () => _databaseService.getChaptersOnPage(pageNumber),
+        failureMapper: (e) =>
+            DatabaseFailure('Failed to fetch chapters on page $pageNumber', e),
+      );
 
   @override
-  Future<List<Chapter>> searchChapters(String query) =>
-      _databaseService.searchChapters(query);
+  Future<Result<List<Chapter>>> searchChapters(String query) =>
+      Result.runCatching(
+        () => _databaseService.searchChapters(query),
+        failureMapper: (e) =>
+            DatabaseFailure('Chapter search failed for query: $query', e),
+      );
 
   @override
-  Future<List<ChaptersByPart>> getChaptersByPart() async {
-    // TODO: Implement grouping logic
-    return [];
-  }
+  Future<Result<List<ChaptersByPart>>> getChaptersByPart() => Result.runCatching(
+        () async {
+          final chaptersResult = await getAllChapters();
+          final chapters = chaptersResult.getOrThrow();
+          return ChaptersByPart.fromChapters(chapters);
+        },
+        failureMapper: (e) =>
+            DatabaseFailure('Failed to group chapters by part', e),
+      );
 
   @override
-  Future<List<ChaptersByHizb>> getChaptersByHizb() async {
-    // TODO: Implement grouping logic
-    return [];
-  }
+  Future<Result<List<ChaptersByHizb>>> getChaptersByHizb() => Result.runCatching(
+        () async {
+          final chaptersResult = await getAllChapters();
+          final chapters = chaptersResult.getOrThrow();
+          return ChaptersByHizb.fromChapters(chapters);
+        },
+        failureMapper: (e) =>
+            DatabaseFailure('Failed to group chapters by hizb', e),
+      );
 
   @override
-  Future<List<ChaptersByType>> getChaptersByType() async {
-    // TODO: Implement grouping logic
-    return [];
-  }
+  Future<Result<List<ChaptersByType>>> getChaptersByType() => Result.runCatching(
+        () async {
+          final chaptersResult = await getAllChapters();
+          final chapters = chaptersResult.getOrThrow();
+          return ChaptersByType.fromChapters(chapters);
+        },
+        failureMapper: (e) =>
+            DatabaseFailure('Failed to group chapters by type', e),
+      );
 
   @override
-  Future<void> loadAndCacheChapters({void Function(int)? onProgress}) async {
-    final chapters = await _databaseService.fetchAllChapters();
-    _chaptersDataCache.setChapters(chapters);
-    _chaptersController.add(chapters);
-    onProgress?.call(100);
-  }
+  Future<Result<void>> loadAndCacheChapters(
+          {void Function(int)? onProgress}) async =>
+      Result.runCatching(
+        () async {
+          final chapters = await _databaseService.fetchAllChapters();
+          _chaptersDataCache.cacheAll(chapters);
+          onProgress?.call(100);
+        },
+        failureMapper: (e) => DatabaseFailure('Failed to load/cache chapters', e),
+      );
 
   @override
-  Future<void> clearCache() async {
-    _chaptersDataCache.clear();
-  }
+  Future<Result<void>> clearCache() async => Result.runCatching(
+        () async => _chaptersDataCache.clear(),
+        failureMapper: (e) => DatabaseFailure('Failed to clear chapters cache', e),
+      );
 }

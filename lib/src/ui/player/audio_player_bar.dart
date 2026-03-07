@@ -10,12 +10,14 @@ class AudioPlayerBar extends StatefulWidget {
   final int chapterNumber;
   final String chapterName;
   final bool autoPlay;
+  final ReadingThemeData? themeData;
 
   const AudioPlayerBar({
     super.key,
     required this.chapterNumber,
     required this.chapterName,
     this.autoPlay = false,
+    this.themeData,
   });
 
   @override
@@ -106,14 +108,14 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
         final progress = duration > 0
             ? (position / duration).clamp(0.0, 1.0)
             : 0.0;
-        final isPlaying = state.isPlaying;
         final isRepeatEnabled = state.isRepeatEnabled;
 
-        final accentColor = const Color(0xFF2D7F6E);
+        final theme = widget.themeData ?? ReadingThemeData.fromTheme(ReadingTheme.light);
+        final accentColor = theme.accentColor;
 
         return Material(
           elevation: 8.0,
-          color: Theme.of(context).colorScheme.surface,
+          color: theme.surfaceColor,
           child: SafeArea(
             top: false,
             child: Padding(
@@ -148,47 +150,36 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
                                 ),
                               ),
                               const SizedBox(width: 4),
-                              const Icon(Icons.keyboard_arrow_down, size: 20),
+                              const Icon(
+                                Icons.keyboard_arrow_down,
+                                size: 20,
+                                semanticLabel: 'Open Reciter Selector',
+                              ),
                             ],
                           ),
                         ),
                       ),
 
                       // Surah Info
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
                             widget.chapterName,
                             style: TextStyle(
                               fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                              color: theme.textColor,
                             ),
                           ),
-                          if (state.currentVerse != null) ...[
+                          if (state.currentVerse != null)
                             Text(
-                              ":",
+                              'Verse ${state.currentVerse}',
                               style: TextStyle(
-                                fontSize: 14,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
+                                fontSize: 11,
+                                color: theme.secondaryTextColor,
                               ),
                             ),
-                            Text(
-                              '${state.currentVerse}',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
                         ],
                       ),
                     ],
@@ -207,7 +198,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
                         overlayRadius: 14,
                       ),
                       activeTrackColor: accentColor,
-                      inactiveTrackColor: Colors.grey.withValues(alpha: 0.3),
+                      inactiveTrackColor: theme.secondaryTextColor.withValues(alpha: 0.2),
                       thumbColor: accentColor,
                     ),
                     child: Slider(
@@ -255,7 +246,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
                           Icons.repeat,
                           color: isRepeatEnabled
                               ? accentColor
-                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                              : theme.secondaryTextColor,
                         ),
                         onPressed: _viewModel.toggleRepeat,
                         tooltip: 'Toggle Repeat',
@@ -264,8 +255,8 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
                       // Previous Chapter (Stub)
                       IconButton(
                         icon: const Icon(Icons.skip_previous),
-                        onPressed:
-                            () {}, // Handled by MushafPage navigation ideally or playlist
+                        onPressed: _viewModel.playPrevious,
+                        color: theme.textColor,
                         tooltip: 'Previous',
                       ),
 
@@ -293,13 +284,15 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
                               state.playbackState == PlaybackState.loading
                               ? null
                               : _viewModel.togglePlayPause,
+                          tooltip: isPlaying ? 'Pause' : 'Play',
                         ),
                       ),
 
                       // Next Chapter (Stub)
                       IconButton(
                         icon: const Icon(Icons.skip_next),
-                        onPressed: () {},
+                        onPressed: _viewModel.playNext,
+                        color: theme.textColor,
                         tooltip: 'Next',
                       ),
 
@@ -316,11 +309,10 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
+                            color: theme.secondaryTextColor,
                           ),
                         ),
+                        tooltip: 'Playback Speed',
                       ),
                     ],
                   ),
@@ -364,7 +356,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
                       title: Text(_viewModel.reciters[index].getDisplayName()),
                       subtitle: Text(_viewModel.reciters[index].rewaya),
                       trailing: isSelected
-                          ? const Icon(Icons.check, color: Color(0xFF2D7F6E))
+                          ? Icon(Icons.check, color: accentColor)
                           : null,
                       onTap: () {
                         _viewModel.selectReciter(_viewModel.reciters[index]);

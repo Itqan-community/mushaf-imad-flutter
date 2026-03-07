@@ -116,6 +116,22 @@ class QuranPlayerViewModel extends ChangeNotifier {
     _audioRepository.setRepeatMode(enabled);
   }
 
+  /// Play the next chapter.
+  void playNext() {
+    final currentChapter = _playerState.currentChapter ?? 1;
+    if (currentChapter < 114) {
+      playChapter(currentChapter + 1);
+    }
+  }
+
+  /// Play the previous chapter.
+  void playPrevious() {
+    final currentChapter = _playerState.currentChapter ?? 1;
+    if (currentChapter > 1) {
+      playChapter(currentChapter - 1);
+    }
+  }
+
   @override
   void dispose() {
     _playerStateSub?.cancel();
