@@ -4,18 +4,10 @@ import '../../data/quran/quran_metadata.dart';
 import '../theme/mushaf_theme_scope.dart';
 import '../theme/reading_theme.dart';
 
-/// Drawer showing all 114 surahs for quick navigation.
-///
-/// Each surah shows its Arabic title, English title, and starting page.
-/// Tapping a surah navigates to its starting page.
-///
-/// When a [MushafThemeScope] ancestor exists, colors are derived from the
-/// active [ReadingThemeData] (matching Android's `MushafColors` pattern).
-class ChapterIndexDrawer extends StatelessWidget {
-  /// Callback when a chapter is selected, passes the starting page number.
-  final ValueChanged<int> onChapterSelected;
+enum _ChapterFilter { all, meccan, medinan }
 
-  /// Currently displayed page number (to highlight the active chapter).
+class ChapterIndexDrawer extends StatefulWidget {
+  final ValueChanged<int> onChapterSelected;
   final int currentPage;
 
   const ChapterIndexDrawer({
@@ -25,13 +17,31 @@ class ChapterIndexDrawer extends StatelessWidget {
   });
 
   @override
+  State<ChapterIndexDrawer> createState() => _ChapterIndexDrawerState();
+}
+
+class _ChapterIndexDrawerState extends State<ChapterIndexDrawer> {
+  _ChapterFilter _filter = _ChapterFilter.all;
+
+  List<ChapterData> _applyFilter(List<ChapterData> chapters) {
+    switch (_filter) {
+      case _ChapterFilter.all:
+        return chapters;
+      case _ChapterFilter.meccan:
+        return chapters.where((c) => c.isMeccan).toList();
+      case _ChapterFilter.medinan:
+        return chapters.where((c) => !c.isMeccan).toList();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final dataProvider = QuranDataProvider.instance;
-    final chapters = dataProvider.getAllChapters();
-    final currentChapters = dataProvider.getChaptersForPage(currentPage);
+    final allChapters = dataProvider.getAllChapters();
+    final filteredChapters = _applyFilter(allChapters);
+    final currentChapters = dataProvider.getChaptersForPage(widget.currentPage);
     final currentChapterNumbers = currentChapters.map((c) => c.number).toSet();
 
-    // Read theme from scope (matching Android LocalMushafColors pattern)
     final scopeNotifier = MushafThemeScope.maybeOf(context);
     final theme =
         scopeNotifier?.themeData ??
@@ -41,7 +51,6 @@ class ChapterIndexDrawer extends StatelessWidget {
       backgroundColor: theme.backgroundColor,
       child: Column(
         children: [
-          // Header
           Container(
             width: double.infinity,
             padding: EdgeInsets.only(
@@ -66,7 +75,7 @@ class ChapterIndexDrawer extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Chapter Index · ${chapters.length} Surahs',
+                  'Chapter Index · ${allChapters.length} Surahs',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.8),
                     fontSize: 13,
@@ -76,27 +85,37 @@ class ChapterIndexDrawer extends StatelessWidget {
             ),
           ),
 
-          // Search/filter area
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               children: [
+                _FilterChip(
+                  label: 'الكل',
+                  selected: _filter == _ChapterFilter.all,
+                  theme: theme,
+                  onTap: () => setState(() => _filter = _ChapterFilter.all),
+                ),
+                const SizedBox(width: 6),
+                _FilterChip(
+                  label: 'مكية',
+                  selected: _filter == _ChapterFilter.meccan,
+                  theme: theme,
+                  onTap: () => setState(() => _filter = _ChapterFilter.meccan),
+                ),
+                const SizedBox(width: 6),
+                _FilterChip(
+                  label: 'مدنية',
+                  selected: _filter == _ChapterFilter.medinan,
+                  theme: theme,
+                  onTap: () => setState(() => _filter = _ChapterFilter.medinan),
+                ),
+                const Spacer(),
                 Text(
-                  'Page ${QuranDataProvider.toArabicNumerals(currentPage)}',
+                  'Page ${QuranDataProvider.toArabicNumerals(widget.currentPage)}',
                   style: TextStyle(
                     fontSize: 13,
                     color: theme.secondaryTextColor,
                     fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const Spacer(),
-                Icon(Icons.swipe, size: 16, color: theme.secondaryTextColor),
-                const SizedBox(width: 4),
-                Text(
-                  'Tap to jump',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: theme.secondaryTextColor,
                   ),
                 ),
               ],
@@ -108,13 +127,12 @@ class ChapterIndexDrawer extends StatelessWidget {
             color: theme.secondaryTextColor.withValues(alpha: 0.3),
           ),
 
-          // Chapter list
           Expanded(
             child: ListView.builder(
-              itemCount: chapters.length,
+              itemCount: filteredChapters.length,
               padding: EdgeInsets.zero,
               itemBuilder: (context, index) {
-                final chapter = chapters[index];
+                final chapter = filteredChapters[index];
                 final isActive = currentChapterNumbers.contains(chapter.number);
 
                 return _ChapterListItem(
@@ -122,7 +140,7 @@ class ChapterIndexDrawer extends StatelessWidget {
                   isActive: isActive,
                   themeData: theme,
                   onTap: () {
-                    onChapterSelected(chapter.startPage);
+                    widget.onChapterSelected(chapter.startPage);
                     Navigator.of(context).pop();
                   },
                 );
@@ -130,6 +148,48 @@ class ChapterIndexDrawer extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final ReadingThemeData theme;
+  final VoidCallback onTap;
+
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.theme,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? theme.accentColor : theme.surfaceColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected
+                ? theme.accentColor
+                : theme.secondaryTextColor.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+            color: selected ? Colors.white : theme.textColor,
+          ),
+          textDirection: TextDirection.rtl,
+        ),
       ),
     );
   }
@@ -160,7 +220,6 @@ class _ChapterListItem extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              // Chapter number badge
               Container(
                 width: 36,
                 height: 36,
@@ -188,7 +247,6 @@ class _ChapterListItem extends StatelessWidget {
 
               const SizedBox(width: 12),
 
-              // Chapter details
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,7 +276,6 @@ class _ChapterListItem extends StatelessWidget {
                 ),
               ),
 
-              // Verse count & page number
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -230,14 +287,30 @@ class _ChapterListItem extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  Text(
-                    '${chapter.versesCount} ayat',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: themeData.secondaryTextColor.withValues(
-                        alpha: 0.7,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        chapter.isMeccan ? 'مكية' : 'مدنية',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: themeData.secondaryTextColor.withValues(
+                            alpha: 0.6,
+                          ),
+                        ),
+                        textDirection: TextDirection.rtl,
                       ),
-                    ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${chapter.versesCount} ayat',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: themeData.secondaryTextColor.withValues(
+                            alpha: 0.7,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
