@@ -1,4 +1,5 @@
 import '../models/mushaf_type.dart';
+import '../models/result.dart';
 import '../models/theme.dart';
 
 /// Repository for all user preferences and settings.
@@ -15,37 +16,37 @@ abstract class PreferencesRepository {
   Stream<MushafType> getMushafTypeStream();
 
   /// Set the selected Mushaf type.
-  Future<void> setMushafType(MushafType mushafType);
+  Future<Result<void>> setMushafType(MushafType mushafType);
 
   /// Get the current page number as a Stream.
   Stream<int> getCurrentPageStream();
 
   /// Set the current page number.
-  Future<void> setCurrentPage(int pageNumber);
+  Future<Result<void>> setCurrentPage(int pageNumber);
 
   /// Get the last read chapter number as a Stream.
   Stream<int?> getLastReadChapterStream();
 
   /// Set the last read chapter number.
-  Future<void> setLastReadChapter(int chapterNumber);
+  Future<Result<void>> setLastReadChapter(int chapterNumber);
 
-  /// Get the last read verse as a Stream. Returns (chapterNumber, verseNumber).
+  /// Get the last read verse as a Stream. Returns (int chapterNumber, int verseNumber).
   Stream<(int, int)?> getLastReadVerseStream();
 
   /// Set the last read verse.
-  Future<void> setLastReadVerse(int chapterNumber, int verseNumber);
+  Future<Result<void>> setLastReadVerse(int chapterNumber, int verseNumber);
 
   /// Get the font size multiplier as a Stream.
   Stream<double> getFontSizeMultiplierStream();
 
   /// Set the font size multiplier (0.5 to 2.0).
-  Future<void> setFontSizeMultiplier(double multiplier);
+  Future<Result<void>> setFontSizeMultiplier(double multiplier);
 
   /// Get whether to show translation.
   Stream<bool> getShowTranslationStream();
 
   /// Set whether to show translation.
-  Future<void> setShowTranslation(bool show);
+  Future<Result<void>> setShowTranslation(bool show);
 
   // ========== Audio Preferences ==========
 
@@ -53,55 +54,64 @@ abstract class PreferencesRepository {
   Stream<int> getSelectedReciterIdStream();
 
   /// Get the selected reciter ID.
-  Future<int> getSelectedReciterId();
+  Future<Result<int>> getSelectedReciterId();
 
   /// Set the selected reciter ID.
-  Future<void> setSelectedReciterId(int reciterId);
+  Future<Result<void>> setSelectedReciterId(int reciterId);
 
   /// Observe the selected playback speed.
   Stream<double> getPlaybackSpeedStream();
 
   /// Get the selected playback speed.
-  Future<double> getPlaybackSpeed();
+  Future<Result<double>> getPlaybackSpeed();
 
   /// Set the playback speed (0.5 - 3.0).
-  Future<void> setPlaybackSpeed(double speed);
+  Future<Result<void>> setPlaybackSpeed(double speed);
 
   /// Observe repeat mode.
   Stream<bool> getRepeatModeStream();
 
   /// Get repeat mode.
-  Future<bool> getRepeatMode();
+  Future<Result<bool>> getRepeatMode();
 
   /// Set repeat mode.
-  Future<void> setRepeatMode(bool enabled);
+  Future<Result<void>> setRepeatMode(bool enabled);
 
   /// Observe last played audio chapter.
   Stream<int?> getLastAudioChapterStream();
 
   /// Get last played audio chapter.
-  Future<int?> getLastAudioChapter();
+  Future<Result<int?>> getLastAudioChapter();
 
   /// Set last played audio chapter.
-  Future<void> setLastAudioChapter(int? chapterNumber);
+  Future<Result<void>> setLastAudioChapter(int? chapterNumber);
 
   /// Observe last played audio verse.
   Stream<int?> getLastAudioVerseStream();
 
   /// Get last played audio verse.
-  Future<int?> getLastAudioVerse();
+  Future<Result<int?>> getLastAudioVerse();
 
   /// Set last played audio verse.
-  Future<void> setLastAudioVerse(int? verseNumber);
+  Future<Result<void>> setLastAudioVerse(int? verseNumber);
 
   /// Observe last audio playback position in milliseconds.
   Stream<int> getLastAudioPositionMsStream();
 
   /// Get last audio playback position in milliseconds.
-  Future<int> getLastAudioPositionMs();
+  Future<Result<int>> getLastAudioPositionMs();
 
   /// Set last audio playback position.
-  Future<void> setLastAudioPositionMs(int positionMs);
+  Future<Result<void>> setLastAudioPositionMs(int positionMs);
+
+  /// Observe whether to show the audio player bar.
+  Stream<bool> getShowAudioPlayerStream();
+
+  /// Get whether to show the audio player bar.
+  Future<Result<bool>> getShowAudioPlayer();
+
+  /// Set whether to show the audio player bar.
+  Future<Result<void>> setShowAudioPlayer(bool show);
 
   // ========== Theme Preferences ==========
 
@@ -109,22 +119,22 @@ abstract class PreferencesRepository {
   Stream<ThemeConfig> getThemeConfigStream();
 
   /// Get current theme configuration.
-  Future<ThemeConfig> getThemeConfig();
+  Future<Result<ThemeConfig>> getThemeConfig();
 
   /// Set theme mode.
-  Future<void> setThemeMode(MushafThemeMode mode);
+  Future<Result<void>> setThemeMode(MushafThemeMode mode);
 
   /// Set color scheme.
-  Future<void> setColorScheme(MushafColorScheme scheme);
+  Future<Result<void>> setColorScheme(MushafColorScheme scheme);
 
   /// Set AMOLED mode (pure black for dark theme).
-  Future<void> setAmoledMode(bool enabled);
+  Future<Result<void>> setAmoledMode(bool enabled);
 
   /// Update complete theme configuration.
-  Future<void> updateThemeConfig(ThemeConfig config);
+  Future<Result<void>> updateThemeConfig(ThemeConfig config);
 
   // ========== General ==========
 
   /// Clear all preferences.
-  Future<void> clearAll();
+  Future<Result<void>> clearAll();
 }

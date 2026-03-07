@@ -1,3 +1,4 @@
+import '../models/result.dart';
 import '../models/user_data_backup.dart';
 
 /// Result of data import operation.
@@ -27,23 +28,23 @@ class ImportResult {
 /// Public API - exposed to library consumers.
 abstract class DataExportRepository {
   /// Export all user data to a backup object.
-  Future<UserDataBackup> exportUserData({bool includeHistory = true});
+  Future<Result<UserDataBackup>> exportUserData({bool includeHistory = true});
 
   /// Export user data to JSON string.
-  Future<String> exportToJson({bool includeHistory = true});
+  Future<Result<String>> exportToJson({bool includeHistory = true});
 
   /// Import user data from a backup object.
-  Future<ImportResult> importUserData(
+  Future<Result<ImportResult>> importUserData(
     UserDataBackup backup, {
     bool mergeWithExisting = true,
   });
 
   /// Import user data from JSON string.
-  Future<ImportResult> importFromJson(
+  Future<Result<ImportResult>> importFromJson(
     String json, {
     bool mergeWithExisting = true,
   });
 
   /// Clear all user data (bookmarks, history, etc.).
-  Future<void> clearAllUserData();
+  Future<Result<void>> clearAllUserData();
 }
