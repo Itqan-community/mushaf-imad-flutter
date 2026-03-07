@@ -108,4 +108,5 @@ export 'src/data/quran/verse_data_provider.dart';
 export 'src/data/local/hive_database_service.dart';
 export 'src/data/local/dao/hive/hive_bookmark_dao.dart';
 export 'src/data/local/dao/hive/hive_reading_history_dao.dart';
+export 'src/data/local/dao/hive/hive_preferences_dao.dart';
 export 'src/data/local/dao/hive/hive_search_history_dao.dart';
