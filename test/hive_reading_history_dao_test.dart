@@ -16,8 +16,9 @@ void main() {
   late HiveReadingHistoryDao dao;
 
   setUpAll(() async {
-    await setupMushafWithHive();
-    dao = mushafGetIt<ReadingHistoryDao>() as HiveReadingHistoryDao;
+    final testDir = Directory.systemTemp.createTempSync('hive_history_test_');
+    Hive.init(testDir.path);
+    dao = HiveReadingHistoryDao();
   });
 
   setUp(() async {

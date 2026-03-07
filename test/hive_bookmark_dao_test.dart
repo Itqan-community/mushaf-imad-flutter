@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:imad_flutter/imad_flutter.dart';
 import 'dart:io';
 
@@ -15,8 +16,9 @@ void main() {
   late HiveBookmarkDao dao;
 
   setUpAll(() async {
-    await setupMushafWithHive();
-    dao = mushafGetIt<BookmarkDao>() as HiveBookmarkDao;
+    final testDir = Directory.systemTemp.createTempSync('hive_bookmark_test_');
+    Hive.init(testDir.path);
+    dao = HiveBookmarkDao();
   });
 
   setUp(() async {
