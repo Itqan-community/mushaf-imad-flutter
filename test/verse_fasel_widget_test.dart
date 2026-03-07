@@ -23,7 +23,7 @@ void main() {
       return find.descendant(
         of: find.byType(VerseFasel),
         matching: find.byType(SizedBox),
-      );
+      ).first;
     }
 
     testWidgets('renders with default size', (tester) async {
@@ -108,7 +108,10 @@ void main() {
       final text = tester.widget<Text>(find.byType(Text));
       expect(text.textAlign, TextAlign.center);
 
-      final stack = tester.widget<Stack>(find.byType(Stack));
+      final stack = tester.widget<Stack>(find.descendant(
+        of: find.byType(VerseFasel),
+        matching: find.byType(Stack),
+      ));
       expect(stack.alignment, Alignment.center);
     });
 
@@ -127,9 +130,13 @@ void main() {
     testWidgets('renders SvgPicture for the fasel graphic', (tester) async {
       await tester.pumpWidget(buildTestWidget(1));
 
-      expect(find.byType(Stack), findsOneWidget);
+      final verseFaselStack = find.descendant(
+        of: find.byType(VerseFasel),
+        matching: find.byType(Stack),
+      );
+      expect(verseFaselStack, findsOneWidget);
       expect(find.byType(SvgPicture), findsOneWidget);
-      final stack = tester.widget<Stack>(find.byType(Stack));
+      final stack = tester.widget<Stack>(verseFaselStack);
       expect(stack.children.length, 2);
     });
 
