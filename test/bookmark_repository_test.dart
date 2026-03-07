@@ -1,6 +1,8 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:imad_flutter/imad_flutter.dart';
+import 'package:imad_flutter/src/data/repository/default_bookmark_repository.dart';
 import 'dart:io';
 
 void main() {
@@ -13,16 +15,13 @@ void main() {
       );
 
   late BookmarkRepository repository;
+  late HiveBookmarkDao dao;
 
   setUpAll(() async {
-    await setupMushafWithHive();
-    await MushafLibrary.initialize(
-      databaseService: mushafGetIt<DatabaseService>(),
-      bookmarkDao: mushafGetIt<BookmarkDao>(),
-      readingHistoryDao: mushafGetIt<ReadingHistoryDao>(),
-      searchHistoryDao: mushafGetIt<SearchHistoryDao>(),
-    );
-    repository = MushafLibrary.getBookmarkRepository();
+    final testDir = Directory.systemTemp.createTempSync('hive_repo_test_');
+    Hive.init(testDir.path);
+    dao = HiveBookmarkDao();
+    repository = DefaultBookmarkRepository(dao);
   });
 
   setUp(() async {
