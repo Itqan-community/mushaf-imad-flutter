@@ -33,6 +33,7 @@ class SettingsViewModel extends ChangeNotifier {
   int _selectedReciterId = 1;
   double _playbackSpeed = 1.0;
   bool _repeatMode = false;
+  double _fontSizeMultiplier = 1.0;
   ThemeConfig _themeConfig = const ThemeConfig();
 
   MushafType get mushafType => _mushafType;
@@ -40,6 +41,7 @@ class SettingsViewModel extends ChangeNotifier {
   int get selectedReciterId => _selectedReciterId;
   double get playbackSpeed => _playbackSpeed;
   bool get repeatMode => _repeatMode;
+  double get fontSizeMultiplier => _fontSizeMultiplier;
   ThemeConfig get themeConfig => _themeConfig;
 
   /// Load current preference values.
@@ -49,6 +51,8 @@ class SettingsViewModel extends ChangeNotifier {
     _selectedReciterId = await _preferencesRepository.getSelectedReciterId();
     _playbackSpeed = await _preferencesRepository.getPlaybackSpeed();
     _repeatMode = await _preferencesRepository.getRepeatMode();
+    _fontSizeMultiplier =
+        await _preferencesRepository.getFontSizeMultiplierStream().first;
     _themeConfig = await _preferencesRepository.getThemeConfig();
     notifyListeners();
   }
@@ -85,6 +89,12 @@ class SettingsViewModel extends ChangeNotifier {
       _isImporting = false;
       notifyListeners();
     }
+  }
+
+  Future<void> setFontSizeMultiplier(double multiplier) async {
+    _fontSizeMultiplier = multiplier;
+    await _preferencesRepository.setFontSizeMultiplier(multiplier);
+    notifyListeners();
   }
 
   /// Clear all user data.
