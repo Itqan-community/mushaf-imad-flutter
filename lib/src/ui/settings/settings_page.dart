@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/audio/reciter_data_provider.dart';
@@ -221,11 +224,22 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       final json = await _viewModel.exportData();
       if (!mounted) return;
+
+      final outputPath = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save Exported Data',
+        fileName: 'mushaf_backup_${DateTime.now().millisecondsSinceEpoch}.json',
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
+
+      if (outputPath == null || !mounted) return;
+
+      final file = File(outputPath);
+      await file.writeAsString(json);
+
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Data exported (${json.length} characters)'),
-          action: SnackBarAction(label: 'OK', onPressed: () {}),
-        ),
+        const SnackBar(content: Text('Data exported successfully')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -236,36 +250,22 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _handleImport(BuildContext context) async {
-    final controller = TextEditingController();
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Import Data'),
-        content: TextField(
-          controller: controller,
-          maxLines: 8,
-          decoration: const InputDecoration(
-            hintText: 'Paste exported JSON data here...',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('Import'),
-          ),
-        ],
-      ),
+    final pickerResult = await FilePicker.platform.pickFiles(
+      dialogTitle: 'Select Backup File',
+      type: FileType.custom,
+      allowedExtensions: ['json'],
     );
 
-    if (result == null || result.trim().isEmpty || !mounted) return;
+    if (pickerResult == null ||
+        pickerResult.files.isEmpty ||
+        !mounted) return;
+
+    final filePath = pickerResult.files.single.path;
+    if (filePath == null || !mounted) return;
 
     try {
-      final importResult = await _viewModel.importData(result);
+      final jsonData = await File(filePath).readAsString();
+      final importResult = await _viewModel.importData(jsonData);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
