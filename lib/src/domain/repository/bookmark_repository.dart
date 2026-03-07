@@ -1,4 +1,5 @@
 import '../models/bookmark.dart';
+import '../models/result.dart';
 
 /// Repository for managing user bookmarks.
 /// Public API - exposed to library consumers.
@@ -7,19 +8,19 @@ abstract class BookmarkRepository {
   Stream<List<Bookmark>> getAllBookmarksStream();
 
   /// Get all bookmarks.
-  Future<List<Bookmark>> getAllBookmarks();
+  Future<Result<List<Bookmark>>> getAllBookmarks();
 
   /// Get bookmark by ID.
-  Future<Bookmark?> getBookmarkById(String id);
+  Future<Result<Bookmark?>> getBookmarkById(String id);
 
   /// Get bookmarks for a specific chapter.
-  Future<List<Bookmark>> getBookmarksForChapter(int chapterNumber);
+  Future<Result<List<Bookmark>>> getBookmarksForChapter(int chapterNumber);
 
   /// Get bookmark for a specific verse.
-  Future<Bookmark?> getBookmarkForVerse(int chapterNumber, int verseNumber);
+  Future<Result<Bookmark?>> getBookmarkForVerse(int chapterNumber, int verseNumber);
 
   /// Add or update a bookmark.
-  Future<Bookmark> addBookmark({
+  Future<Result<Bookmark>> addBookmark({
     required int chapterNumber,
     required int verseNumber,
     required int pageNumber,
@@ -28,23 +29,23 @@ abstract class BookmarkRepository {
   });
 
   /// Update bookmark note.
-  Future<void> updateBookmarkNote(String id, String note);
+  Future<Result<void>> updateBookmarkNote(String id, String note);
 
   /// Update bookmark tags.
-  Future<void> updateBookmarkTags(String id, List<String> tags);
+  Future<Result<void>> updateBookmarkTags(String id, List<String> tags);
 
   /// Delete a bookmark.
-  Future<void> deleteBookmark(String id);
+  Future<Result<void>> deleteBookmark(String id);
 
   /// Delete bookmark for a specific verse.
-  Future<void> deleteBookmarkForVerse(int chapterNumber, int verseNumber);
+  Future<Result<void>> deleteBookmarkForVerse(int chapterNumber, int verseNumber);
 
   /// Delete all bookmarks.
-  Future<void> deleteAllBookmarks();
+  Future<Result<void>> deleteAllBookmarks();
 
   /// Check if a verse is bookmarked.
-  Future<bool> isVerseBookmarked(int chapterNumber, int verseNumber);
+  Future<Result<bool>> isVerseBookmarked(int chapterNumber, int verseNumber);
 
   /// Search bookmarks by note content or tags.
-  Future<List<Bookmark>> searchBookmarks(String query);
+  Future<Result<List<Bookmark>>> searchBookmarks(String query);
 }

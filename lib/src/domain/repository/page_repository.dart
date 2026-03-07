@@ -1,34 +1,36 @@
 import '../models/mushaf_type.dart';
 import '../models/page.dart';
 import '../models/page_header_info.dart';
+import '../models/result.dart';
 
 /// Repository for Page-related operations.
 /// Public API - exposed to library consumers.
 abstract class PageRepository {
   /// Get a specific page by number.
-  Future<Page?> getPage(int number);
+  Future<Result<Page?>> getPage(int number);
 
   /// Get total number of pages (default 604).
-  Future<int> getTotalPages();
+  Future<Result<int>> getTotalPages();
 
   /// Get page header information.
-  Future<PageHeaderInfo?> getPageHeaderInfo(
+  Future<Result<PageHeaderInfo?>> getPageHeaderInfo(
     int pageNumber, {
     MushafType mushafType = MushafType.hafs1441,
   });
 
   /// Pre-cache a specific page.
-  Future<void> cachePage(int pageNumber);
+  Future<Result<void>> cachePage(int pageNumber);
 
   /// Pre-cache a range of pages.
-  Future<void> cachePageRange(int start, int end);
+  Future<Result<void>> cachePageRange(int start, int end);
 
   /// Check if a page is cached.
-  Future<bool> isPageCached(int pageNumber);
+  Future<Result<bool>> isPageCached(int pageNumber);
 
   /// Clear page cache.
-  Future<void> clearPageCache(int pageNumber);
+  Future<Result<void>> clearPageCache(int pageNumber);
 
   /// Clear all page caches.
-  Future<void> clearAllPageCache();
+  Future<Result<void>> clearAllPageCache();
 }
+
