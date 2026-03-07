@@ -243,8 +243,10 @@ void main() {
           (tester) async {
         await tester.pumpWidget(buildTestWidget(markers: []));
 
-        // Only the outer Stack from LayoutBuilder
-        final stacks = tester.widgetList<Stack>(find.byType(Stack));
+        final stacks = tester.widgetList<Stack>(find.descendant(
+          of: find.byType(QuranLineImage),
+          matching: find.byType(Stack),
+        ));
         expect(stacks.length, 1);
       });
 
