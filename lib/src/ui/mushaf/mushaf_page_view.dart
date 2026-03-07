@@ -111,6 +111,7 @@ class MushafPageViewState extends State<MushafPageView> {
         setState(() {
           _isInitialized = true;
         });
+        widget.onPageChanged?.call(_currentPage);
       }
     }
   }
