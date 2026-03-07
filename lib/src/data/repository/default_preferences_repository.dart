@@ -1,26 +1,23 @@
 import 'dart:async';
-
+import '../../domain/error/failure.dart';
 import '../../domain/models/mushaf_type.dart';
+import '../../domain/models/result.dart';
 import '../../domain/models/theme.dart';
 import '../../domain/repository/preferences_repository.dart';
+import '../local/dao/preferences_dao.dart';
 
 /// Default implementation of PreferencesRepository.
-/// Uses in-memory state with Stream-based reactivity.
-/// For production, replace with SharedPreferences or Hive-backed implementation.
 class DefaultPreferencesRepository implements PreferencesRepository {
-  // Mushaf preferences — backing fields for Stream-based state.
-  // Values are currently written via setters and emitted to StreamControllers.
-  // Will be persisted via Hive when integrated.
-  // ignore: unused_field
+  final PreferencesDao _dao;
+
+  DefaultPreferencesRepository(this._dao);
+
+  // Mushaf preferences
   MushafType _mushafType = MushafType.hafs1441;
-  // ignore: unused_field
   int _currentPage = 1;
-  // ignore: unused_field
   int? _lastReadChapter;
   (int, int)? _lastReadVerse;
-  // ignore: unused_field
   double _fontSizeMultiplier = 1.0;
-  // ignore: unused_field
   bool _showTranslation = false;
 
   // Audio preferences
@@ -33,6 +30,7 @@ class DefaultPreferencesRepository implements PreferencesRepository {
 
   // Theme preferences
   ThemeConfig _themeConfig = const ThemeConfig();
+  bool _showAudioPlayer = true;
 
   // Stream controllers
   final _mushafTypeController = StreamController<MushafType>.broadcast();
@@ -48,6 +46,41 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   final _lastAudioVerseController = StreamController<int?>.broadcast();
   final _lastAudioPositionController = StreamController<int>.broadcast();
   final _themeConfigController = StreamController<ThemeConfig>.broadcast();
+  final _showAudioPlayerController = StreamController<bool>.broadcast();
+
+  /// Initialize state from the DAO.
+  Future<void> initialize() async {
+    _mushafType = await _dao.getMushafType() ?? MushafType.hafs1441;
+    _currentPage = await _dao.getCurrentPage() ?? 1;
+    _lastReadChapter = await _dao.getLastReadChapter();
+    
+    final verseChapter = await _dao.getLastReadVerseChapter();
+    final verseNumber = await _dao.getLastReadVerseNumber();
+    if (verseChapter != null && verseNumber != null) {
+      _lastReadVerse = (verseChapter, verseNumber);
+    }
+
+    _fontSizeMultiplier = await _dao.getFontSizeMultiplier() ?? 1.0;
+    _showTranslation = await _dao.getShowTranslation() ?? false;
+    _selectedReciterId = await _dao.getSelectedReciterId() ?? 1;
+    _playbackSpeed = await _dao.getPlaybackSpeed() ?? 1.0;
+    _repeatMode = await _dao.getRepeatMode() ?? false;
+    _themeConfig = await _dao.getThemeConfig() ?? const ThemeConfig();
+    _showAudioPlayer = await _dao.getShowAudioPlayer() ?? true;
+
+    // Emit initial values
+    _mushafTypeController.add(_mushafType);
+    _currentPageController.add(_currentPage);
+    _lastReadChapterController.add(_lastReadChapter);
+    _lastReadVerseController.add(_lastReadVerse);
+    _fontSizeController.add(_fontSizeMultiplier);
+    _showTranslationController.add(_showTranslation);
+    _reciterIdController.add(_selectedReciterId);
+    _playbackSpeedController.add(_playbackSpeed);
+    _repeatModeController.add(_repeatMode);
+    _themeConfigController.add(_themeConfig);
+    _showAudioPlayerController.add(_showAudioPlayer);
+  }
 
   // ========== Mushaf Reading Preferences ==========
 
@@ -55,56 +88,85 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   Stream<MushafType> getMushafTypeStream() => _mushafTypeController.stream;
 
   @override
-  Future<void> setMushafType(MushafType mushafType) async {
-    _mushafType = mushafType;
-    _mushafTypeController.add(mushafType);
-  }
+  Future<Result<void>> setMushafType(MushafType mushafType) => Result.runCatching(
+        () async {
+          _mushafType = mushafType;
+          await _dao.saveMushafType(mushafType);
+          _mushafTypeController.add(mushafType);
+        },
+        failureMapper: (e) => PreferenceFailure('Failed to save Mushaf type', e),
+      );
 
   @override
   Stream<int> getCurrentPageStream() => _currentPageController.stream;
 
   @override
-  Future<void> setCurrentPage(int pageNumber) async {
-    _currentPage = pageNumber;
-    _currentPageController.add(pageNumber);
-  }
+  Future<Result<void>> setCurrentPage(int pageNumber) => Result.runCatching(
+        () async {
+          _currentPage = pageNumber;
+          await _dao.saveCurrentPage(pageNumber);
+          _currentPageController.add(pageNumber);
+        },
+        failureMapper: (e) => PreferenceFailure('Failed to save current page', e),
+      );
 
   @override
   Stream<int?> getLastReadChapterStream() => _lastReadChapterController.stream;
 
   @override
-  Future<void> setLastReadChapter(int chapterNumber) async {
-    _lastReadChapter = chapterNumber;
-    _lastReadChapterController.add(chapterNumber);
-  }
+  Future<Result<void>> setLastReadChapter(int chapterNumber) => Result.runCatching(
+        () async {
+          _lastReadChapter = chapterNumber;
+          await _dao.saveLastReadChapter(chapterNumber);
+          _lastReadChapterController.add(chapterNumber);
+        },
+        failureMapper: (e) =>
+            PreferenceFailure('Failed to save last read chapter', e),
+      );
 
   @override
   Stream<(int, int)?> getLastReadVerseStream() =>
       _lastReadVerseController.stream;
 
   @override
-  Future<void> setLastReadVerse(int chapterNumber, int verseNumber) async {
-    _lastReadVerse = (chapterNumber, verseNumber);
-    _lastReadVerseController.add(_lastReadVerse);
-  }
+  Future<Result<void>> setLastReadVerse(int chapterNumber, int verseNumber) =>
+      Result.runCatching(
+        () async {
+          _lastReadVerse = (chapterNumber, verseNumber);
+          await _dao.saveLastReadVerse(chapterNumber, verseNumber);
+          _lastReadVerseController.add(_lastReadVerse);
+        },
+        failureMapper: (e) =>
+            PreferenceFailure('Failed to save last read verse', e),
+      );
 
   @override
   Stream<double> getFontSizeMultiplierStream() => _fontSizeController.stream;
 
   @override
-  Future<void> setFontSizeMultiplier(double multiplier) async {
-    _fontSizeMultiplier = multiplier;
-    _fontSizeController.add(multiplier);
-  }
+  Future<Result<void>> setFontSizeMultiplier(double multiplier) =>
+      Result.runCatching(
+        () async {
+          _fontSizeMultiplier = multiplier;
+          await _dao.saveFontSizeMultiplier(multiplier);
+          _fontSizeController.add(multiplier);
+        },
+        failureMapper: (e) =>
+            PreferenceFailure('Failed to save font size multiplier', e),
+      );
 
   @override
   Stream<bool> getShowTranslationStream() => _showTranslationController.stream;
 
   @override
-  Future<void> setShowTranslation(bool show) async {
-    _showTranslation = show;
-    _showTranslationController.add(show);
-  }
+  Future<Result<void>> setShowTranslation(bool show) => Result.runCatching(
+        () async {
+          _showTranslation = show;
+          await _dao.saveShowTranslation(show);
+          _showTranslationController.add(show);
+        },
+        failureMapper: (e) => PreferenceFailure('Failed to save translation preference', e),
+      );
 
   // ========== Audio Preferences ==========
 
@@ -112,75 +174,133 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   Stream<int> getSelectedReciterIdStream() => _reciterIdController.stream;
 
   @override
-  Future<int> getSelectedReciterId() async => _selectedReciterId;
+  Future<Result<int>> getSelectedReciterId() => Result.runCatching(
+        () async => _selectedReciterId,
+        failureMapper: (e) => PreferenceFailure('Failed to get reciter ID', e),
+      );
 
   @override
-  Future<void> setSelectedReciterId(int reciterId) async {
-    _selectedReciterId = reciterId;
-    _reciterIdController.add(reciterId);
-  }
+  Future<Result<void>> setSelectedReciterId(int reciterId) => Result.runCatching(
+        () async {
+          _selectedReciterId = reciterId;
+          await _dao.saveSelectedReciterId(reciterId);
+          _reciterIdController.add(reciterId);
+        },
+        failureMapper: (e) => PreferenceFailure('Failed to save reciter ID', e),
+      );
 
   @override
   Stream<double> getPlaybackSpeedStream() => _playbackSpeedController.stream;
 
   @override
-  Future<double> getPlaybackSpeed() async => _playbackSpeed;
+  Future<Result<double>> getPlaybackSpeed() => Result.runCatching(
+        () async => _playbackSpeed,
+        failureMapper: (e) => PreferenceFailure('Failed to get playback speed', e),
+      );
 
   @override
-  Future<void> setPlaybackSpeed(double speed) async {
-    _playbackSpeed = speed;
-    _playbackSpeedController.add(speed);
-  }
+  Future<Result<void>> setPlaybackSpeed(double speed) => Result.runCatching(
+        () async {
+          _playbackSpeed = speed;
+          await _dao.savePlaybackSpeed(speed);
+          _playbackSpeedController.add(speed);
+        },
+        failureMapper: (e) => PreferenceFailure('Failed to save playback speed', e),
+      );
 
   @override
   Stream<bool> getRepeatModeStream() => _repeatModeController.stream;
 
   @override
-  Future<bool> getRepeatMode() async => _repeatMode;
+  Future<Result<bool>> getRepeatMode() => Result.runCatching(
+        () async => _repeatMode,
+        failureMapper: (e) => PreferenceFailure('Failed to get repeat mode', e),
+      );
 
   @override
-  Future<void> setRepeatMode(bool enabled) async {
-    _repeatMode = enabled;
-    _repeatModeController.add(enabled);
-  }
+  Future<Result<void>> setRepeatMode(bool enabled) => Result.runCatching(
+        () async {
+          _repeatMode = enabled;
+          await _dao.saveRepeatMode(enabled);
+          _repeatModeController.add(enabled);
+        },
+        failureMapper: (e) => PreferenceFailure('Failed to save repeat mode', e),
+      );
 
   @override
   Stream<int?> getLastAudioChapterStream() =>
       _lastAudioChapterController.stream;
 
   @override
-  Future<int?> getLastAudioChapter() async => _lastAudioChapter;
+  Future<Result<int?>> getLastAudioChapter() => Result.runCatching(
+        () async => _lastAudioChapter,
+        failureMapper: (e) => PreferenceFailure('Failed to get last audio chapter', e),
+      );
 
   @override
-  Future<void> setLastAudioChapter(int? chapterNumber) async {
-    _lastAudioChapter = chapterNumber;
-    _lastAudioChapterController.add(chapterNumber);
-  }
+  Future<Result<void>> setLastAudioChapter(int? chapterNumber) => Result.runCatching(
+        () async {
+          _lastAudioChapter = chapterNumber;
+          _lastAudioChapterController.add(chapterNumber);
+        },
+        failureMapper: (e) => PreferenceFailure('Failed to set last audio chapter', e),
+      );
 
   @override
   Stream<int?> getLastAudioVerseStream() => _lastAudioVerseController.stream;
 
   @override
-  Future<int?> getLastAudioVerse() async => _lastAudioVerse;
+  Future<Result<int?>> getLastAudioVerse() => Result.runCatching(
+        () async => _lastAudioVerse,
+        failureMapper: (e) => PreferenceFailure('Failed to get last audio verse', e),
+      );
 
   @override
-  Future<void> setLastAudioVerse(int? verseNumber) async {
-    _lastAudioVerse = verseNumber;
-    _lastAudioVerseController.add(verseNumber);
-  }
+  Future<Result<void>> setLastAudioVerse(int? verseNumber) => Result.runCatching(
+        () async {
+          _lastAudioVerse = verseNumber;
+          _lastAudioVerseController.add(verseNumber);
+        },
+        failureMapper: (e) => PreferenceFailure('Failed to set last audio verse', e),
+      );
 
   @override
   Stream<int> getLastAudioPositionMsStream() =>
       _lastAudioPositionController.stream;
 
   @override
-  Future<int> getLastAudioPositionMs() async => _lastAudioPositionMs;
+  Future<Result<int>> getLastAudioPositionMs() => Result.runCatching(
+        () async => _lastAudioPositionMs,
+        failureMapper: (e) => PreferenceFailure('Failed to get last audio position', e),
+      );
 
   @override
-  Future<void> setLastAudioPositionMs(int positionMs) async {
-    _lastAudioPositionMs = positionMs;
-    _lastAudioPositionController.add(positionMs);
-  }
+  Future<Result<void>> setLastAudioPositionMs(int positionMs) => Result.runCatching(
+        () async {
+          _lastAudioPositionMs = positionMs;
+          _lastAudioPositionController.add(positionMs);
+        },
+        failureMapper: (e) => PreferenceFailure('Failed to set last audio position', e),
+      );
+
+  @override
+  Stream<bool> getShowAudioPlayerStream() => _showAudioPlayerController.stream;
+
+  @override
+  Future<Result<bool>> getShowAudioPlayer() => Result.runCatching(
+        () async => _showAudioPlayer,
+        failureMapper: (e) => PreferenceFailure('Failed to get audio player visibility', e),
+      );
+
+  @override
+  Future<Result<void>> setShowAudioPlayer(bool show) => Result.runCatching(
+        () async {
+          _showAudioPlayer = show;
+          await _dao.saveShowAudioPlayer(show);
+          _showAudioPlayerController.add(show);
+        },
+        failureMapper: (e) => PreferenceFailure('Failed to set audio player visibility', e),
+      );
 
   // ========== Theme Preferences ==========
 
@@ -188,60 +308,98 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   Stream<ThemeConfig> getThemeConfigStream() => _themeConfigController.stream;
 
   @override
-  Future<ThemeConfig> getThemeConfig() async => _themeConfig;
+  Future<Result<ThemeConfig>> getThemeConfig() => Result.runCatching(
+        () async => _themeConfig,
+        failureMapper: (e) => PreferenceFailure('Failed to get theme configuration', e),
+      );
 
   @override
-  Future<void> setThemeMode(MushafThemeMode mode) async {
-    _themeConfig = ThemeConfig(
-      mode: mode,
-      colorScheme: _themeConfig.colorScheme,
-      useAmoled: _themeConfig.useAmoled,
-    );
-    _themeConfigController.add(_themeConfig);
-  }
+  Future<Result<void>> setThemeMode(MushafThemeMode mode) => Result.runCatching(
+        () async {
+          _themeConfig = ThemeConfig(
+            mode: mode,
+            colorScheme: _themeConfig.colorScheme,
+            useAmoled: _themeConfig.useAmoled,
+          );
+          await _dao.saveThemeConfig(_themeConfig);
+          _themeConfigController.add(_themeConfig);
+        },
+        failureMapper: (e) => PreferenceFailure('Failed to save theme mode', e),
+      );
 
   @override
-  Future<void> setColorScheme(MushafColorScheme scheme) async {
-    _themeConfig = ThemeConfig(
-      mode: _themeConfig.mode,
-      colorScheme: scheme,
-      useAmoled: _themeConfig.useAmoled,
-    );
-    _themeConfigController.add(_themeConfig);
-  }
+  Future<Result<void>> setColorScheme(MushafColorScheme scheme) =>
+      Result.runCatching(
+        () async {
+          _themeConfig = ThemeConfig(
+            mode: _themeConfig.mode,
+            colorScheme: scheme,
+            useAmoled: _themeConfig.useAmoled,
+          );
+          await _dao.saveThemeConfig(_themeConfig);
+          _themeConfigController.add(_themeConfig);
+        },
+        failureMapper: (e) => PreferenceFailure('Failed to save color scheme', e),
+      );
 
   @override
-  Future<void> setAmoledMode(bool enabled) async {
-    _themeConfig = ThemeConfig(
-      mode: _themeConfig.mode,
-      colorScheme: _themeConfig.colorScheme,
-      useAmoled: enabled,
-    );
-    _themeConfigController.add(_themeConfig);
-  }
+  Future<Result<void>> setAmoledMode(bool enabled) => Result.runCatching(
+        () async {
+          _themeConfig = ThemeConfig(
+            mode: _themeConfig.mode,
+            colorScheme: _themeConfig.colorScheme,
+            useAmoled: enabled,
+          );
+          await _dao.saveThemeConfig(_themeConfig);
+          _themeConfigController.add(_themeConfig);
+        },
+        failureMapper: (e) => PreferenceFailure('Failed to save AMOLED mode', e),
+      );
 
   @override
-  Future<void> updateThemeConfig(ThemeConfig config) async {
-    _themeConfig = config;
-    _themeConfigController.add(config);
-  }
+  Future<Result<void>> updateThemeConfig(ThemeConfig config) => Result.runCatching(
+        () async {
+          _themeConfig = config;
+          await _dao.saveThemeConfig(config);
+          _themeConfigController.add(config);
+        },
+        failureMapper: (e) => PreferenceFailure('Failed to update theme configuration', e),
+      );
 
   // ========== General ==========
 
   @override
-  Future<void> clearAll() async {
-    _mushafType = MushafType.hafs1441;
-    _currentPage = 1;
-    _lastReadChapter = null;
-    _lastReadVerse = null;
-    _fontSizeMultiplier = 1.0;
-    _showTranslation = false;
-    _selectedReciterId = 1;
-    _playbackSpeed = 1.0;
-    _repeatMode = false;
-    _lastAudioChapter = null;
-    _lastAudioVerse = null;
-    _lastAudioPositionMs = 0;
-    _themeConfig = const ThemeConfig();
-  }
+  Future<Result<void>> clearAll() => Result.runCatching(
+        () async {
+          await _dao.clearAll();
+          _mushafType = MushafType.hafs1441;
+          _currentPage = 1;
+          _lastReadChapter = null;
+          _lastReadVerse = null;
+          _fontSizeMultiplier = 1.0;
+          _showTranslation = false;
+          _selectedReciterId = 1;
+          _playbackSpeed = 1.0;
+          _repeatMode = false;
+          _lastAudioChapter = null;
+          _lastAudioVerse = null;
+          _lastAudioPositionMs = 0;
+          _showAudioPlayer = true;
+          _themeConfig = const ThemeConfig();
+
+          // Emit reset values
+          _mushafTypeController.add(_mushafType);
+          _currentPageController.add(_currentPage);
+          _lastReadChapterController.add(_lastReadChapter);
+          _lastReadVerseController.add(_lastReadVerse);
+          _fontSizeController.add(_fontSizeMultiplier);
+          _showTranslationController.add(_showTranslation);
+          _reciterIdController.add(_selectedReciterId);
+          _playbackSpeedController.add(_playbackSpeed);
+          _repeatModeController.add(_repeatMode);
+          _themeConfigController.add(_themeConfig);
+          _showAudioPlayerController.add(_showAudioPlayer);
+        },
+        failureMapper: (e) => PreferenceFailure('Failed to clear preferences', e),
+      );
 }

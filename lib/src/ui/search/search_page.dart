@@ -134,25 +134,29 @@ class _SearchPageState extends State<SearchPage> {
   // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildFilterChips(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
+    final theme = Theme.of(context);
+    return Container(
+      height: 48,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
-          FilterChip(
+          _SearchFilterChip(
+            label: 'All',
             selected: _viewModel.searchType == SearchType.general,
-            label: const Text('All'),
             onSelected: (_) => _viewModel.setSearchType(SearchType.general),
           ),
           const SizedBox(width: 8),
-          FilterChip(
+          _SearchFilterChip(
+            label: 'Verses',
             selected: _viewModel.searchType == SearchType.verse,
-            label: const Text('Verses'),
             onSelected: (_) => _viewModel.setSearchType(SearchType.verse),
           ),
           const SizedBox(width: 8),
-          FilterChip(
+          _SearchFilterChip(
+            label: 'Chapters',
             selected: _viewModel.searchType == SearchType.chapter,
-            label: const Text('Chapters'),
             onSelected: (_) => _viewModel.setSearchType(SearchType.chapter),
           ),
         ],
@@ -196,13 +200,19 @@ class _SearchPageState extends State<SearchPage> {
       return _buildEmptyResultsView(context);
     }
 
-    // Search results
+    // Search results with animation
     if (_viewModel.hasSearched) {
-      return _buildSearchResults(context);
+      return AnimatedSwitcher(
+        duration: const Duration(milliseconds: 500),
+        child: _buildSearchResults(context),
+      );
     }
 
     // Initial state — search history (matching Android SearchHistoryView)
-    return _buildPreSearchContent(context);
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 500),
+      child: _buildPreSearchContent(context),
+    );
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -408,12 +418,13 @@ class _SearchPageState extends State<SearchPage> {
               ),
             ),
           ),
-          ..._viewModel.chapterResults.map(
-            (chapter) => _ChapterResultTile(
-              chapter: chapter,
+          ..._viewModel.chapterResults.indexed.map(
+            (item) => _ChapterResultTile(
+              index: item.$1,
+              chapter: item.$2,
               onTap: () {
                 final page = QuranDataProvider.instance.getPageForChapter(
-                  chapter.number,
+                  item.$2.number,
                 );
                 widget.onChapterSelected?.call(page);
               },
@@ -433,10 +444,12 @@ class _SearchPageState extends State<SearchPage> {
               ),
             ),
           ),
-          ..._viewModel.verseResults.map(
-            (verse) => _VerseResultTile(
-              verse: verse,
-              onTap: () => widget.onVerseSelected?.call(verse.pageNumber),
+          ..._viewModel.verseResults.indexed.map(
+            (item) => _VerseResultTile(
+              index: item.$1,
+              verse: item.$2,
+              query: _viewModel.query,
+              onTap: () => widget.onVerseSelected?.call(item.$2.pageNumber),
             ),
           ),
           if (hasBookmarks) const SizedBox(height: 16),
@@ -492,6 +505,36 @@ class _RecentSearchTile extends StatelessWidget {
   }
 }
 
+    );
+  }
+}
+
+/// Generic fade-in animation for list items
+class _FadeInItem extends StatelessWidget {
+  final Widget child;
+  final int index;
+
+  const _FadeInItem({required this.child, required this.index});
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: Duration(milliseconds: 400 + (index % 10 * 50)),
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 20 * (1 - value)),
+            child: child,
+          ),
+        );
+      },
+      child: child,
+    );
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Chapter Result Tile (matching Android ChapterResultItem)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -499,40 +542,58 @@ class _RecentSearchTile extends StatelessWidget {
 class _ChapterResultTile extends StatelessWidget {
   final Chapter chapter;
   final VoidCallback onTap;
+  final int index;
 
-  const _ChapterResultTile({required this.chapter, required this.onTap});
+  const _ChapterResultTile({
+    required this.chapter,
+    required this.onTap,
+    this.index = 0,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      color: theme.colorScheme.surfaceContainerHighest,
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: theme.colorScheme.primary,
-          radius: 20,
-          child: Text(
-            '${chapter.number}',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onPrimary,
+    return _FadeInItem(
+      index: index,
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+        ),
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: theme.colorScheme.primaryContainer,
+            radius: 20,
+            child: Text(
+              '${chapter.number}',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.primary,
+              ),
             ),
           ),
-        ),
-        title: Text(
-          chapter.arabicTitle,
-          textDirection: TextDirection.rtl,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(
-          '${chapter.englishTitle} · ${chapter.versesCount} verses · ${chapter.isMeccan ? "Meccan" : "Medinan"}',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+          title: Text(
+            chapter.arabicTitle,
+            textDirection: TextDirection.rtl,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
+          subtitle: Text(
+            '${chapter.englishTitle} · ${chapter.versesCount} verses',
+            style: theme.textTheme.bodySmall,
+          ),
+          trailing: Icon(
+            Icons.arrow_forward_ios_rounded,
+            size: 14,
+            color: theme.colorScheme.primary.withValues(alpha: 0.5),
+          ),
+          onTap: onTap,
         ),
-        onTap: onTap,
       ),
     );
   }
@@ -544,9 +605,16 @@ class _ChapterResultTile extends StatelessWidget {
 
 class _VerseResultTile extends StatelessWidget {
   final Verse verse;
+  final String query;
   final VoidCallback onTap;
+  final int index;
 
-  const _VerseResultTile({required this.verse, required this.onTap});
+  const _VerseResultTile({
+    required this.verse,
+    required this.query,
+    required this.onTap,
+    this.index = 0,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -555,52 +623,174 @@ class _VerseResultTile extends StatelessWidget {
       verse.chapterNumber,
     );
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      color: theme.colorScheme.surfaceContainerHighest,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: InkWell(
-          onTap: onTap,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Verse reference row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${chapterData.arabicTitle} ${verse.chapterNumber}:${verse.number}',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w600,
+    return _FadeInItem(
+      index: index,
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: InkWell(
+            onTap: onTap,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Verse reference row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${chapterData.arabicTitle} ${verse.chapterNumber}:${verse.number}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onPrimaryContainer,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  ),
-                  Text(
-                    'Page ${verse.pageNumber}',
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                    Text(
+                      'Page ${verse.pageNumber}',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              // Verse text
-              Text(
-                verse.text.isNotEmpty ? verse.text : verse.textWithoutTashkil,
-                textDirection: TextDirection.rtl,
-                style: const TextStyle(
-                  fontFamily: 'serif',
-                  fontSize: 18,
-                  height: 1.8,
+                  ],
                 ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.end,
+                const SizedBox(height: 12),
+                // Verse text with highlighting
+              _HighlightedArabicText(
+                fullText: verse.text.isNotEmpty ? verse.text : verse.textWithoutTashkil,
+                query: query,
+                theme: theme,
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _HighlightedArabicText extends StatelessWidget {
+  final String fullText;
+  final String query;
+  final ThemeData theme;
+
+  const _HighlightedArabicText({
+    required this.fullText,
+    required this.query,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (query.isEmpty) {
+      return Text(
+        fullText,
+        textDirection: TextDirection.rtl,
+        style: const TextStyle(
+          fontFamily: 'serif',
+          fontSize: 18,
+          height: 1.8,
+        ),
+        maxLines: 3,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.end,
+      );
+    }
+
+    final queryLower = query.toLowerCase();
+    final textLower = fullText.toLowerCase();
+    final spans = <TextSpan>[];
+    int start = 0;
+
+    while (true) {
+      final index = textLower.indexOf(queryLower, start);
+      if (index == -1) {
+        spans.add(TextSpan(text: fullText.substring(start)));
+        break;
+      }
+
+      if (index > start) {
+        spans.add(TextSpan(text: fullText.substring(start, index)));
+      }
+
+      spans.add(
+        TextSpan(
+          text: fullText.substring(index, index + query.length),
+          style: TextStyle(
+            color: theme.colorScheme.primary,
+            backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.15),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      );
+
+      start = index + query.length;
+    }
+
+    return Text.rich(
+      TextSpan(children: spans),
+      textDirection: TextDirection.rtl,
+      style: const TextStyle(
+        fontFamily: 'serif',
+        fontSize: 18,
+        height: 1.8,
+      ),
+      maxLines: 3,
+      overflow: TextOverflow.ellipsis,
+      textAlign: TextAlign.end,
+    );
+  }
+}
+
+class _SearchFilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final ValueChanged<bool> onSelected;
+
+  const _SearchFilterChip({
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: FilterChip(
+        selected: selected,
+        label: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : theme.colorScheme.onSurface,
+            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.5,
+        ),
+        selectedColor: theme.colorScheme.primary,
+        checkmarkColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        onSelected: onSelected,
       ),
     );
   }

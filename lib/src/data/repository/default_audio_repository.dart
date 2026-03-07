@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import '../../domain/error/failure.dart';
 import '../../domain/models/audio_player_state.dart';
 import '../../domain/models/reciter_info.dart';
 import '../../domain/models/reciter_timing.dart';
+import '../../domain/models/result.dart';
 import '../../domain/repository/audio_repository.dart';
 import '../audio/ayah_timing_service.dart';
 import '../audio/flutter_audio_player.dart';
@@ -21,30 +23,47 @@ class DefaultAudioRepository implements AudioRepository {
   );
 
   @override
-  Future<List<ReciterInfo>> getAllReciters() async =>
-      _reciterService.getAllReciters();
+  Future<Result<List<ReciterInfo>>> getAllReciters() async => Result.runCatching(
+        () => _reciterService.getAllReciters(),
+        failureMapper: (e) => DatabaseFailure('Failed to fetch reciters', e),
+      );
 
   @override
-  Future<ReciterInfo?> getReciterById(int reciterId) async =>
-      _reciterService.getReciterById(reciterId);
+  Future<Result<ReciterInfo?>> getReciterById(int reciterId) async =>
+      Result.runCatching(
+        () => _reciterService.getReciterById(reciterId),
+        failureMapper: (e) => DatabaseFailure('Failed to fetch reciter $reciterId', e),
+      );
 
   @override
-  Future<List<ReciterInfo>> searchReciters(
+  Future<Result<List<ReciterInfo>>> searchReciters(
     String query, {
     String languageCode = 'en',
-  }) async => _reciterService.searchReciters(query, languageCode: languageCode);
+  }) async =>
+      Result.runCatching(
+        () => _reciterService.searchReciters(query, languageCode: languageCode),
+        failureMapper: (e) => DatabaseFailure('Search failed for query: $query', e),
+      );
 
   @override
-  Future<List<ReciterInfo>> getHafsReciters() async =>
-      _reciterService.getHafsReciters();
+  Future<Result<List<ReciterInfo>>> getHafsReciters() async =>
+      Result.runCatching(
+        () => _reciterService.getHafsReciters(),
+        failureMapper: (e) => DatabaseFailure('Failed to fetch Hafs reciters', e),
+      );
 
   @override
-  Future<ReciterInfo> getDefaultReciter() async =>
-      _reciterService.getDefaultReciter();
+  Future<Result<ReciterInfo>> getDefaultReciter() async => Result.runCatching(
+        () => _reciterService.getDefaultReciter(),
+        failureMapper: (e) => DatabaseFailure('Failed to fetch default reciter', e),
+      );
 
   @override
-  void saveSelectedReciter(ReciterInfo reciter) =>
-      _reciterService.selectReciter(reciter);
+  Future<Result<void>> saveSelectedReciter(ReciterInfo reciter) async =>
+      Result.runCatching(
+        () async => _reciterService.selectReciter(reciter),
+        failureMapper: (e) => PreferenceFailure('Failed to save selected reciter', e),
+      );
 
   @override
   Stream<ReciterInfo?> getSelectedReciterStream() =>
@@ -66,19 +85,25 @@ class DefaultAudioRepository implements AudioRepository {
   }
 
   @override
-  void loadChapter(
+  Future<Result<void>> loadChapter(
     int chapterNumber,
     int reciterId, {
     bool autoPlay = false,
   }) async {
-    final reciter = await _reciterService.getReciterById(reciterId);
-    if (reciter != null) {
-      await _audioPlayer.loadChapter(
-        chapterNumber,
-        reciter,
-        autoPlay: autoPlay,
-      );
-    }
+    return Result.runCatching(
+      () async {
+        final reciter = await _reciterService.getReciterById(reciterId);
+        if (reciter == null) {
+          throw ValidationFailure('Reciter $reciterId not found');
+        }
+        await _audioPlayer.loadChapter(
+          chapterNumber,
+          reciter,
+          autoPlay: autoPlay,
+        );
+      },
+      failureMapper: (e) => e is Failure ? e : NetworkFailure('Failed to load chapter audio', e),
+    );
   }
 
   @override
@@ -103,11 +128,6 @@ class DefaultAudioRepository implements AudioRepository {
   @override
   bool isRepeatEnabled() => _audioPlayer.isRepeatMode();
 
-  // These synchronous getters might need an async await if audio_service is isolated,
-  // but just_audio within BaseAudioHandler holds synchronous state if in same isolate.
-  // For now, these are not strictly available synchronously from base handler, so we can stub
-  // or return default if we don't store them locally anymore. We'll return 0 for now since
-  // UI mostly relies on the Stream<AudioPlayerState>.
   @override
   int getCurrentPosition() => 0;
 
@@ -118,36 +138,50 @@ class DefaultAudioRepository implements AudioRepository {
   bool isCurrentlyPlaying() => false;
 
   @override
-  Future<AyahTiming?> getAyahTiming(
+  Future<Result<AyahTiming?>> getAyahTiming(
     int reciterId,
     int chapterNumber,
     int ayahNumber,
-  ) => _ayahTimingService.getAyahTiming(reciterId, chapterNumber, ayahNumber);
+  ) =>
+      Result.runCatching(
+        () => _ayahTimingService.getAyahTiming(reciterId, chapterNumber, ayahNumber),
+        failureMapper: (e) =>
+            DatabaseFailure('Failed to fetch ayah timing for $reciterId', e),
+      );
 
   @override
-  Future<int?> getCurrentVerse(
+  Future<Result<int?>> getCurrentVerse(
     int reciterId,
     int chapterNumber,
     int currentTimeMs,
-  ) => _ayahTimingService.getCurrentVerse(
-    reciterId,
-    chapterNumber,
-    currentTimeMs,
-  );
+  ) =>
+      Result.runCatching(
+        () => _ayahTimingService.getCurrentVerse(
+            reciterId, chapterNumber, currentTimeMs),
+        failureMapper: (e) =>
+            DatabaseFailure('Failed to determine current verse', e),
+      );
 
   @override
-  Future<List<AyahTiming>> getChapterTimings(
+  Future<Result<List<AyahTiming>>> getChapterTimings(
     int reciterId,
     int chapterNumber,
-  ) => _ayahTimingService.getChapterTimings(reciterId, chapterNumber);
+  ) =>
+      Result.runCatching(
+        () => _ayahTimingService.getChapterTimings(reciterId, chapterNumber),
+        failureMapper: (e) =>
+            DatabaseFailure('Failed to fetch chapter timings for $reciterId', e),
+      );
 
   @override
   bool hasTimingForReciter(int reciterId) =>
       _ayahTimingService.hasTimingForReciter(reciterId);
 
   @override
-  Future<void> preloadTiming(int reciterId) =>
-      _ayahTimingService.preloadTiming(reciterId);
+  Future<Result<void>> preloadTiming(int reciterId) => Result.runCatching(
+        () => _ayahTimingService.preloadTiming(reciterId),
+        failureMapper: (e) => DatabaseFailure('Failed to preload timing data', e),
+      );
 
   @override
   void release() {
@@ -155,3 +189,4 @@ class DefaultAudioRepository implements AudioRepository {
     _reciterService.dispose();
   }
 }
+

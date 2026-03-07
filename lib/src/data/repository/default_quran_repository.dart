@@ -1,6 +1,8 @@
+import '../../domain/error/failure.dart';
 import '../../domain/models/cache_stats.dart';
 import '../../domain/models/part.dart';
 import '../../domain/models/quarter.dart';
+import '../../domain/models/result.dart';
 import '../../domain/repository/quran_repository.dart';
 import '../cache/chapters_data_cache.dart';
 import '../cache/quran_data_cache_service.dart';
@@ -20,50 +22,91 @@ class DefaultQuranRepository implements QuranRepository {
   );
 
   @override
-  Future<void> initialize() async {
-    await _databaseService.initialize();
-    _isInitialized = true;
+  Future<Result<void>> initialize() async {
+    return Result.runCatching(
+      () async {
+        await _databaseService.initialize();
+        _isInitialized = true;
+      },
+      failureMapper: (e) => DatabaseFailure('Failed to initialize database', e),
+    );
   }
 
   @override
   bool isInitialized() => _isInitialized;
 
   @override
-  Future<List<Part>> getAllParts() => _databaseService.fetchAllParts();
+  Future<Result<List<Part>>> getAllParts() => Result.runCatching(
+        () => _databaseService.fetchAllParts(),
+        failureMapper: (e) => DatabaseFailure('Failed to fetch all parts', e),
+      );
 
   @override
-  Future<Part?> getPart(int number) => _databaseService.getPart(number);
+  Future<Result<Part?>> getPart(int number) => Result.runCatching(
+        () => _databaseService.getPart(number),
+        failureMapper: (e) => DatabaseFailure('Failed to fetch part $number', e),
+      );
 
   @override
-  Future<Part?> getPartForPage(int pageNumber) =>
-      _databaseService.getPartForPage(pageNumber);
+  Future<Result<Part?>> getPartForPage(int pageNumber) => Result.runCatching(
+        () => _databaseService.getPartForPage(pageNumber),
+        failureMapper: (e) =>
+            DatabaseFailure('Failed to fetch part for page $pageNumber', e),
+      );
 
   @override
-  Future<Part?> getPartForVerse(int chapterNumber, int verseNumber) =>
-      _databaseService.getPartForVerse(chapterNumber, verseNumber);
+  Future<Result<Part?>> getPartForVerse(int chapterNumber, int verseNumber) =>
+      Result.runCatching(
+        () => _databaseService.getPartForVerse(chapterNumber, verseNumber),
+        failureMapper: (e) => DatabaseFailure(
+            'Failed to fetch part for verse $chapterNumber:$verseNumber', e),
+      );
 
   @override
-  Future<List<Quarter>> getAllQuarters() => _databaseService.fetchAllQuarters();
+  Future<Result<List<Quarter>>> getAllQuarters() => Result.runCatching(
+        () => _databaseService.fetchAllQuarters(),
+        failureMapper: (e) => DatabaseFailure('Failed to fetch all quarters', e),
+      );
 
   @override
-  Future<Quarter?> getQuarter(int hizbNumber, int fraction) =>
-      _databaseService.getQuarter(hizbNumber, fraction);
+  Future<Result<Quarter?>> getQuarter(int hizbNumber, int fraction) =>
+      Result.runCatching(
+        () => _databaseService.getQuarter(hizbNumber, fraction),
+        failureMapper: (e) => DatabaseFailure(
+            'Failed to fetch quarter for $hizbNumber (fraction $fraction)', e),
+      );
 
   @override
-  Future<Quarter?> getQuarterForPage(int pageNumber) =>
-      _databaseService.getQuarterForPage(pageNumber);
+  Future<Result<Quarter?>> getQuarterForPage(int pageNumber) =>
+      Result.runCatching(
+        () => _databaseService.getQuarterForPage(pageNumber),
+        failureMapper: (e) =>
+            DatabaseFailure('Failed to fetch quarter for page $pageNumber', e),
+      );
 
   @override
-  Future<Quarter?> getQuarterForVerse(int chapterNumber, int verseNumber) =>
-      _databaseService.getQuarterForVerse(chapterNumber, verseNumber);
+  Future<Result<Quarter?>> getQuarterForVerse(int chapterNumber, int verseNumber) =>
+      Result.runCatching(
+        () => _databaseService.getQuarterForVerse(chapterNumber, verseNumber),
+        failureMapper: (e) => DatabaseFailure(
+            'Failed to fetch quarter for verse $chapterNumber:$verseNumber', e),
+      );
 
   @override
-  Future<CacheStats> getCacheStats() async =>
-      _quranDataCacheService.getCacheStats();
+  Future<Result<CacheStats>> getCacheStats() => Result.runCatching(
+        () => _quranDataCacheService.getCacheStats(),
+        failureMapper: (e) => CacheFailure('Failed to fetch cache stats', e),
+      );
 
   @override
-  Future<void> clearAllCaches() async {
-    _chaptersDataCache.clear();
-    _quranDataCacheService.clearAllCache();
+  Future<Result<void>> clearAllCaches() async {
+    return Result.runCatching(
+      () async {
+        _chaptersDataCache.clear();
+        _quranDataCacheService.clearAllCache();
+      },
+      failureMapper: (e) => CacheFailure('Failed to clear caches', e),
+    );
   }
 }
+

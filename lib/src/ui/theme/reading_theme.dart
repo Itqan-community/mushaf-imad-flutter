@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Reading theme for Mushaf pages.
 /// Controls background color, text color, and other visual settings.
-enum ReadingTheme { light, dark, sepia, warmDark }
+enum ReadingTheme { light, dark, sepia, warmDark, amoled }
 
 /// Color presets for reading themes.
 class MushafColors {
@@ -93,6 +93,14 @@ class ReadingThemeData {
         surfaceColor: MushafColors.warmDarkSurface,
         textColor: MushafColors.warmDarkText,
         secondaryTextColor: MushafColors.warmDarkSecondaryText,
+        accentColor: MushafColors.primaryGold,
+        highlightColor: MushafColors.highlightBlue,
+      ),
+      ReadingTheme.amoled => const ReadingThemeData(
+        backgroundColor: MushafColors.amoledBackground,
+        surfaceColor: MushafColors.amoledSurface,
+        textColor: MushafColors.darkText,
+        secondaryTextColor: MushafColors.darkSecondaryText,
         accentColor: MushafColors.primaryGold,
         highlightColor: MushafColors.highlightBlue,
       ),
