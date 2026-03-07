@@ -5,6 +5,7 @@ import '../../di/core_module.dart';
 import '../../domain/repository/data_export_repository.dart';
 import '../../domain/repository/preferences_repository.dart';
 import '../theme/theme_picker_widget.dart';
+import 'import_strategy_dialog.dart';
 import 'settings_view_model.dart';
 
 /// Unified settings page combining theme, preferences, and data management.
@@ -237,7 +238,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _handleImport(BuildContext context) async {
     final controller = TextEditingController();
-    final result = await showDialog<String>(
+    final jsonInput = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Import Data'),
@@ -256,17 +257,38 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('Import'),
+            child: const Text('Next'),
           ),
         ],
       ),
     );
 
-    if (result == null || result.trim().isEmpty || !mounted) return;
+    if (jsonInput == null || jsonInput.trim().isEmpty || !mounted) return;
+
+    final strategy = await ImportStrategyDialog.show(context);
+    if (strategy == null || !mounted) return;
+
+    final mergeWithExisting = strategy == ImportStrategy.merge;
 
     try {
-      final importResult = await _viewModel.importData(result);
+      final importResult = await _viewModel.importData(
+        jsonInput,
+        mergeWithExisting: mergeWithExisting,
+      );
       if (!mounted) return;
+
+      if (importResult.errors.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Import completed with ${importResult.errors.length} error(s): '
+              '${importResult.errors.first}',
+            ),
+          ),
+        );
+        return;
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

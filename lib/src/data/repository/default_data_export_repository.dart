@@ -90,8 +90,52 @@ class DefaultDataExportRepository implements DataExportRepository {
     String json, {
     bool mergeWithExisting = true,
   }) async {
-    final data = jsonDecode(json) as Map<String, dynamic>;
-    final backup = UserDataBackup.fromJson(data);
+    final dynamic decoded;
+    try {
+      decoded = jsonDecode(json);
+    } on FormatException catch (e) {
+      return ImportResult(
+        bookmarksImported: 0,
+        lastReadPositionsImported: 0,
+        searchHistoryImported: 0,
+        preferencesImported: false,
+        errors: ['Invalid JSON format: ${e.message}'],
+      );
+    }
+
+    if (decoded is! Map<String, dynamic>) {
+      return ImportResult(
+        bookmarksImported: 0,
+        lastReadPositionsImported: 0,
+        searchHistoryImported: 0,
+        preferencesImported: false,
+        errors: ['Expected a JSON object but got ${decoded.runtimeType}'],
+      );
+    }
+
+    if (!decoded.containsKey('timestamp')) {
+      return ImportResult(
+        bookmarksImported: 0,
+        lastReadPositionsImported: 0,
+        searchHistoryImported: 0,
+        preferencesImported: false,
+        errors: ['Missing required field: timestamp. Not a valid backup file.'],
+      );
+    }
+
+    final UserDataBackup backup;
+    try {
+      backup = UserDataBackup.fromJson(decoded);
+    } catch (e) {
+      return ImportResult(
+        bookmarksImported: 0,
+        lastReadPositionsImported: 0,
+        searchHistoryImported: 0,
+        preferencesImported: false,
+        errors: ['Failed to parse backup data: $e'],
+      );
+    }
+
     return importUserData(backup, mergeWithExisting: mergeWithExisting);
   }
 
