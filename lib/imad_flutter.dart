@@ -96,6 +96,8 @@ export 'src/ui/mushaf/chapter_index_drawer.dart';
 export 'src/ui/bookmarks/bookmark_list_widget.dart';
 export 'src/ui/search/search_page.dart';
 export 'src/ui/settings/settings_page.dart';
+export 'src/ui/verses/verses_list_page.dart';
+export 'src/ui/verses/verses_list_view_model.dart';
 export 'src/ui/theme/theme_picker_widget.dart';
 export 'src/ui/theme/mushaf_theme_scope.dart';
 
