@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:imad_flutter/imad_flutter.dart';
 import 'package:imad_flutter/src/ui/mushaf/verse_fasel.dart';
@@ -6,20 +7,29 @@ import 'package:imad_flutter/src/data/quran/quran_data_provider.dart';
 
 void main() {
   group('VerseFasel widget', () {
-    Widget buildTestWidget(int number, {double size = 28}) {
+    Widget buildTestWidget(int number, {double? size}) {
       return MaterialApp(
         home: Scaffold(
           body: Center(
-            child: VerseFasel(number: number, size: size),
+            child: size != null
+                ? VerseFasel(number: number, size: size)
+                : VerseFasel(number: number),
           ),
         ),
+      );
+    }
+
+    Finder findVerseFaselSizedBox() {
+      return find.descendant(
+        of: find.byType(VerseFasel),
+        matching: find.byType(SizedBox),
       );
     }
 
     testWidgets('renders with default size', (tester) async {
       await tester.pumpWidget(buildTestWidget(1));
 
-      final sizedBox = tester.widget<SizedBox>(find.byType(SizedBox).first);
+      final sizedBox = tester.widget<SizedBox>(findVerseFaselSizedBox());
       expect(sizedBox.width, 28);
       expect(sizedBox.height, 28);
     });
@@ -27,7 +37,7 @@ void main() {
     testWidgets('renders with custom size', (tester) async {
       await tester.pumpWidget(buildTestWidget(5, size: 56));
 
-      final sizedBox = tester.widget<SizedBox>(find.byType(SizedBox).first);
+      final sizedBox = tester.widget<SizedBox>(findVerseFaselSizedBox());
       expect(sizedBox.width, 56);
       expect(sizedBox.height, 56);
     });
@@ -118,7 +128,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget(1));
 
       expect(find.byType(Stack), findsOneWidget);
-      // Stack should have 2 children: SvgPicture and Padding(Text)
+      expect(find.byType(SvgPicture), findsOneWidget);
       final stack = tester.widget<Stack>(find.byType(Stack));
       expect(stack.children.length, 2);
     });
