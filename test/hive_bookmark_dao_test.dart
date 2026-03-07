@@ -188,6 +188,12 @@ void main() {
       final result = await dao.getById('t1');
       expect(result!.tags, ['quran', 'tafsir']);
     });
+
+    test('should not throw for non-existent bookmark', () async {
+      await dao.updateTags('non-existent', ['tag']);
+      final result = await dao.getById('non-existent');
+      expect(result, isNull);
+    });
   });
 
   group('delete', () {

@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hive/hive.dart';
 import 'package:imad_flutter/imad_flutter.dart';
 import 'dart:io';
 
@@ -21,6 +22,8 @@ void main() {
 
   setUp(() async {
     await dao.deleteAll();
+    final positionBox = await Hive.openBox<Map>('last_read_positions');
+    await positionBox.clear();
   });
 
   ReadingHistory _createHistory({
