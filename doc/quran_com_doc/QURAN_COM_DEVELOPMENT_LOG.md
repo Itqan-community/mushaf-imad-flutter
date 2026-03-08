@@ -5,17 +5,28 @@ It is meant for both **reviewers** and **future contributors** to understand the
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Phase 0 – Setup & Baseline](#phase-0--setup--baseline)
-  - [0.1 – Repository setup and remotes](#01--repository-setup-and-remotes)
-  - [0.2 – Syncing main and creating the feature branch](#02--syncing-main-and-creating-the-feature-branch)
-  - [0.3 – Dependency resolution and static analysis](#03--dependency-resolution-and-static-analysis)
-  - [0.4 – Checklists and logging setup](#04--checklists-and-logging-setup)
-- [Next Phase – Phase 1: API Research & Credential Strategy](#next-phase--phase-1-api-research--credential-strategy)
-- [Phase 1 – API research & decisions](#phase-1--api-research--decisions)
-  - [Steps performed](#steps-performed)
-  - [Observations & answers](#observations--answers)
-  - [Next](#next)
+- [Quran.com Audio Feature – Development Log](#qurancom-audio-feature--development-log)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+  - [Phase 0 – Setup \& Baseline](#phase-0--setup--baseline)
+    - [0.1 – Repository setup and remotes](#01--repository-setup-and-remotes)
+    - [0.2 – Syncing main and creating the feature branch](#02--syncing-main-and-creating-the-feature-branch)
+    - [0.3 – Dependency resolution and static analysis](#03--dependency-resolution-and-static-analysis)
+    - [0.4 – Checklists and logging setup](#04--checklists-and-logging-setup)
+  - [Next Phase – Phase 1: API Research \& Credential Strategy](#next-phase--phase-1-api-research--credential-strategy)
+  - [Phase 1 – API research \& decisions](#phase-1--api-research--decisions)
+    - [Steps performed](#steps-performed)
+    - [Observations \& answers](#observations--answers)
+    - [Next](#next)
+  - [Phase 2 – Data Models \& API Client](#phase-2--data-models--api-client)
+    - [2.1 – Folder and dependencies](#21--folder-and-dependencies)
+    - [2.2 – Reciter Model \& Unit Tests](#22--reciter-model--unit-tests)
+    - [2.3 – Chapter Audio \& Verse Timing Models](#23--chapter-audio--verse-timing-models)
+    - [Next](#next-1)
+    - [2.4 – API Client \& Unit Tests](#24--api-client--unit-tests)
+    - [2.5 - Integration Testing and Debugging](#25---integration-testing-and-debugging)
+    - [API Client Integration test results:](#api-client-integration-test-results)
+    - [Phase 3 – Adapting to `MushafAudioDataSource` Architecture](#phase-3--adapting-to-mushafaudiodatasource-architecture)
 
 
 ---
@@ -303,7 +314,136 @@ matching these shapes.
   - Accurate serialization back to JSON format.
 
 ### Next
-With the data layer structure complete and verified, the next phase is to implement the `QuranComApiClient` (Phase 2.4). This will handle OAuth2 token management (client credentials flow) and the actual fetch logic.
+With the data layer structure complete and verified, the next phase is to implement the `QuranComApiClient` (Phase 2.4). This handles OAuth2 token management (client credentials flow) and the actual fetch logic.
+
+### 2.4 – API Client & Unit Tests
+**Date:** 4th Mar 2026
+
+- **Configuration:** Implemented `QuranComApiConfig` and `QuranComEnvironment` enum to handle prelive/production URL switching and credentials.
+- **OAuth2 Flow:** Implemented the client credentials flow with:
+  - Memory-based token caching.
+  - Automatic re-requesting ~30s before expiry.
+  - 401 Unauthorized interceptor that clears the token cache and retries the request once.
+- **Fetch Logic:** 
+  - `fetchReciters`: Returns a list of `QuranComReciter`.
+  - `fetchChapterAudio`: Returns `QuranComAudioFile` including timings and URL.
+- **Security:** Confirmed that credentials remain placeholders in the codebase, ensuring no sensitive data is committed.
+
+### 2.5 - Integration Testing and Debugging
+**Date:** 6th-8th Mar 2026
+
+- **Issue:** Encountered 404 (Not Found) and 522 (Service Error) during integration tests on real API.
+- **Root Cause & Resolution:**
+  1. **URL Concatenation Bug:** `QuranComApiConfig` was appending `/content/api/v4` to a base URL that *already* included it. Removed the redundant suffix.
+  2. **Token Fetch Stampede Prevention:** Implemented a `Future<String>? _tokenFetchFuture` lock in Dart to prevent multiple concurrent requests from triggering duplicate OAuth token fetches when the token is expired. This aligns with the `threading.Lock()` strategy used in the official Python examples.
+  3. **Timing Parsing:** Updated `QuranComVerseTiming` to safely handle variable-length segment arrays (e.g. `[wordIndex]` without start/end times) avoiding out-of-bounds `RangeError`.
+  4. **Logging:** Integrated the `MushafLogger` (`LogCategory.network`) directly into `QuranComApiClient`. This improved the visibility of network requests in the terminal compared to `dart:developer` and aligned the client with the app's established telemetry system.
+- **Test Coverage & Validation:**
+  - Validated deeply nested parsing (e.g., verifying exactly 7 timings for Fatiha).
+  - Fetched chapter audio both *with* and *without* the `segments` dimension to prove the parsing model dynamically adapts.
+  - Profiled the in-memory Token Caching mechanism using a `Stopwatch`, confirming that secondary requests bypass the ~1000ms+ OAuth roundtrip.
+  - Successfully intercepted deliberate 404 boundary errors (requesting Chapter 115).
+
+  #### API Client Integration test results:
+  ``` powershell
+  --- TEST: Fetch Reciters ---
+  Fetching real reciters list...
+  Mushaf[network] INFO: Fetching new OAuth2 token...
+  Mushaf[network] INFO: Successfully fetched and cached new token (expires in 59 minutes | 59 seconds).
+  Mushaf[network] INFO: Sending GET request to https://apis-prelive.quran.foundation/content/api/v4/resources/recitations
+  Mushaf[network] INFO: Successfully received response from resources/recitations
+  ✅ Successfully fetched 2 reciters.
+  ✅ First reciter: id=6, name="Mahmoud Khalil Al-Husary", style="null"
+  ✅ Translated name: "Mahmoud Khalil Al-Husary" (english)
+  ✅ Found Mishari al-Afasy: id=7, Name="Mishari Rashid al-`Afasy"
+  00:02 +1: QuranComApiClient Integration Test should successfully fetch chapter audio and timings (Fatiha) and deeply assert structure
+
+  --- TEST: Fetch Chapter Audio (Fatiha) ---
+  Fetching real audio and timings for Fatiha (reciter 7, chapter 1)...
+  Mushaf[network] INFO: Fetching new OAuth2 token...
+  Mushaf[network] INFO: Successfully fetched and cached new token (expires in 59 minutes | 59 seconds).
+  Mushaf[network] INFO: Sending GET request to https://apis-prelive.quran.foundation/content/api/v4/chapter_recitations/7/1?segments=true
+  Mushaf[network] INFO: Successfully received response from chapter_recitations/7/1?segments=true
+  ✅ Audio URL: https://download.quranicaudio.com/qdc/mishari_al_afasy/murattal/1.mp3
+  ✅ Format: mp3, Size: 839808.0 KB
+  ✅ Timestamps count: 7 (Verified exactly 7 for Fatiha)
+  ✅ First verse [1:1]: From 0ms to 6090ms
+  ✅ First verse has 4 word segments.
+    -> Word 1: 0ms - 580ms
+  00:03 +2: QuranComApiClient Integration Test should successfully fetch chapter audio without segments
+
+  --- TEST: Fetch Chapter Audio Without Segments ---
+  Fetching Husary (reciter 6) for Fatiha (chapter 1) with segments=false...
+  Mushaf[network] INFO: Fetching new OAuth2 token...
+  Mushaf[network] INFO: Successfully fetched and cached new token (expires in 59 minutes | 59 seconds).
+  Mushaf[network] INFO: Sending GET request to https://apis-prelive.quran.foundation/content/api/v4/chapter_recitations/6/1?segments=false
+  Mushaf[network] INFO: Successfully received response from chapter_recitations/6/1?segments=false
+  00:03 +3: QuranComApiClient Integration Test should fail gracefully when requesting an invalid chapter (e.g., 115)
+
+  --- TEST: Edge Case - Invalid Chapter ---
+  Fetching audio for non-existent chapter 115...
+  Mushaf[network] INFO: Fetching new OAuth2 token...
+  Mushaf[network] INFO: Successfully fetched and cached new token (expires in 59 minutes | 59 seconds).
+  Mushaf[network] INFO: Sending GET request to https://apis-prelive.quran.foundation/content/api/v4/chapter_recitations/7/115?segments=true
+  Mushaf[network] ERROR: Failed to get data from Quran.com API: status 404 , error {"details":{"status":404,"error":"Surah number or slug is invalid. Please select valid s✅ Successfully caught expected error for invalid chapter:
+  ccess":false}
+  00:04 +4: QuranComApiClient Integration Test should handle token caching and 401 recovery on real API
+
+  --- TEST: Sequential Calls (Caching) ---
+  Executing Call 1...
+  Mushaf[network] INFO: Fetching new OAuth2 token...
+  Mushaf[network] INFO: Successfully fetched and cached new token (expires in 59 minutes | 59 seconds).
+  Mushaf[network] INFO: Sending GET request to https://apis-prelive.quran.foundation/content/api/v4/resources/recitations
+  Mushaf[network] INFO: Successfully received response from resources/recitations
+  ✅ Call 1 completed in 687 ms
+  Executing Call 2 (Should be faster, using cached token)...
+  Mushaf[network] INFO: Sending GET request to https://apis-prelive.quran.foundation/content/api/v4/resources/recitations
+  Mushaf[network] INFO: Successfully received response from resources/recitations
+  ✅ Call 2 completed in 90 ms
+  Call 1 time: 687 ms, Call 2 time: 90 ms
+  Faster by 597 ms (Expected due to token caching and no re-authentication)
+  ✅ Sequential calls successful.
+  00:05 +5: All tests passed!
+  ```
+
+---
+
+
+### Phase 3 – Adapting to `MushafAudioDataSource` Architecture
+**Date:** 4th Mar 2026
+
+**Maintainer Feedback & Architecture Update:**
+The maintainer confirmed the use of **Dart Named Records** for `QuranComVerseTiming` segments and approved the extension of `MushafAudioDataSource` with `fetchChapterTiming`.
+
+**Current Status:**
+The design for the API client and the interface extension strategy is ready. The next steps involve the manual implementation of these components as per the project requirements.
+
+**Next Steps:**
+- Formulate the `QuranComDataSource` implementation.
+- Refactor `AyahTimingService` to handle lazy timing loads.
+
+**The `MushafAudioDataSource` Protocol:**
+```dart
+abstract class MushafAudioDataSource {
+  Future<List<ReciterInfo>> fetchAllReciters();
+  Future<ReciterTiming?> fetchReciterTiming(int reciterId);
+  Future<String?> fetchChapterAudioUrl(int reciterId, int chapterNumber);
+}
+```
+
+**Architectural Resolution:**
+There is a fundamental difference in how Quran.com provides audio timings compared to the built-in/CMS sources:
+- **CMS/Built-in:** All timings for all 114 chapters for a reciter are bundled in a single JSON file.
+- **Quran.com:** Timings are fetched *per chapter*, dynamically, alongside the audio URL (`/chapter_recitations/{reciter_id}/{chapter_number}`).
+
+If we strictly implement `fetchReciterTiming(int reciterId)` by fetching all 114 chapters from Quran.com, it will trigger 114 separate API requests, causing extreme latency and likely hitting rate limits.
+
+**Maintainer Decision & Solution:**
+1. Keep the `QuranComApiClient` untouched; it successfully maps to the API endpoints.
+2. Build `QuranComDataSource implements MushafAudioDataSource`.
+3. In `fetchChapterAudioUrl(reciterId, chapterNumber)`: Call the API. We get *both* the URL and the timings for that chapter. We will cache the timings in-memory if needed.
+4. **Interface Extension**: The maintainers approved extending `MushafAudioDataSource` with a `fetchChapterTiming(reciterId, chapterNumber)` method. This elegantly prevents the 114-request issue while preserving the plug-and-play architecture.
+5. In Phase 3, we will refactor `AyahTimingService` to gracefully support lazy timing loads using this new method.
 
 
 

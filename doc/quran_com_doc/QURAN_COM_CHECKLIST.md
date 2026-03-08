@@ -160,134 +160,81 @@ Each checkbox is a small, focused step that can usually be its own commit.
 
 ### 2.4 – QuranComApiClient
 
-- [ ] **Config object**
-  - [ ] Add `QuranComApiConfig` with `baseUrl`, `clientId`, `authToken`, `enableSegments`.
-- [ ] **Client implementation**
-  - [ ] Create `qurancom_api_client.dart`.
-  - [ ] Inject `http.Client` in the constructor.
-  - [ ] Implement `Future<List<QuranComReciter>> fetchReciters(...)`.
-  - [ ] Implement `Future<QuranComAudioFile> fetchChapterAudio(...)`.
-  - [ ] Handle non-200 responses with clear exceptions.
-- [ ] **Client tests**
-  - [ ] Add `test/qurancom_api_client_test.dart`.
-  - [ ] Use mocked `http.Client` to test success and error paths.
-- [ ] **Dev log**
-  - [ ] Add `## Phase 2 – Models & API client` describing main decisions and test results.
-- [ ] **Commit**
-  - [ ] Commit message: `feat(qurancom): implement api client and tests`.
+- [x] **Config object**
+  - [x] Add `QuranComApiConfig` with `clientId`, `clientSecret`, and `environment`.
+- [x] **OAuth2 Token Generation & Caching**
+  - [x] Implement token retrieval using client credentials flow.
+  - [x] Cache token in memory with expiry handling.
+- [x] **Client implementation**
+  - [x] Create `qurancom_api_client.dart`.
+  - [x] Implement `fetchReciters`.
+  - [x] Implement `fetchChapterAudio`.
+  - [x] Add 401 Unauthorized retry logic.
+- [x] **Client tests**
+  - [x] Add unit tests for `QuranComApiClient`.
+  - [x] Add integration tests for real-world functionality.
+- [x] **Dev log**
+  - [x] Add `## Phase 2.4 – API client details` and debugging logs.
+- [x] **Commit**
+  - [x] Commit message: `feat(qurancom): implement api client with oauth2 token management`.
 
 ---
 
-## Phase 3 – Providers (Reciters + Timings)
+## Phase 3 – Data Source Integration (MushafAudioDataSource)
 
-### 3.1 – QuranComReciterProvider
+### 3.1 – QuranComDataSource Implementation
 
-- [ ] **Provider creation**
-  - [ ] Create `qurancom_reciter_provider.dart` and inject `QuranComApiClient`.
-  - [ ] Add internal caches for all reciters and by-id lookup.
-- [ ] **Mapping to `ReciterInfo`**
-  - [ ] Map `QuranComReciter` → existing `ReciterInfo` (English/Arabic names, style, etc.).
-- [ ] **Public methods**
-  - [ ] `getAllReciters()`
-  - [ ] `getReciterById(int id)`
-  - [ ] `searchReciters(String query, {String languageCode = 'en'})`
-  - [ ] `getHafsReciters()` (or similar)
-  - [ ] `getDefaultReciter()`
-  - [ ] `clearCache()`
-- [ ] **Provider tests**
-  - [ ] Add `test/qurancom_reciter_provider_test.dart`.
-  - [ ] Verify caching and search behaviour with a mocked API client.
+- [ ] **Create data source class**
+  - [ ] Create `qurancom_data_source.dart` implementing `MushafAudioDataSource`.
+  - [ ] Inject `QuranComApiClient` into its constructor.
+- [ ] **Implement `fetchAllReciters`**
+- [ ] **Implement `fetchChapterAudioUrl`**
+- [ ] **Implement `fetchChapterTiming`**
+- [ ] **Recorded in dev log**
+- [ ] **Implement `fetchAllReciters`**
+  - [ ] Call `apiClient.fetchReciters()`.
+  - [ ] Map `QuranComReciter` to domain `ReciterInfo`.
+  - [ ] Memoize/cache the result to prevent duplicate calls.
+- [ ] **Implement `fetchChapterAudioUrl`**
+  - [ ] Call `apiClient.fetchChapterAudio(reciterId, chapterNumber)`.
+  - [ ] Return the audio `url`.
+  - [ ] *Crucial:* In-memory cache the `timestamps` returned by this call so they can be provided to the player.
+- [x] **Address `fetchReciterTiming` architecture mismatch**
+  - [x] Since Quran.com provides timings per-chapter and *not* per-reciter, discuss with maintainer (@ma9ni / @hassaanalansary).
+  - [x] **Resolution:** Maintainer agreed to extend the interface for a "common denominator".
+- [ ] **Modify `MushafAudioDataSource` Interface**
+  - [ ] Add `Future<ChapterTiming?> fetchChapterTiming(int reciterId, int chapterNumber)` to the abstract class.
+- [ ] **Refactor `AyahTimingService`**
+  - [ ] Update `loadTimingData` to support lazily fetching from `fetchChapterTiming` if the bulk `fetchReciterTiming` returns null.
+- [ ] **Implement `QuranComDataSource`**
+  - [ ] Implement `fetchChapterTiming` by calling `apiClient.fetchChapterAudio`.
+- [ ] **Tests**
+  - [ ] Add `test/src/data/audio/quran_com/qurancom_data_source_test.dart`.
+  - [ ] Test the mapping and caching logic.
 - [ ] **Commit**
-  - [ ] Commit message: `feat(qurancom): add reciter provider and tests`.
-
-### 3.2 – QuranComTimingService
-
-- [ ] **Service creation**
-  - [ ] Create `qurancom_timing_service.dart` and inject `QuranComApiClient`.
-  - [ ] Cache timings by `"reciterId:chapterNumber"`.
-- [ ] **Conversion logic**
-  - [ ] Convert `QuranComAudioFile.timings` → `ReciterTiming` / `AyahTiming`.
-- [ ] **Public methods**
-  - [ ] `loadChapterTiming(reciterId, chapterNumber)`
-  - [ ] `getAyahTiming(reciterId, chapterNumber, ayahNumber)`
-  - [ ] `getChapterTimings(reciterId, chapterNumber)`
-  - [ ] `hasTimingForReciter(reciterId)`
-  - [ ] `preloadTiming(reciterId)` (optional)
-  - [ ] `clearCache()`
-- [ ] **Timing tests**
-  - [ ] Add `test/qurancom_timing_service_test.dart`.
-  - [ ] Test caching, basic timing conversion, and edge cases.
-- [ ] **Dev log**
-  - [ ] Add `## Phase 3 – Providers` with main design notes.
-- [ ] **Commit**
-  - [ ] Commit message: `feat(qurancom): add timing service and tests`.
+  - [ ] Commit message: `feat(qurancom): implement MushafAudioDataSource for qurancom`.
 
 ---
 
-## Phase 4 – QuranComAudioRepository & Player Integration
+## Phase 4 – Configuration & UI Initialization
 
-### 4.1 – Repository implementation
+### 4.1 – Enums & Config
 
-- [ ] **Create repository**
-  - [ ] Add `lib/src/data/repository/qurancom_audio_repository.dart`.
-  - [ ] Implement `AudioRepository` using:
-    - [ ] `QuranComReciterProvider` for reciters.
-    - [ ] `QuranComTimingService` for timings.
-    - [ ] `FlutterAudioPlayer` + `ReciterService` for playback and selection.
-
-### 4.2 – Player URL integration
-
-- [ ] **Player signature**
-  - [ ] Update `FlutterAudioPlayer.loadChapter` to accept an optional `audioUrl`.
-  - [ ] Use API URL when provided, fall back to existing URL logic otherwise.
-- [ ] **Use API URL**
-  - [ ] In `QuranComAudioRepository.loadChapter`, fetch audio via API and pass URL to player.
-
-### 4.3 – Verse tracking
-
-- [ ] **Current verse calculation**
-  - [ ] Implement `getCurrentVerse(reciterId, chapterNumber, currentTimeMs)` using timings.
-- [ ] **Player state stream**
-  - [ ] In `getPlayerStateStream`, enrich player state with current verse using timing data.
-
-- [ ] **Repository tests**
-  - [ ] Add tests (using fakes/mocks) for:
-    - [ ] Reciter retrieval.
-    - [ ] Chapter loading with correct URL.
-    - [ ] Current verse calculation.
-- [ ] **Dev log**
-  - [ ] Add `## Phase 4 – Repository & player integration`.
+- [ ] **Update MushafAudioSource enum**
+  - [ ] Add `quranCom` to the `MushafAudioSource` enum (if not added by PR #24).
+- [ ] **QuranComAudioSourceConfig**
+  - [ ] Build `QuranComAudioSourceConfig` (similar to `CmsAudioSourceConfig`) holding environment URLs and Client credentials.
 - [ ] **Commit**
-  - [ ] Commit message: `feat(qurancom): add audio repository and integrate player`.
+  - [ ] Commit message: `feat(qurancom): add config and enum support`.
 
----
-
-## Phase 5 – Configuration & DI (initialize / AudioSource)
-
-### 5.1 – AudioSource enum
-
-- [ ] **Create enum**
-  - [ ] Add `lib/src/domain/models/audio_source.dart` with `local` and `qurancom`.
-- [ ] **Commit**
-  - [ ] Commit message: `feat(audio): add AudioSource enum`.
-
-### 5.2 – Library initialization
+### 4.2 – Initialization Wiring
 
 - [ ] **Extend entrypoint**
-  - [ ] In the main library file (e.g. `imad_flutter.dart`), add/extend an `initialize` function with:
-    - [ ] `AudioSource audioSource = AudioSource.local`
-    - [ ] `AudioRepository? audioRepository`
-    - [ ] `QuranComApiConfig? quranComConfig`
-- [ ] **DI logic**
-  - [ ] If `audioRepository` is provided → register it directly.
-  - [ ] Else if `audioSource == AudioSource.qurancom` → register Quran.com services/repository.
-  - [ ] Else → register existing local repository configuration.
-- [ ] **Backward compatibility**
-  - [ ] Confirm existing users (who don’t pass audioSource) still get local behaviour.
-- [ ] **Dev log**
-  - [ ] Add `## Phase 5 – Initialization & DI`.
+  - [ ] Within the core initialization flow, intercept when `MushafAudioSource.quranCom` is chosen.
+  - [ ] Instantiate `QuranComApiClient`.
+  - [ ] Provide `QuranComDataSource` to whichever orchestrator/repository consumes `MushafAudioDataSource`.
 - [ ] **Commit**
-  - [ ] Commit message: `feat(audio): wire initialization for local and qurancom sources`.
+  - [ ] Commit message: `feat(audio): wire qurancom data source into library initialization`.
 
 ---
 
