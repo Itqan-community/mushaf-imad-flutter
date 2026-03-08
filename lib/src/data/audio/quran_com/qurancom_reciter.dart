@@ -81,4 +81,6 @@ class QuranComRecitationsResponse {
   Map<String, dynamic> toJson() => {
     'recitations': recitations.map((e) => e.toJson()).toList(),
   };
+
+  List<QuranComReciter> get reciters => recitations;
 }
