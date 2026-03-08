@@ -248,6 +248,12 @@ class MushafPageViewState extends State<MushafPageView> {
                                 : key;
                           });
                         },
+                        onVerseLongPress: (chapter, verse) {
+                          final key = chapter * 1000 + verse;
+                          setState(() {
+                            _selectedVerseKey = key;
+                          });
+                        },
                       );
                     },
                   ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../data/quran/quran_data_provider.dart';
 import '../../data/quran/verse_data_provider.dart';
@@ -30,6 +31,7 @@ class QuranLineImage extends StatelessWidget {
   /// contrasts against dark backgrounds (uses BlendMode.srcIn).
   final Color? textColor;
   final void Function(double tapRatio)? onTapUpExact;
+  final void Function(double tapRatio)? onLongPressUpExact;
 
   /// Verse markers that end on this line (for rendering VerseFasel).
   final List<PageVerseData> markers;
@@ -46,6 +48,7 @@ class QuranLineImage extends StatelessWidget {
     this.selectionHighlights = const [],
     this.onTap,
     this.onTapUpExact,
+    this.onLongPressUpExact,
     this.markers = const [],
     this.highlightColor,
     this.textColor,
@@ -74,6 +77,16 @@ class QuranLineImage extends StatelessWidget {
         // Need to define onTap so this GestureDetector wins the gesture arena
         // against the parent MushafPageView's onTap (which toggles controls).
       },
+      onLongPressStart: onLongPressUpExact != null
+          ? (details) {
+              HapticFeedback.mediumImpact();
+              final box = context.findRenderObject() as RenderBox;
+              final localPosition =
+                  box.globalToLocal(details.globalPosition);
+              final tapRatio = localPosition.dx / box.size.width;
+              onLongPressUpExact!(tapRatio);
+            }
+          : null,
       child: AspectRatio(
         aspectRatio: _aspectRatio,
         child: LayoutBuilder(

@@ -23,6 +23,9 @@ class QuranPageWidget extends StatefulWidget {
   /// Called when a verse is tapped. Provides (chapterNumber, verseNumber).
   final void Function(int chapterNumber, int verseNumber)? onVerseTap;
 
+  /// Called when a verse is long-pressed. Provides (chapterNumber, verseNumber).
+  final void Function(int chapterNumber, int verseNumber)? onVerseLongPress;
+
   /// Reading theme data for colors. Defaults to light theme.
   final ReadingThemeData? themeData;
 
@@ -33,6 +36,7 @@ class QuranPageWidget extends StatefulWidget {
     this.audioVerseKey,
     this.audioHighlightsColor,
     this.onVerseTap,
+    this.onVerseLongPress,
     this.themeData,
   });
 
@@ -201,6 +205,36 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
                           }
                           widget.onVerseTap!(target.chapter, target.number);
                         },
+                        onLongPressUpExact: widget.onVerseLongPress != null
+                            ? (tapRatio) {
+                                if (versesOnLine.isEmpty) return;
+
+                                PageVerseData? target;
+
+                                for (final verse in versesOnLine) {
+                                  final hList = verse.highlights1441.where(
+                                    (h) => h.line == line,
+                                  );
+                                  for (final h in hList) {
+                                    if (tapRatio >= h.left &&
+                                        tapRatio <= h.right) {
+                                      target = verse;
+                                      break;
+                                    }
+                                  }
+                                  if (target != null) break;
+                                }
+
+                                target ??= markers.isNotEmpty
+                                    ? markers.last
+                                    : versesOnLine.last;
+
+                                widget.onVerseLongPress!(
+                                  target.chapter,
+                                  target.number,
+                                );
+                              }
+                            : null,
                       ),
                     );
                   }),
