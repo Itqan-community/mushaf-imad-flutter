@@ -37,9 +37,9 @@ class VerseFasel extends StatelessWidget {
               style: TextStyle(
                 fontSize: size * 0.45,
                 fontWeight: FontWeight.bold,
-                color: Colors.black, // Android uses pure Color.Black
-                fontFamily:
-                    'QuranNumbers', // Using the custom QuranNumbers font requested
+                color: Colors.black,
+                fontFamily: 'QuranNumbers',
+                package: 'imad_flutter',
                 height: 1.0,
               ),
             ),
