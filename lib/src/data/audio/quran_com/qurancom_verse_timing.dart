@@ -38,11 +38,12 @@ class QuranComVerseTiming {
           // Where list.map is more readable , I chose for loop because it is more efficient
           ? [
               for (final segment in json['segments'])
-                (
-                  wordIndex: segment[0] as int,
-                  startMs: segment[1] as int,
-                  endMs: segment[2] as int,
-                ),
+                if (segment is List && segment.isNotEmpty)
+                  (
+                    wordIndex: segment[0] as int,
+                    startMs: segment.length > 1 ? segment[1] as int : 0,
+                    endMs: segment.length > 2 ? segment[2] as int : 0,
+                  ),
             ]
           : null,
     );
