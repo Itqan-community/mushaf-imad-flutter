@@ -165,11 +165,7 @@ class QuranComApiClient {
     final token = await _getValidAccessToken();
     final url = Uri.parse('${_config.contentApiBaseUrl}/$endpointPath');
 
-    final headers = {
-      'x-auth-token': token,
-      'x-client-id': _config.clientId,
-      'x-client-secret': _config.clientSecret,
-    };
+    final headers = {'x-auth-token': token, 'x-client-id': _config.clientId};
 
     _logger.info('Sending GET request to $url', category: LogCategory.network);
     var response = await _httpClient.get(url, headers: headers);

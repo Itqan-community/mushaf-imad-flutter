@@ -406,11 +406,18 @@ With the data layer structure complete and verified, the next phase is to implem
   00:05 +5: All tests passed!
   ```
 
+### 2.6 - Security Refinement: API Headers
+**Date:** 9th Mar 2026
+
+- **Issue:** `x-client-secret` was being incorrectly sent in authenticated GET requests in `QuranComApiClient._getWithAuth`.
+- **Finding:** Authenticated resource requests should only carry the `x-auth-token` and `x-client-id`. The `x-client-secret` is strictly for the OAuth2 token exchange flow.
+- **Action:** Removed `x-client-secret` from the `headers` map in `_getWithAuth`.
+- **Verification:** Verified that `_fetchNewToken` still correctly includes the secret for the initial handshake/refresh, while resource requests are now properly scoped.
+
 ---
 
-
 ### Phase 3 – Adapting to `MushafAudioDataSource` Architecture
-**Date:** 4th Mar 2026
+**Date:** 9th Mar 2026
 
 **Maintainer Feedback & Architecture Update:**
 The maintainer confirmed the use of **Dart Named Records** for `QuranComVerseTiming` segments and approved the extension of `MushafAudioDataSource` with `fetchChapterTiming`.
@@ -428,6 +435,7 @@ abstract class MushafAudioDataSource {
   Future<List<ReciterInfo>> fetchAllReciters();
   Future<ReciterTiming?> fetchReciterTiming(int reciterId);
   Future<String?> fetchChapterAudioUrl(int reciterId, int chapterNumber);
+  Future<List<QuranComVerseTiming>?> fetchChapterTiming(int reciterId, int chapterNumber);
 }
 ```
 
