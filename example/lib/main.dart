@@ -5,7 +5,14 @@ import 'package:collection/collection.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await setupMushafWithHive();
+
+  // Define CMS configuration pointing to the Itqan API
+  const cmsConfig = CmsAudioConfig(
+    baseUrl: 'https://api.cms.itqan.dev',
+    defaultReciterId: 1, // e.g. Mishari Al-afasi
+  );
+
+  await setupMushafWithHive(cmsAudioConfig: cmsConfig);
 
   // Initialize MushafLibrary with actual DAO instances
   await MushafLibrary.initialize(
@@ -13,6 +20,7 @@ void main() async {
     bookmarkDao: mushafGetIt<BookmarkDao>(),
     readingHistoryDao: mushafGetIt<ReadingHistoryDao>(),
     searchHistoryDao: mushafGetIt<SearchHistoryDao>(),
+    cmsAudioConfig: cmsConfig,
   );
   runApp(const MushafApp());
 }
@@ -666,11 +674,9 @@ class _MushafTypePageState extends State<MushafTypePage> {
               title: Text(type.name),
               subtitle: Text(_description(type)),
               leading: RadioGroup(
-                groupValue:_selected ,
+                groupValue: _selected,
                 onChanged: (v) => setState(() => _selected = v!),
-                child: Radio<MushafType>(
-                  value: type
-                ),
+                child: Radio<MushafType>(value: type),
               ),
               onTap: () => setState(() => _selected = type),
             ),
@@ -732,7 +738,7 @@ class DomainModelsPage extends StatelessWidget {
       appBar: AppBar(title: const Text('Domain Models')),
       body: ListView.separated(
         itemCount: models.length,
-        separatorBuilder: (_, _a) => const Divider(height: 1),
+        separatorBuilder: (_, dummy) => const Divider(height: 1),
         itemBuilder: (context, index) {
           final (name, desc) = models[index];
           return ListTile(
