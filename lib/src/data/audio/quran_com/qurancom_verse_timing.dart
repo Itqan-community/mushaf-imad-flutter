@@ -30,9 +30,9 @@ class QuranComVerseTiming {
   factory QuranComVerseTiming.fromJson(Map<String, dynamic> json) {
     return QuranComVerseTiming(
       verseKey: json['verse_key'],
-      timestampFrom: json['timestamp_from'],
-      timestampTo: json['timestamp_to'],
-      duration: json['duration'],
+      timestampFrom: (json['timestamp_from'] as num).toInt(),
+      timestampTo: (json['timestamp_to'] as num).toInt(),
+      duration: (json['duration'] as num).toInt(),
       segments: json['segments'] != null
           // After searching for which is more efficient here (for loop VS map)
           // Where list.map is more readable , I chose for loop because it is more efficient
@@ -40,9 +40,12 @@ class QuranComVerseTiming {
               for (final segment in json['segments'])
                 if (segment is List && segment.isNotEmpty)
                   (
-                    wordIndex: segment[0] as int,
-                    startMs: segment.length > 1 ? segment[1] as int : 0,
-                    endMs: segment.length > 2 ? segment[2] as int : 0,
+                    wordIndex: (segment[0] as num).toInt(),
+                    startMs: segment.length > 1
+                        ? (segment[1] as num).toInt()
+                        : 0,
+                    endMs:
+                        segment.length > 2 ? (segment[2] as num).toInt() : 0,
                   ),
             ]
           : null,
