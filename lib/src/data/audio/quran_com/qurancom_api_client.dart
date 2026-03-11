@@ -184,7 +184,7 @@ class QuranComApiClient {
         'Retrying GET request to $url with new token',
         category: LogCategory.network,
       );
-      return await _httpClient.get(url, headers: headers);
+      response = await _httpClient.get(url, headers: headers);
     }
 
     if (response.statusCode != 200) {

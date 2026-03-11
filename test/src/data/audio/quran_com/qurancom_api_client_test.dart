@@ -110,6 +110,33 @@ void main() {
       expect(getCallCount, 2);
     });
 
+    test(
+      'should throw Exception if retry after 401 also fails with non-200',
+      () async {
+        // Arrange
+        when(
+          () => httpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => http.Response(mockTokenJson('token'), 200));
+
+        var getCallCount = 0;
+        when(
+          () => httpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async {
+          getCallCount++;
+          if (getCallCount == 1) return http.Response('Unauthorized', 401);
+          return http.Response('Internal Server Error', 500);
+        });
+
+        // Act & Assert
+        expect(() => apiClient.fetchReciters(), throwsException);
+        expect(getCallCount, 2);
+      },
+    );
+
     test('should throw Exception if token fetch fails', () async {
       // Arrange
       when(
