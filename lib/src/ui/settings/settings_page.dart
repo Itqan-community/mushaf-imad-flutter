@@ -1,6 +1,7 @@
-import 'dart:io';
+import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../../data/audio/reciter_data_provider.dart';
@@ -8,11 +9,11 @@ import '../../di/core_module.dart';
 import '../../domain/repository/data_export_repository.dart';
 import '../../domain/repository/preferences_repository.dart';
 import '../theme/theme_picker_widget.dart';
+import 'file_io_helper.dart'
+    if (dart.library.io) 'file_io_helper_io.dart'
+    if (dart.library.html) 'file_io_helper_web.dart';
 import 'settings_view_model.dart';
 
-/// Unified settings page combining theme, preferences, and data management.
-///
-/// Uses [SettingsViewModel] and embeds [ThemePickerWidget].
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
@@ -225,17 +226,28 @@ class _SettingsPageState extends State<SettingsPage> {
       final json = await _viewModel.exportData();
       if (!mounted) return;
 
-      final outputPath = await FilePicker.platform.saveFile(
-        dialogTitle: 'Save Exported Data',
-        fileName: 'mushaf_backup_${DateTime.now().millisecondsSinceEpoch}.json',
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-      );
+      final bytes = utf8.encode(json);
+      if (kIsWeb) {
+        await FilePicker.platform.saveFile(
+          dialogTitle: 'Save Exported Data',
+          fileName:
+              'mushaf_backup_${DateTime.now().millisecondsSinceEpoch}.json',
+          type: FileType.custom,
+          allowedExtensions: ['json'],
+          bytes: bytes,
+        );
+      } else {
+        final outputPath = await FilePicker.platform.saveFile(
+          dialogTitle: 'Save Exported Data',
+          fileName:
+              'mushaf_backup_${DateTime.now().millisecondsSinceEpoch}.json',
+          type: FileType.custom,
+          allowedExtensions: ['json'],
+        );
 
-      if (outputPath == null || !mounted) return;
-
-      final file = File(outputPath);
-      await file.writeAsString(json);
+        if (outputPath == null || !mounted) return;
+        await writeFileAsString(outputPath, json);
+      }
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -250,21 +262,31 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _handleImport(BuildContext context) async {
-    final pickerResult = await FilePicker.platform.pickFiles(
-      dialogTitle: 'Select Backup File',
-      type: FileType.custom,
-      allowedExtensions: ['json'],
-    );
-
-    if (pickerResult == null ||
-        pickerResult.files.isEmpty ||
-        !mounted) return;
-
-    final filePath = pickerResult.files.single.path;
-    if (filePath == null || !mounted) return;
-
     try {
-      final jsonData = await File(filePath).readAsString();
+      final pickerResult = await FilePicker.platform.pickFiles(
+        dialogTitle: 'Select Backup File',
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        withData: kIsWeb,
+      );
+
+      if (pickerResult == null ||
+          pickerResult.files.isEmpty ||
+          !mounted) return;
+
+      final platformFile = pickerResult.files.single;
+      final String jsonData;
+
+      if (kIsWeb) {
+        final bytes = platformFile.bytes;
+        if (bytes == null) return;
+        jsonData = utf8.decode(bytes);
+      } else {
+        final filePath = platformFile.path;
+        if (filePath == null || !mounted) return;
+        jsonData = await readFileAsString(filePath);
+      }
+
       final importResult = await _viewModel.importData(jsonData);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -312,7 +334,8 @@ class _SettingsPageState extends State<SettingsPage> {
               _viewModel.clearAllData();
               ScaffoldMessenger.of(
                 context,
-              ).showSnackBar(const SnackBar(content: Text('All data cleared')));
+              ).showSnackBar(
+                  const SnackBar(content: Text('All data cleared')));
             },
             child: const Text('Clear Everything'),
           ),
