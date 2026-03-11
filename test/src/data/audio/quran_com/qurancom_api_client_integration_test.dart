@@ -16,11 +16,11 @@ void main() {
 
   group('QuranComApiClient Integration Test', () {
     if (clientId.isEmpty || clientSecret.isEmpty) {
-      test('Skiping integration test (Credentials missing)', () {
-        print(
-          'Skipping test: QF_ID or QF_SECRET not provided via --dart-define',
-        );
-      });
+      test(
+        'Skipping integration test (Credentials missing)',
+        () {},
+        skip: 'QF_ID or QF_SECRET not provided via --dart-define',
+      );
       return;
     }
 
