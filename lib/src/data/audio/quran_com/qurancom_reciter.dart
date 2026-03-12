@@ -22,7 +22,7 @@ class QuranComReciter {
 
   factory QuranComReciter.fromJson(Map<String, dynamic> json) {
     return QuranComReciter(
-      id: json['id'] as int,
+      id: (json['id'] as num).toInt(),
       reciterName: json['reciter_name'] as String,
       style: json['style'] as String?, // might be null
       translatedName: json['translated_name'] != null
@@ -71,8 +71,14 @@ class QuranComRecitationsResponse {
   const QuranComRecitationsResponse({required this.recitations});
 
   factory QuranComRecitationsResponse.fromJson(Map<String, dynamic> json) {
+    final recitationsJson = json['recitations'] as List<dynamic>?;
+    if (recitationsJson == null) {
+      throw const FormatException(
+        "Missing or null 'recitations' in QuranComRecitationsResponse.fromJson",
+      );
+    }
     return QuranComRecitationsResponse(
-      recitations: (json['recitations'] as List<dynamic>)
+      recitations: recitationsJson
           .map((e) => QuranComReciter.fromJson(e as Map<String, dynamic>))
           .toList(),
     );

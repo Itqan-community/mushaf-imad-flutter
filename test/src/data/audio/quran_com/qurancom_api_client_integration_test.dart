@@ -35,6 +35,10 @@ void main() {
       apiClient = QuranComApiClient(config: config);
     });
 
+    tearDown(() {
+      apiClient.dispose();
+    });
+
     test(
       'should successfully fetch reciters from real API and validate fields',
       () async {

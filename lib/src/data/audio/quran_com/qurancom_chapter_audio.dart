@@ -26,11 +26,11 @@ class QuranComAudioFile {
 
   factory QuranComAudioFile.fromJson(Map<String, dynamic> json) {
     return QuranComAudioFile(
-      id: json['id'] as int,
-      chapterId: json['chapter_id'] as int,
+      id: (json['id'] as num).toInt(),
+      chapterId: (json['chapter_id'] as num).toInt(),
       fileSize: (json['file_size'] as num).toDouble(),
-      format: json['format'],
-      audioUrl: json['audio_url'],
+      format: json['format'] as String,
+      audioUrl: json['audio_url'] as String,
       timestamps: json['timestamps'] != null
           ? [
               for (final x in json['timestamps'])
@@ -59,8 +59,14 @@ class QuranComChapterAudioResponse {
   QuranComChapterAudioResponse({required this.audioFile});
 
   factory QuranComChapterAudioResponse.fromJson(Map<String, dynamic> json) {
+    final audioFileJson = json['audio_file'];
+    if (audioFileJson == null) {
+      throw const FormatException(
+        "Missing or null 'audio_file' in QuranComChapterAudioResponse.fromJson",
+      );
+    }
     return QuranComChapterAudioResponse(
-      audioFile: QuranComAudioFile.fromJson(json['audio_file']),
+      audioFile: QuranComAudioFile.fromJson(audioFileJson),
     );
   }
 

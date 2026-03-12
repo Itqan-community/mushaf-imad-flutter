@@ -39,6 +39,10 @@ void main() {
     apiClient = QuranComApiClient(config: config, httpClient: httpClient);
   });
 
+  tearDown(() {
+    apiClient.dispose();
+  });
+
   group('OAuth2 Authentication & Caching', () {
     test('should fetch token on first request and cache it', () async {
       // Arrange
@@ -132,7 +136,7 @@ void main() {
         });
 
         // Act & Assert
-        expect(() => apiClient.fetchReciters(), throwsException);
+        await expectLater(apiClient.fetchReciters(), throwsException);
         expect(getCallCount, 2);
       },
     );

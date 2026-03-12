@@ -455,3 +455,28 @@ If we strictly implement `fetchReciterTiming(int reciterId)` by fetching all 114
 
 
 
+---
+
+### 2.7 - Robustness & Reliability Refinements
+**Date:** 12th Mar 2026
+
+Following a secondary audit of the API client and data models, several refinements were made to ensure production-grade robustness:
+
+- **Retry Logic Validation:**
+  - **Issue:** The retry branch in `_getWithAuth` bypassed follow-up non-200 status code guards.
+  - **Action:** Refactored to assign the retried response to the local `response` variable, ensuring it undergoes the same validation checks.
+  - **Regression Test:** Added a test case for "401 followed by 500" to verify exceptions are correctly thrown.
+
+- **Numeric Type Safety (Safe Casting):**
+  - **Issue:** API responses might return integers as doubles (e.g., `100.0`), which causes `as int` casts to fail in Dart.
+  - **Action:** Implemented `(json['field'] as num).toInt()` pattern across all models (`QuranComVerseTiming`, `QuranComAudioFile`, `QuranComReciter`).
+  - **Scope:** Applied to timestamps, durations, word indices, and entity IDs.
+
+- **Defensive JSON Parsing:**
+  - **Action:** Updated response wrappers (`QuranComChapterAudioResponse`, `QuranComRecitationsResponse`) to explicitly check for null/missing root keys and throw a descriptive `FormatException`.
+
+- **Test Infrastructure Polish:**
+  - **Clean Skip:** Used the `skip` facility for integration tests when credentials are missing, preventing "silent failures" or "fake passes".
+  - **Resource Leak Prevention:** Added `tearDown` blocks to ensure `apiClient.dispose()` is called after each test, closing the underlying HTTP client sockets.
+
+---
