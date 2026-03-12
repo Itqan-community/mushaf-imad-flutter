@@ -38,7 +38,7 @@ It is meant for both **reviewers** and **future contributors** to understand the
 - **Feature branch**: `feature/qurancom-audio`
 - **Goal**: Add Quran.com (Quran Foundation) API as an optional audio source alongside the existing local audio implementation, with clean architecture, tests, and documentation.
 - **Companion docs**:
-  - Task checklist: `doc/QURAN_COM_CHECKLIST.md`
+  - Task checklist: `doc/quran_com_doc/QURAN_COM_CHECKLIST.md`
 
 ---
 
@@ -140,9 +140,9 @@ It is meant for both **reviewers** and **future contributors** to understand the
 **Objective:** Make the work transparent and easy to review by maintaining explicit checklists and a development journal.
 
 - Created a detailed incremental checklist in:
-  - `doc/QURAN_COM_CHECKLIST.md`
+  - `doc/quran_com_doc/QURAN_COM_CHECKLIST.md`
   - The checklist mirrors the main phases from `QURAN_COM_ROADMAP.md`, but breaks them into small, commit-sized tasks with Markdown checkboxes.
-- Established this development log (`doc/QURAN_COM_DEVELOPMENT_LOG.md`) to:
+- Established this development log (`doc/quran_com_doc/QURAN_COM_DEVELOPMENT_LOG.md`) to:
   - Record high-level decisions and context per phase.
   - Provide reviewers with a narrative of the implementation, not just raw diffs.
 - Agreed on a workflow:
