@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:imad_flutter/src/data/audio/quran_com/qurancom_api_config.dart';
@@ -99,32 +100,39 @@ class QuranComApiClient {
   ///
   /// Returns a [String] object containing the access token.
   Future<String> _fetchNewToken() async {
-    _logger.info('Fetching new OAuth2 token...', category: LogCategory.network);
-    final response = await _httpClient.post(
-      Uri.parse(_config.tokenUrl),
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization':
-            'Basic ${base64Encode(utf8.encode('${_config.clientId}:${_config.clientSecret}'))}',
-      },
-      body: {'grant_type': 'client_credentials', 'scope': 'content'},
-    );
+    try {
+      final response = await _httpClient
+          .post(
+            Uri.parse(_config.tokenUrl),
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'Authorization':
+                  'Basic ${base64Encode(utf8.encode('${_config.clientId}:${_config.clientSecret}'))}',
+            },
+            body: {'grant_type': 'client_credentials', 'scope': 'content'},
+          )
+          .timeout(const Duration(seconds: 15));
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      _accessToken = data['access_token'];
-      final expiresIn = data['expires_in'] as int;
-      _tokenExpiry = DateTime.now().add(Duration(seconds: expiresIn - 60));
-      _logger.info(
-        'Successfully fetched and cached new token (expires in ${expiresIn ~/ 60} minutes & ${expiresIn % 60} seconds).',
-        category: LogCategory.network,
-      );
-      return _accessToken!;
-    } else {
-      final errorMsg =
-          'Failed to fetch OAuth2 token from Quran.com API. Status: ${response.statusCode}, Body: ${response.body}';
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        _accessToken = data['access_token'];
+        final expiresIn = data['expires_in'] as int;
+        _tokenExpiry = DateTime.now().add(Duration(seconds: expiresIn - 60));
+        _logger.info(
+          'Successfully fetched and cached new token (expires in ${expiresIn ~/ 60} minutes & ${expiresIn % 60} seconds).',
+          category: LogCategory.network,
+        );
+        return _accessToken!;
+      } else {
+        final errorMsg =
+            'Failed to fetch OAuth2 token from Quran.com API. Status: ${response.statusCode}, Body: ${response.body}';
+        _logger.error(errorMsg, category: LogCategory.network);
+        throw Exception(errorMsg);
+      }
+    } on TimeoutException catch (e) {
+      final errorMsg = 'Timeout fetching OAuth2 token from ${_config.tokenUrl}: $e';
       _logger.error(errorMsg, category: LogCategory.network);
-      throw Exception(errorMsg);
+      rethrow;
     }
   }
 
@@ -167,37 +175,47 @@ class QuranComApiClient {
 
     final headers = {'x-auth-token': token, 'x-client-id': _config.clientId};
 
-    _logger.info('Sending GET request to $url', category: LogCategory.network);
-    var response = await _httpClient.get(url, headers: headers);
+    try {
+      _logger.info('Sending GET request to $url', category: LogCategory.network);
+      var response = await _httpClient
+          .get(url, headers: headers)
+          .timeout(const Duration(seconds: 15));
 
-    if (response.statusCode == 401) {
-      _logger.warning(
-        'Received 401 Unauthorized. Clearing token cache and retrying once...',
-        category: LogCategory.network,
-      );
-      // Token might be expired , clear it and retry once
-      _accessToken = null;
-      _tokenExpiry = null;
-      final newToken = await _getValidAccessToken();
-      headers['x-auth-token'] = newToken;
+      if (response.statusCode == 401) {
+        _logger.warning(
+          'Received 401 Unauthorized. Clearing token cache and retrying once...',
+          category: LogCategory.network,
+        );
+        // Token might be expired , clear it and retry once
+        _accessToken = null;
+        _tokenExpiry = null;
+        final newToken = await _getValidAccessToken();
+        headers['x-auth-token'] = newToken;
+        _logger.info(
+          'Retrying GET request to $url with new token',
+          category: LogCategory.network,
+        );
+        response = await _httpClient
+            .get(url, headers: headers)
+            .timeout(const Duration(seconds: 15));
+      }
+
+      if (response.statusCode != 200) {
+        final errorMsg =
+            'Failed to get data from Quran.com API: status ${response.statusCode} , error ${response.body}';
+        _logger.error(errorMsg, category: LogCategory.network);
+        throw Exception(errorMsg);
+      }
+
       _logger.info(
-        'Retrying GET request to $url with new token',
+        'Successfully received response from $endpointPath',
         category: LogCategory.network,
       );
-      response = await _httpClient.get(url, headers: headers);
-    }
-
-    if (response.statusCode != 200) {
-      final errorMsg =
-          'Failed to get data from Quran.com API: status ${response.statusCode} , error ${response.body}';
+      return response;
+    } on TimeoutException catch (e) {
+      final errorMsg = 'Timeout requesting data from $url: $e';
       _logger.error(errorMsg, category: LogCategory.network);
-      throw Exception(errorMsg);
+      rethrow;
     }
-
-    _logger.info(
-      'Successfully received response from $endpointPath',
-      category: LogCategory.network,
-    );
-    return response;
   }
 }
