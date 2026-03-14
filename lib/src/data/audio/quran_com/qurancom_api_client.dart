@@ -71,8 +71,9 @@ class QuranComApiClient {
   /// Fetches a list of available reciters from the Quran.com API.
   ///
   /// Returns a [List<QuranComReciter>] object containing the reciter details.
-  Future<List<QuranComReciter>> fetchReciters() async {
-    final response = await _getWithAuth(_config.recitersPath);
+  Future<List<QuranComReciter>> fetchReciters({String? language}) async {
+    final path = '${_config.recitersPath}${language != null ? '?language=$language' : ''}';
+    final response = await _getWithAuth(path);
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     return QuranComRecitationsResponse.fromJson(data).reciters;
   }
@@ -130,7 +131,8 @@ class QuranComApiClient {
         throw Exception(errorMsg);
       }
     } on TimeoutException catch (e) {
-      final errorMsg = 'Timeout fetching OAuth2 token from ${_config.tokenUrl}: $e';
+      final errorMsg =
+          'Timeout fetching OAuth2 token from ${_config.tokenUrl}: $e';
       _logger.error(errorMsg, category: LogCategory.network);
       rethrow;
     }
@@ -176,7 +178,10 @@ class QuranComApiClient {
     final headers = {'x-auth-token': token, 'x-client-id': _config.clientId};
 
     try {
-      _logger.info('Sending GET request to $url', category: LogCategory.network);
+      _logger.info(
+        'Sending GET request to $url',
+        category: LogCategory.network,
+      );
       var response = await _httpClient
           .get(url, headers: headers)
           .timeout(const Duration(seconds: 15));
