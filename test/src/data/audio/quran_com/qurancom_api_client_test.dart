@@ -154,6 +154,53 @@ void main() {
       // Act & Assert
       expect(() => apiClient.fetchReciters(), throwsException);
     });
+
+    test(
+      'should only fetch token once when multiple requests are made concurrently',
+      () async {
+        // Arrange
+        var tokenFetchCount = 0;
+        when(
+          () => httpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async {
+          tokenFetchCount++;
+          // Simulate some network delay to allow concurrent calls to stack up
+          await Future.delayed(const Duration(milliseconds: 50));
+          return http.Response(mockTokenJson(validToken), 200);
+        });
+
+        when(
+          () => httpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(jsonEncode({'recitations': []}), 200),
+        );
+
+        // Act
+        // Trigger multiple concurrent calls
+        await Future.wait([
+          apiClient.fetchReciters(),
+          apiClient.fetchReciters(),
+          apiClient.fetchReciters(),
+        ]);
+
+        // Assert
+        expect(tokenFetchCount, 1, reason: 'Token should only be fetched once');
+        verify(
+          () => httpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).called(1);
+        verify(
+          () => httpClient.get(any(), headers: any(named: 'headers')),
+        ).called(3);
+      },
+    );
   });
 
   group('API Methods Parsing', () {
