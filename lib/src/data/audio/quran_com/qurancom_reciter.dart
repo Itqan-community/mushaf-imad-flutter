@@ -71,16 +71,24 @@ class QuranComRecitationsResponse {
   const QuranComRecitationsResponse({required this.recitations});
 
   factory QuranComRecitationsResponse.fromJson(Map<String, dynamic> json) {
-    final recitationsJson = json['recitations'] as List<dynamic>?;
-    if (recitationsJson == null) {
-      throw const FormatException(
-        "Missing or null 'recitations' in QuranComRecitationsResponse.fromJson",
+    final recitationsJson = json['recitations'];
+
+    if (recitationsJson is! List) {
+      throw FormatException(
+        "Missing, null, or non-list 'recitations' in QuranComRecitationsResponse.fromJson. Got: ${recitationsJson.runtimeType}",
       );
     }
+
     return QuranComRecitationsResponse(
-      recitations: recitationsJson
-          .map((e) => QuranComReciter.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      recitations: [
+        for (final item in recitationsJson)
+          if (item is Map<String, dynamic>)
+            QuranComReciter.fromJson(item)
+          else
+            throw FormatException(
+              "Expected each item in 'recitations' to be a Map, but got ${item.runtimeType}",
+            )
+      ],
     );
   }
 

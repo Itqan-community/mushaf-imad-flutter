@@ -25,16 +25,29 @@ class QuranComAudioFile {
   });
 
   factory QuranComAudioFile.fromJson(Map<String, dynamic> json) {
+    final timestampsJson = json['timestamps'];
+
+    if (timestampsJson != null && timestampsJson is! List) {
+      throw FormatException(
+        "Expected 'timestamps' to be a List, but got ${timestampsJson.runtimeType}",
+      );
+    }
+
     return QuranComAudioFile(
       id: (json['id'] as num).toInt(),
       chapterId: (json['chapter_id'] as num).toInt(),
       fileSize: (json['file_size'] as num).toDouble(),
       format: json['format'] as String,
       audioUrl: json['audio_url'] as String,
-      timestamps: json['timestamps'] != null
+      timestamps: timestampsJson != null
           ? [
-              for (final x in json['timestamps'])
-                QuranComVerseTiming.fromJson(x),
+              for (final x in timestampsJson)
+                if (x is Map<String, dynamic>)
+                  QuranComVerseTiming.fromJson(x)
+                else
+                  throw FormatException(
+                    "Expected each item in 'timestamps' to be a Map, but got ${x.runtimeType}",
+                  )
             ]
           : null,
     );
@@ -60,9 +73,9 @@ class QuranComChapterAudioResponse {
 
   factory QuranComChapterAudioResponse.fromJson(Map<String, dynamic> json) {
     final audioFileJson = json['audio_file'];
-    if (audioFileJson == null) {
-      throw const FormatException(
-        "Missing or null 'audio_file' in QuranComChapterAudioResponse.fromJson",
+    if (audioFileJson is! Map<String, dynamic>) {
+      throw FormatException(
+        "Missing, null, or non-object 'audio_file' in QuranComChapterAudioResponse.fromJson. Got: ${audioFileJson.runtimeType}",
       );
     }
     return QuranComChapterAudioResponse(
