@@ -25,8 +25,17 @@ It is meant for both **reviewers** and **future contributors** to understand the
     - [Next](#next-1)
     - [2.4 – API Client \& Unit Tests](#24--api-client--unit-tests)
     - [2.5 - Integration Testing and Debugging](#25---integration-testing-and-debugging)
-    - [API Client Integration test results:](#api-client-integration-test-results)
-    - [Phase 3 – Adapting to `MushafAudioDataSource` Architecture](#phase-3--adapting-to-mushafaudiodatasource-architecture)
+      - [API Client Integration test results:](#api-client-integration-test-results)
+    - [2.6 - Security Refinement: API Headers](#26---security-refinement-api-headers)
+    - [Pre-Phase 3 – Adapting to `MushafAudioDataSource` Architecture](#pre-phase-3--adapting-to-mushafaudiodatasource-architecture)
+    - [2.7 - Robustness \& Reliability Refinements](#27---robustness--reliability-refinements)
+  - [Phase 3 – Data Source: Interface Extension \& QuranComDataSource](#phase-3--data-source-interface-extension--qurancomdatasource)
+    - [3.1 – MushafAudioDataSource Interface](#31--mushafaudiodatasource-interface)
+    - [3.2 – QurancomDataSource Implementation](#32--qurancomdatasource-implementation)
+    - [3.2.1 - Verification \& Testing](#321---verification--testing)
+      - [Unit Tests (Mocked)](#unit-tests-mocked)
+      - [Integration Tests (Live API)](#integration-tests-live-api)
+    - [Next](#next-2)
 
 
 ---
@@ -416,7 +425,7 @@ With the data layer structure complete and verified, the next phase is to implem
 
 ---
 
-### Phase 3 – Adapting to `MushafAudioDataSource` Architecture
+### Pre-Phase 3 – Adapting to `MushafAudioDataSource` Architecture
 **Date:** 9th Mar 2026
 
 **Maintainer Feedback & Architecture Update:**
@@ -462,21 +471,80 @@ If we strictly implement `fetchReciterTiming(int reciterId)` by fetching all 114
 
 Following a secondary audit of the API client and data models, several refinements were made to ensure production-grade robustness:
 
-- **Retry Logic Validation:**
-  - **Issue:** The retry branch in `_getWithAuth` bypassed follow-up non-200 status code guards.
-  - **Action:** Refactored to assign the retried response to the local `response` variable, ensuring it undergoes the same validation checks.
-  - **Regression Test:** Added a test case for "401 followed by 500" to verify exceptions are correctly thrown.
+- **Retry Logic Validation:** Refactored `_getWithAuth` to ensure retried responses undergo the same validation checks as initial requests.
+- **Numeric Type Safety:** Implemented `(json['field'] as num).toInt()` pattern across all models to safely handle double-to-int conversion from API JSON.
+- **Defensive JSON Parsing:** Added root key validation in response wrappers to throw descriptive `FormatException` on malformed payloads.
+- **Test Infrastructure:** Added `tearDown` for client disposal and used `skip` for integration tests when credentials are missing.
 
-- **Numeric Type Safety (Safe Casting):**
-  - **Issue:** API responses might return integers as doubles (e.g., `100.0`), which causes `as int` casts to fail in Dart.
-  - **Action:** Implemented `(json['field'] as num).toInt()` pattern across all models (`QuranComVerseTiming`, `QuranComAudioFile`, `QuranComReciter`).
-  - **Scope:** Applied to timestamps, durations, word indices, and entity IDs.
+---
 
-- **Defensive JSON Parsing:**
-  - **Action:** Updated response wrappers (`QuranComChapterAudioResponse`, `QuranComRecitationsResponse`) to explicitly check for null/missing root keys and throw a descriptive `FormatException`.
+## Phase 3 – Data Source: Interface Extension & QuranComDataSource
 
-- **Test Infrastructure Polish:**
-  - **Clean Skip:** Used the `skip` facility for integration tests when credentials are missing, preventing "silent failures" or "fake passes".
-  - **Resource Leak Prevention:** Added `tearDown` blocks to ensure `apiClient.dispose()` is called after each test, closing the underlying HTTP client sockets.
+**Date:** 14th Mar 2026
+
+**Focus:** Bridging the gap between the low-level API client and the high-level Domain Models by implementing a concrete Data Source.
+
+### 3.1 – MushafAudioDataSource Interface
+- Defined a new abstract interface `MushafAudioDataSource` in `lib/src/data/audio/`.
+- This interface standardizes how audio data (reciters, URLs, and timings) are retrieved, allowing the system to switch between local assets and remote APIs.
+- Key Methods:
+  - `fetchAllReciters()`
+  - `fetchChapterAudioUrl(reciterId, chapterNumber)`
+  - `fetchChapterTiming(reciterId, chapterNumber)`
+
+### 3.2 – QurancomDataSource Implementation
+- Implemented `QurancomDataSource` as the first concrete provider of the new interface.
+- **Architectural Decision (Single-Trip Fetching):** Optimized network usage by performing a "Single-Trip" fetch in `fetchChapterAudioUrl`. Since the Quran.com API returns both the audio URL and verse segments in one call, the Data Source now eager-caches the timestamps in a private `_timingCache` Map.
+- **Performance Benefit:** Subsequent calls to `fetchChapterTiming` (requested by the UI/Timing layer) are resolved instantly from the in-memory cache with zero network cost.
+- **Clean Architecture Mapping:** 
+  - Moved mapping logic from DTOs (`QuranComReciter`) into the Data Source.
+  - The Data Source now acts as a translator, converting the API's JSON-friendly DTOs into the app's internal `ReciterInfo` domain entities.
+  - Successfully integrated Arabic name support by requesting `language: 'ar'` from the API client during reciter discovery.
+- **UI/UX Considerations:** Set `folderUrl` to an empty string for API-based reciters, with a plan to handle dynamic URL resolution at the Repository level in Phase 4.
+
+### 3.2.1 - Verification & Testing
+**Date:** 14th Mar 2026
+
+To ensure the reliability of the "Single-Trip" caching and the DTO-to-Domain mapping, a dedicated test suite was implemented.
+
+#### Unit Tests (Mocked)
+Verified the core logic of `QurancomDataSource` using `mocktail` to intercept API calls.
+- **File:** `test/src/data/audio/quran_com/qurancom_data_source_test.dart`
+- **Scenarios:**
+    - Reciter list mapping + caching.
+    - Timing eager-caching during URL fetch.
+    - API delegation on cache miss.
+    - Graceful handling of null timestamps.
+
+**Results:**
+```text
+00:08 +4: All tests passed!
+```
+
+#### Integration Tests (Live API)
+End-to-end verification against the live Quran.com prelive environment.
+- **File:** `test/src/data/audio/quran_com/qurancom_data_source_integration_test.dart`
+- **Logs:**
+```powershell
+--- TEST: Integration Fetch Reciters ---
+Mushaf[network] INFO: Successfully fetched and cached new token (expires in 59 minutes & 59 seconds).
+Mushaf[network] INFO: Sending GET request to https://apis-prelive.quran.foundation/content/api/v4/resources/recitations?language=ar
+Mushaf[network] INFO: Successfully received response from resources/recitations?language=ar
+✅ Successfully fetched 2 reciters.
+✅ Mapped Example: English="Mahmoud Khalil Al-Husary", Arabic="محمود خليل الحصري", Style="Hafs"
+00:03 +1: QurancomDataSource Integration Test should fetch and cache timings for a real chapter
+
+--- TEST: Integration Audio & Timing Cache ---
+Mushaf[network] INFO: Successfully fetched and cached new token (expires in 59 minutes & 59 seconds).
+Mushaf[network] INFO: Sending GET request to https://apis-prelive.quran.foundation/content/api/v4/chapter_recitations/7/1?segments=true
+Mushaf[network] INFO: Successfully received response from chapter_recitations/7/1?segments=true
+✅ Audio URL: https://download.quranicaudio.com/qdc/mishari_al_afasy/murattal/1.mp3
+✅ Timestamps count: 7
+✅ Timing fetch duration (cached): 1ms
+00:05 +2: All tests passed!
+```
+
+### Next
+With the Data Source layer complete and efficient, the next step is **Phase 3.3: Timing Service Modernization**. We will refactor `AyahTimingService` to use the `MushafAudioDataSource` as a lazy-loading fallback when local timing assets are missing.
 
 ---

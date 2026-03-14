@@ -184,40 +184,53 @@ Each checkbox is a small, focused step that can usually be its own commit.
 
 ### 3.1 – Extend MushafAudioDataSource Interface
 
-- [ ] **Add `fetchChapterTiming` to the interface**
-  - [ ] Add `MushafAudioDataSource` abstract class in a separate file.
-  - [ ] Add `Future<List<QuranComVerseTiming>?> fetchChapterTiming(int reciterId, int chapterNumber)`.
-  - [ ] **Note:** Approved by maintainer — avoids the 114-request anti-pattern of `fetchReciterTiming`.
+- [x] **Add `fetchChapterTiming` to the interface**
+  - [x] Add `MushafAudioDataSource` abstract class in a separate file.
+  - [x] Add `Future<List<QuranComVerseTiming>?> fetchChapterTiming(int reciterId, int chapterNumber)`.
+  - [x] **Note:** Approved by maintainer — avoids the 114-request anti-pattern of `fetchReciterTiming`.
 - [x] **Resolution discussed with maintainer**
   - [x] Quran.com provides timings per-chapter (not per-reciter bulk file).
   - [x] Maintainer agreed to extend interface for a "common denominator" method.
 
 ### 3.2 – QuranComDataSource Implementation
 
-- [ ] **Create data source class**
-  - [ ] Create `lib/src/data/audio/quran_com/qurancom_data_source.dart`.
-  - [ ] Implement `MushafAudioDataSource`.
-  - [ ] Inject `QuranComApiClient`.
-- [ ] **Implement `fetchAllReciters`**
-  - [ ] Call `apiClient.fetchReciters()`.
-  - [ ] Map `QuranComReciter` → domain `ReciterInfo`.
-  - [ ] Memoize/cache result to prevent duplicate API calls.
-- [ ] **Implement `fetchChapterAudioUrl`**
-  - [ ] Call `apiClient.fetchChapterAudio(reciterId, chapterNumber)`.
-  - [ ] Return the `audioUrl` string.
-  - [ ] In-memory cache the `timestamps` returned so they are available to the timing layer.
-- [ ] **Implement `fetchChapterTiming`**
-  - [ ] Return the cached `timestamps` from the previous `fetchChapterAudio` call if available.
-  - [ ] Otherwise call `apiClient.fetchChapterAudio` and cache result.
-- [ ] **Refactor `AyahTimingService`**
-  - [ ] Update `loadTimingData` to lazily call `fetchChapterTiming` if no local bulk file exists.
-- [ ] **Tests**
-  - [ ] Add `test/src/data/audio/quran_com/qurancom_data_source_test.dart`.
-  - [ ] Test mapping, caching, and fallback logic.
-- [ ] **Dev log**
-  - [ ] Add `## Phase 3 – Data Source` entry.
-- [ ] **Commit**
-  - [ ] Commit message: `feat(qurancom): implement MushafAudioDataSource with chapter timing support`.
+- [x] **Create data source class**
+  - [x] Create `lib/src/data/audio/quran_com/qurancom_data_source.dart`.
+  - [x] Implement `MushafAudioDataSource`.
+  - [x] Inject `QuranComApiClient`.
+- [x] **Implement `fetchAllReciters`**
+  - [x] Call `apiClient.fetchReciters(language: 'ar')`.
+  - [x] Map `QuranComReciter` → domain `ReciterInfo` (with Arabic name support).
+  - [x] Memoize/cache result to prevent duplicate API calls.
+- [x] **Implement `fetchChapterAudioUrl`**
+  - [x] Call `apiClient.fetchChapterAudio(reciterId, chapterNumber, segments: true)`.
+  - [x] Return the `audioUrl` string.
+  - [x] In-memory cache the `timestamps` returned (Single-Trip Optimization).
+- [x] **Implement `fetchChapterTiming`**
+  - [x] Return the cached `timestamps` from the previous `fetchChapterAudioUrl` call if available.
+  - [x] Otherwise call `apiClient.fetchChapterAudio` and cache result.
+
+### 3.2.1 – Verification & Testing
+
+- [x] **Unit Testing (Mocked)**
+  - [x] Create `test/src/data/audio/quran_com/qurancom_data_source_test.dart`.
+  - [x] Test Domain mapping (`ReciterInfo`).
+  - [x] Test Performance Caching (`_recitersCache`).
+  - [x] Test Single-Trip cache hits for timings.
+- [x] **Integration Testing (Live API)**
+  - [x] Create `test/src/data/audio/quran_com/qurancom_data_source_integration_test.dart`.
+  - [x] Verify real-world connectivity and dynamic timing retrieval.
+
+### 3.3 – AyahTimingService Modernization
+
+- [ ] **Refactor `AyahTimingService` for dynamic loading**
+  - [ ] Add `MushafAudioDataSource` dependency (via constructor or injection).
+  - [ ] Update `getChapterTimings` to check local assets FIRST.
+  - [ ] If asset is missing, call `dataSource.fetchChapterTiming(reciterId, chapterNumber)`.
+- [ ] **Support individual chapter caching**
+  - [ ] Update `_timingCache` or add a new `_chapterTimingCache` (Map<String, List<AyahTiming>>) to store dynamically fetched data.
+- [ ] **Verify Fallback Logic**
+  - [ ] Add tests ensuring it falls back to API when asset is not found.
 
 ---
 
