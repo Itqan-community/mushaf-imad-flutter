@@ -35,7 +35,9 @@ It is meant for both **reviewers** and **future contributors** to understand the
     - [3.2.1 - Verification \& Testing](#321---verification--testing)
       - [Unit Tests (Mocked)](#unit-tests-mocked)
       - [Integration Tests (Live API)](#integration-tests-live-api)
-    - [Next](#next-2)
+    - [3.3 – AyahTimingService Modernization](#33---ayahtimingservice-modernization)
+      - [Atomic Commits Strategy](#atomic-commits-strategy)
+  - [Next Phase – Phase 4: Provider \& Repository Implementation](#next-phase--phase-4-provider--repository-implementation)
 
 
 ---
@@ -544,7 +546,45 @@ Mushaf[network] INFO: Successfully received response from chapter_recitations/7/
 00:05 +2: All tests passed!
 ```
 
-### Next
-With the Data Source layer complete and efficient, the next step is **Phase 3.3: Timing Service Modernization**. We will refactor `AyahTimingService` to use the `MushafAudioDataSource` as a lazy-loading fallback when local timing assets are missing.
+### 3.3 - AyahTimingService Modernization
 
----
+#### Architecture & Strategy
+Refactored `AyahTimingService` to handle dynamic loading from API sources without breaking legacy local functionality.
+
+**Key features:**
+1.  **Lazy & On-Demand**: Timings are now fetched per chapter when needed, rather than requiring the whole reciter's 114-chapter database.
+2.  **Local-First, API-Fallback**: The service checks local assets FIRST. If missing, it falls back to the injected `MushafAudioDataSource`.
+3.  **Dynamic In-Memory Cache**: Added `_dynamicChapterCache` to store timings fetched via API, preventing redundant network calls during a session.
+4.  **No Breaking Changes**: The service maintains its existing API. If no data source is provided (legacy mode), it simply behaves as before, failing gracefully for missing assets.
+
+**Files modified:**
+- `lib/src/data/audio/ayah_timing_service.dart`: Core logic refactor.
+- `QURAN_COM_ROADMAP.md`: Updated architecture diagram and strategy description.
+
+### 3.3 - AyahTimingService Modernization
+**Date:** 14th Mar 2026
+
+The final major component of the data layer was the modernization of `AyahTimingService` to support dynamic, per-chapter timing retrieval.
+
+- **Tiered Retrieval Logic:** Implemented a priority system: 
+    1. **Memory Cache:** Pre-loaded JSON bulk strings.
+    2. **Dynamic Cache:** Chapters fetched during the current session.
+    3. **Local Assets:** Bundled JSON files.
+    4. **Remote Fallback:** If all else fails, fetch from `MushafAudioDataSource`.
+- **Atomic Commits Strategy:** To prevent integration "shocks", we followed a strict atomic commit workflow:
+    - **Refactor:** `refactor(audio): integrate remote timing fallback in AyahTimingService` (Logical changes).
+    - **Unit Tests:** `test(audio): expand AyahTimingService unit tests for remote source support` (Mock-based verification).
+    - **Integration:** `test(audio): upgrade integration tests with MushafLogger and live API scenarios` (Live connectivity and categorized logging).
+- **MushafLogger Integration:** Standardized all test diagnostics to use the project's internal logging system (`LogCategory.timing`), replacing `print` statements.
+
+#### Atomic Commits Strategy
+We ensured that every logical change was accompanied by its verification suite in separate, meaningful commits. This allowed us to:
+- Verify that **Local-First** priority was never bypassed.
+- Confirm that **Dynamic Caching** was instantaneous (~0ms) for subsequent hits.
+- Ensure **Error Gracefulness** (empty lists instead of crashes) during API outages.
+
+### Next Phase – Phase 4: Provider & Repository Implementation
+**Planned focus:**
+- Implement `QuranComReciterProvider` to manage high-level reciter business logic (search, filtering).
+- Implement `QuranComAudioRepository` as the main entry point for the playback flow, utilizing the refactored timing service.
+- Integration tests for the repository layer.

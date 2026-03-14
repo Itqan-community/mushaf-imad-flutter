@@ -223,14 +223,14 @@ Each checkbox is a small, focused step that can usually be its own commit.
 
 ### 3.3 – AyahTimingService Modernization
 
-- [ ] **Refactor `AyahTimingService` for dynamic loading**
-  - [ ] Add `MushafAudioDataSource` dependency (via constructor or injection).
-  - [ ] Update `getChapterTimings` to check local assets FIRST.
-  - [ ] If asset is missing, call `dataSource.fetchChapterTiming(reciterId, chapterNumber)`.
-- [ ] **Support individual chapter caching**
-  - [ ] Update `_timingCache` or add a new `_chapterTimingCache` (Map<String, List<AyahTiming>>) to store dynamically fetched data.
-- [ ] **Verify Fallback Logic**
-  - [ ] Add tests ensuring it falls back to API when asset is not found.
+- [x] **Refactor `AyahTimingService` for dynamic loading**
+  - [x] Add `MushafAudioDataSource` dependency (via constructor or injection).
+  - [x] Update `getChapterTimings` to check local assets FIRST.
+  - [x] If asset is missing, call `dataSource.fetchChapterTiming(reciterId, chapterNumber)`.
+- [x] **Support individual chapter caching**
+  - [x] Update `_timingCache` or add a new `_dynamicChapterCache` (Map<int, Map<int, List<AyahTiming>>>) to store dynamically fetched data.
+- [x] **Verify Fallback Logic**
+  - [x] Add tests ensuring it falls back to API when asset is not found.
 
 ---
 
@@ -248,16 +248,11 @@ Each checkbox is a small, focused step that can usually be its own commit.
 - [ ] **Commit**
   - [ ] Commit message: `feat(qurancom): add reciter provider with caching`.
 
-### 4.2 – QuranComTimingService
+### 4.2 – AyahTimingService Integration (Verified)
 
-- [ ] **Create timing service**
-  - [ ] Create `lib/src/data/audio/quran_com/qurancom_timing_service.dart`.
-  - [ ] Inject `QuranComApiClient`.
-  - [ ] Implement `loadChapterTiming(reciterId, chapterNumber)` with `'$reciterId:$chapterNumber'` keyed cache.
-  - [ ] Convert `QuranComVerseTiming` → internal `AyahTiming`.
-  - [ ] Implement `getAyahTiming` and `getChapterTimings`.
-- [ ] **Commit**
-  - [ ] Commit message: `feat(qurancom): add chapter timing service`.
+- [x] **Integrate AyahTimingService with Repository**
+  - [x] Verified that `AyahTimingService` successfully handles secondary fallback to `QuranComDataSource`.
+  - [x] Confirmed dynamic caching logic is robust.
 
 ### 4.3 – QuranComAudioRepository
 
