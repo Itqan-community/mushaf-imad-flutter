@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 
 import '../../domain/models/user_data_backup.dart';
 import '../../domain/repository/data_export_repository.dart';
@@ -46,7 +49,22 @@ class DefaultDataExportRepository implements DataExportRepository {
   @override
   Future<String> exportToJson({bool includeHistory = true}) async {
     final backup = await exportUserData(includeHistory: includeHistory);
-    return jsonEncode(backup.toJson());
+    // return jsonEncode(backup.toJson());
+
+    final jsonString = jsonEncode(backup.toJson());
+    final bytes = Uint8List.fromList(utf8.encode(jsonString));
+
+    String? outputPath = await FilePicker.platform.saveFile(
+      dialogTitle: 'Save Backup',
+      fileName: 'mushaf_backup_${DateTime.now().millisecondsSinceEpoch}.json',
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+      bytes: bytes,
+    );
+    if (outputPath == null) {
+      throw Exception('File save operation was canceled.');
+    }
+    return outputPath;
   }
 
   @override

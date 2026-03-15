@@ -219,11 +219,14 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _handleExport(BuildContext context) async {
     try {
-      final json = await _viewModel.exportData();
+      // final json = await _viewModel.exportData();
+
+      final outputPath = await _viewModel.exportData();
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Data exported (${json.length} characters)'),
+          content: Text('Data exported to: $outputPath'),
           action: SnackBarAction(label: 'OK', onPressed: () {}),
         ),
       );
