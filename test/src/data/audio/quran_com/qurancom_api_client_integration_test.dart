@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:imad_flutter/src/data/audio/quran_com/qurancom_api_client.dart';
 import 'package:imad_flutter/src/data/audio/quran_com/qurancom_api_config.dart';
 import 'package:imad_flutter/src/data/audio/quran_com/qurancom_environment.dart';
+import 'package:imad_flutter/src/logging/mushaf_logger.dart';
 
 /// Manual Integration Test for QuranComApiClient.
 ///
@@ -13,6 +14,7 @@ void main() {
   // Read credentials from environment
   const clientId = String.fromEnvironment('QF_ID');
   const clientSecret = String.fromEnvironment('QF_SECRET');
+  final logger = DefaultMushafLogger();
 
   group('QuranComApiClient Integration Test', () {
     if (clientId.isEmpty || clientSecret.isEmpty) {
@@ -42,8 +44,8 @@ void main() {
     test(
       'should successfully fetch reciters from real API and validate fields',
       () async {
-        print('\n--- TEST: Fetch Reciters ---');
-        print('Fetching real reciters list...');
+        logger.info('--- TEST: Fetch Reciters ---', category: LogCategory.audio);
+        logger.info('Fetching real reciters list...', category: LogCategory.audio);
         final reciters = await apiClient.fetchReciters();
 
         expect(
@@ -51,16 +53,18 @@ void main() {
           isNotEmpty,
           reason: 'Reciters list should not be empty',
         );
-        print('✅ Successfully fetched ${reciters.length} reciters.');
+        logger.info('✅ Successfully fetched ${reciters.length} reciters.', category: LogCategory.audio);
 
         final first = reciters.first;
         expect(first.id, isPositive);
         expect(first.reciterName, isNotEmpty);
-        print(
+        logger.info(
           '✅ First reciter: id=${first.id}, name="${first.reciterName}", style="${first.style}"',
+          category: LogCategory.audio,
         );
-        print(
+        logger.info(
           '✅ Translated name: "${first.translatedName?.name}" (${first.translatedName?.languageName})',
+          category: LogCategory.audio,
         );
 
         // Find Mishari al-Afasy (id usually 7 or similar)
@@ -68,8 +72,9 @@ void main() {
             .where((r) => r.reciterName.toLowerCase().contains('afasy'))
             .firstOrNull;
         if (mishari != null) {
-          print(
+          logger.info(
             '✅ Found Mishari al-Afasy: id=${mishari.id}, Name="${mishari.translatedName?.name ?? mishari.reciterName}"',
+            category: LogCategory.audio,
           );
         }
       },
@@ -78,9 +83,10 @@ void main() {
     test(
       'should successfully fetch chapter audio and timings (Fatiha) and deeply assert structure',
       () async {
-        print('\n--- TEST: Fetch Chapter Audio (Fatiha) ---');
-        print(
+        logger.info('--- TEST: Fetch Chapter Audio (Fatiha) ---', category: LogCategory.audio);
+        logger.info(
           'Fetching real audio and timings for Fatiha (reciter 7, chapter 1)...',
+          category: LogCategory.audio,
         );
         final audioFile = await apiClient.fetchChapterAudio(
           reciterId: 7,
@@ -101,10 +107,11 @@ void main() {
           reason: 'Al-Fatiha must have exactly 7 verses',
         );
 
-        print('✅ Audio URL: ${audioFile.audioUrl}');
-        print('✅ Format: ${audioFile.format}, Size: ${audioFile.fileSize} KB');
-        print(
+        logger.info('✅ Audio URL: ${audioFile.audioUrl}', category: LogCategory.audio);
+        logger.info('✅ Format: ${audioFile.format}, Size: ${audioFile.fileSize} KB', category: LogCategory.audio);
+        logger.info(
           '✅ Timestamps count: ${timestamps.length} (Verified exactly 7 for Fatiha)',
+          category: LogCategory.audio,
         );
 
         for (int i = 0; i < timestamps.length; i++) {
@@ -115,30 +122,35 @@ void main() {
         }
 
         final firstVerse = timestamps.first;
-        print(
+        logger.info(
           '✅ First verse [${firstVerse.verseKey}]: From ${firstVerse.timestampFrom}ms to ${firstVerse.timestampTo}ms',
+          category: LogCategory.audio,
         );
 
         if (firstVerse.segments != null && firstVerse.segments!.isNotEmpty) {
-          print(
+          logger.info(
             '✅ First verse has ${firstVerse.segments!.length} word segments.',
+            category: LogCategory.audio,
           );
           final firstWord = firstVerse.segments!.first;
-          print(
-            '   -> Word ${firstWord.wordIndex}: ${firstWord.startMs}ms - ${firstWord.endMs}ms',
+          logger.info(
+            '   -> Word $firstWord.wordIndex: $firstWord.startMs ms - $firstWord.endMs ms',
+            category: LogCategory.audio,
           );
         } else {
-          print(
+          logger.warning(
             '⚠️ Warning: No segments found for the first verse (might be normal depending on reciter).',
+            category: LogCategory.audio,
           );
         }
       },
     );
 
     test('should successfully fetch chapter audio without segments', () async {
-      print('\n--- TEST: Fetch Chapter Audio Without Segments ---');
-      print(
+      logger.info('\n--- TEST: Fetch Chapter Audio Without Segments ---', category: LogCategory.audio);
+      logger.info(
         'Fetching Husary (reciter 6) for Fatiha (chapter 1) with segments=false...',
+        category: LogCategory.audio,
       );
       final audioFile = await apiClient.fetchChapterAudio(
         reciterId: 6,
@@ -151,7 +163,7 @@ void main() {
 
       final timestamps = audioFile.timestamps;
       if (timestamps != null && timestamps.isNotEmpty) {
-        print('✅ Timestamps successfully retrieved without segments array');
+        logger.info('✅ Timestamps successfully retrieved without segments array', category: LogCategory.audio);
         for (final verse in timestamps) {
           expect(
             verse.segments,
@@ -166,15 +178,15 @@ void main() {
     test(
       'should fail gracefully when requesting an invalid chapter (e.g., 115)',
       () async {
-        print('\n--- TEST: Edge Case - Invalid Chapter ---');
-        print('Fetching audio for non-existent chapter 115...');
+        logger.info('\n--- TEST: Edge Case - Invalid Chapter ---', category: LogCategory.audio);
+        logger.info('Fetching audio for non-existent chapter 115...', category: LogCategory.audio);
 
         try {
           await apiClient.fetchChapterAudio(reciterId: 7, chapterNumber: 115);
           fail('Should have thrown an exception for chapter 115');
         } catch (e) {
-          print('✅ Successfully caught expected error for invalid chapter:');
-          print('   -> $e');
+          logger.info('✅ Successfully caught expected error for invalid chapter:', category: LogCategory.audio);
+          logger.info('   -> $e', category: LogCategory.audio);
           expect(
             e.toString(),
             contains('404'),
@@ -184,26 +196,27 @@ void main() {
     );
 
     test('should handle token caching and 401 recovery on real API', () async {
-      print('\n--- TEST: Sequential Calls (Caching) ---');
-      print('Executing Call 1...');
+      logger.info('\n--- TEST: Sequential Calls (Caching) ---', category: LogCategory.audio);
+      logger.info('Executing Call 1...', category: LogCategory.audio);
       //time calculation
       final stopwatch = Stopwatch()..start();
       await apiClient.fetchReciters();
       stopwatch.stop();
       final call1Time = stopwatch.elapsedMilliseconds;
-      print('✅ Call 1 completed in ${stopwatch.elapsedMilliseconds} ms');
-      print('Executing Call 2 (Should be faster, using cached token)...');
+      logger.info('✅ Call 1 completed in $call1Time ms', category: LogCategory.audio);
+      logger.info('Executing Call 2 (Should be faster, using cached token)...', category: LogCategory.audio);
       stopwatch.reset();
       stopwatch.start();
       await apiClient.fetchReciters();
       stopwatch.stop();
       final call2Time = stopwatch.elapsedMilliseconds;
-      print('✅ Call 2 completed in ${stopwatch.elapsedMilliseconds} ms');
-      print('Call 1 time: ${call1Time} ms, Call 2 time: ${call2Time} ms');
-      print(
+      logger.info('✅ Call 2 completed in $call2Time ms', category: LogCategory.audio);
+      logger.info('Call 1 time: $call1Time ms, Call 2 time: $call2Time ms', category: LogCategory.audio);
+      logger.info(
         'Faster by ${call1Time - call2Time} ms (Expected due to token caching and no re-authentication)',
+        category: LogCategory.audio,
       );
-      print('✅ Sequential calls successful.');
+      logger.info('✅ Sequential calls successful.', category: LogCategory.audio);
     });
   });
 }

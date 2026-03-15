@@ -3,6 +3,7 @@ import 'package:imad_flutter/src/data/audio/quran_com/qurancom_api_client.dart';
 import 'package:imad_flutter/src/data/audio/quran_com/qurancom_api_config.dart';
 import 'package:imad_flutter/src/data/audio/quran_com/qurancom_data_source.dart';
 import 'package:imad_flutter/src/data/audio/quran_com/qurancom_environment.dart';
+import 'package:imad_flutter/src/logging/mushaf_logger.dart';
 
 /// Integration Test for QurancomDataSource.
 ///
@@ -13,6 +14,7 @@ import 'package:imad_flutter/src/data/audio/quran_com/qurancom_environment.dart'
 void main() {
   const clientId = String.fromEnvironment('QF_ID');
   const clientSecret = String.fromEnvironment('QF_SECRET');
+  final logger = DefaultMushafLogger();
 
   group('QurancomDataSource Integration Test', () {
     if (clientId.isEmpty || clientSecret.isEmpty) {
@@ -42,7 +44,7 @@ void main() {
     });
 
     test('should fetch real reciters and map to ReciterInfo with Arabic names', () async {
-      print('\n--- TEST: Integration Fetch Reciters ---');
+      logger.info('\n--- TEST: Integration Fetch Reciters ---', category: LogCategory.audio);
       final reciters = await dataSource.fetchAllReciters();
       
       expect(reciters, isNotEmpty);
@@ -54,16 +56,16 @@ void main() {
       expect(first.nameEnglish, isNotEmpty);
       expect(first.rewaya, isNotEmpty);
       
-      print('✅ Successfully fetched ${reciters.length} reciters.');
-      print('✅ Mapped Example: English="${first.nameEnglish}", Arabic="${first.nameArabic}", Style="${first.rewaya}"');
+      logger.info('✅ Successfully fetched ${reciters.length} reciters.', category: LogCategory.audio);
+      logger.info('✅ Mapped Example: English="${first.nameEnglish}", Arabic="${first.nameArabic}", Style="${first.rewaya}"', category: LogCategory.audio);
     });
 
     test('should fetch and cache timings for a real chapter', () async {
-      print('\n--- TEST: Integration Audio & Timing Cache ---');
+      logger.info('\n--- TEST: Integration Audio & Timing Cache ---', category: LogCategory.audio);
       // Test with Fatiha (chapter 1) and Mishari (id 7)
       final url = await dataSource.fetchChapterAudioUrl(7, 1);
       expect(url, contains('.mp3'));
-      print('✅ Audio URL: $url');
+      logger.info('✅ Audio URL: $url', category: LogCategory.audio);
 
       // Subsequent timing fetch should be instant/cached
       final stopwatch = Stopwatch()..start();
@@ -72,8 +74,8 @@ void main() {
       
       expect(timings, isNotNull);
       expect(timings!.length, equals(7));
-      print('✅ Timestamps count: ${timings.length}');
-      print('✅ Timing fetch duration (cached): ${stopwatch.elapsedMilliseconds}ms');
+      logger.info('✅ Timestamps count: ${timings.length}', category: LogCategory.audio);
+      logger.info('✅ Timing fetch duration (cached): ${stopwatch.elapsedMilliseconds}ms', category: LogCategory.audio);
       
       // In integration tests, 50ms is a safe "cached" threshold to account for CPU variation
       expect(stopwatch.elapsedMilliseconds, lessThan(50), reason: 'Timing should be returned from cache');
