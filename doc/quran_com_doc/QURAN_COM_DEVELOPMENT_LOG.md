@@ -37,7 +37,13 @@ It is meant for both **reviewers** and **future contributors** to understand the
       - [Integration Tests (Live API)](#integration-tests-live-api)
     - [3.3 – AyahTimingService Modernization](#33---ayahtimingservice-modernization)
       - [Atomic Commits Strategy](#atomic-commits-strategy)
-  - [Next Phase – Phase 4: Provider \& Repository Implementation](#next-phase--phase-4-provider--repository-implementation)
+  - [Phase 4 – Provider \& Repository](#phase-4--provider--repository)
+    - [4.1 – QuranComReciterProvider](#41--qurancomreciterprovider)
+    - [4.2 – QuranComAudioRepository](#42--qurancomaudiorepository)
+    - [4.3 – Core Refactoring: FlutterAudioPlayer](#43--core-refactoring-flutteraudioplayer)
+    - [4.4 – Logging Standardization](#44--logging-standardization)
+    - [4.5 – Verification \& Testing](#45--verification--testing)
+  - [Next Phase – Phase 5: Configuration \& Dependency Injection](#next-phase--phase-5-configuration--dependency-injection)
 
 
 ---
@@ -583,8 +589,45 @@ We ensured that every logical change was accompanied by its verification suite i
 - Confirm that **Dynamic Caching** was instantaneous (~0ms) for subsequent hits.
 - Ensure **Error Gracefulness** (empty lists instead of crashes) during API outages.
 
-### Next Phase – Phase 4: Provider & Repository Implementation
+## Phase 4 – Provider & Repository
+
+**Date:** 15th Mar 2026
+
+**Focus:** Moving into the Domain layer by implementing the Reciter Provider and Audio Repository, finalizing the glue between API data and high-level business logic.
+
+### 4.1 – QuranComReciterProvider
+- Implemented `QuranComReciterProvider` to handle reciter-specific business logic.
+- **Search Logic**: Implemented case-insensitive name matching in both English and Arabic.
+- **Hafs Filtering**: Dedicated method to filter by the 'Hafs' rewaya, fulfilling a common user requirement.
+- **Eager Caching**: The provider now fetches and caches the list of ~150+ reciters once per lifecycle, ensuring near-instantaneous search and filtering after the first load.
+
+### 4.2 – QuranComAudioRepository
+- Implemented `QuranComAudioRepository` as the bridge between the playback system and the data sources.
+- **Async Chapter Loading**: Refactored `loadChapter` to return `Future<void>`. This allows the repository to await mapping the reciter, fetching the audio URL, and loading it into the player before resolving.
+- **Stream Enrichment (Verse Highlighting)**: Implemented `getPlayerStateStream`. This method enriches the raw `AudioPlayerState` with real-time `currentVerse` information by intersecting playback positions with timings from `AyahTimingService`.
+- **Lifecycle Management**: Integrated `release()` to clear internal data caches and stop the player gracefully.
+
+### 4.3 – Core Refactoring: FlutterAudioPlayer
+- Updated the core `FlutterAudioPlayer.loadChapter` method. 
+- Added an optional `audioUrl` parameter. This allows the player to bypass the legacy local folder structure when an external API provides a direct stream URL.
+
+### 4.4 – Logging Standardization
+- **Standard**: Migrated all new implementation and testing files to `MushafLogger`.
+- **Scope Restriction**: Per user request to keep the PR focused, logging changes in "core" pre-existing files (`FlutterAudioPlayer`, `AyahTimingService`) were reverted/avoided to maintain minimal diff impact on stable legacy code.
+
+### 4.5 – Verification & Testing
+- **Unit Tests**: Achieved 100% coverage for the new Repository and Provider logic using `mocktail`.
+- **Integration Tests**: Verified end-to-end flows against the live API:
+    - `getReciterById`: Reliable fetching of specific reciter data.
+    - `getDefaultReciter`: Returns the first available Hafs reciter.
+    - `preloadTiming`: Verified that timings can be fetched independently of playback for UI pre-rendering.
+    - **Error Resilience**: Confirmed the repository logs errors correctly when the API returns 404/500 without crashing the playback loop.
+
+---
+
+## Next Phase – Phase 5: Configuration & Dependency Injection
+
 **Planned focus:**
-- Implement `QuranComReciterProvider` to manage high-level reciter business logic (search, filtering).
-- Implement `QuranComAudioRepository` as the main entry point for the playback flow, utilizing the refactored timing service.
-- Integration tests for the repository layer.
+- Wiring the brand-new components into the application's service locator (`get_it`).
+- Enhancing `MushafFlutter.initialize()` to support the new `QuranComApiConfig`.
+- Exposing the source toggle through the `MushafAudioSource` enum.

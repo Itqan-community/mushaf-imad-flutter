@@ -238,15 +238,15 @@ Each checkbox is a small, focused step that can usually be its own commit.
 
 ### 4.1 – QuranComReciterProvider
 
-- [ ] **Create reciter provider**
-  - [ ] Create `lib/src/data/audio/quran_com/qurancom_reciter_provider.dart`.
-  - [ ] Inject `QuranComApiClient`.
-  - [ ] Implement `getAllReciters()` with in-memory caching.
-  - [ ] Map `QuranComReciter` → domain `ReciterInfo`.
-  - [ ] Implement `getReciterById(int id)`.
-  - [ ] Implement `searchReciters(String query)`.
-- [ ] **Commit**
-  - [ ] Commit message: `feat(qurancom): add reciter provider with caching`.
+- [x] **Create reciter provider**
+  - [x] Create `lib/src/data/audio/quran_com/qurancom_reciter_provider.dart`.
+  - [x] Inject `QuranComApiClient`.
+  - [x] Implement `getAllReciters()` with in-memory caching.
+  - [x] Map `QuranComReciter` → domain `ReciterInfo`.
+  - [x] Implement `getReciterById(int id)`.
+  - [x] Implement `searchReciters(String query)`.
+- [x] **Commit**
+  - [x] Commit message: `feat(qurancom): add reciter provider with caching`.
 
 ### 4.2 – AyahTimingService Integration (Verified)
 
@@ -256,22 +256,28 @@ Each checkbox is a small, focused step that can usually be its own commit.
 
 ### 4.3 – QuranComAudioRepository
 
-- [ ] **Create repository**
-  - [ ] Create `lib/src/data/repository/qurancom_audio_repository.dart`.
-  - [ ] Implement `AudioRepository` interface.
-  - [ ] Inject `QuranComReciterProvider`, `QuranComTimingService`, `FlutterAudioPlayer`, `ReciterService`.
-  - [ ] Implement `loadChapter`: fetch audio URL from `QuranComDataSource`, pass it to `FlutterAudioPlayer`.
-  - [ ] Implement `getCurrentVerse` by querying `QuranComTimingService`.
-  - [ ] Delegate all other `AudioRepository` methods to player/service.
-- [ ] **Update `FlutterAudioPlayer` (if needed)**
-  - [ ] Add optional `audioUrl` parameter to `loadChapter` so the Quran.com URL is used instead of `folderUrl`.
-- [ ] **Tests**
-  - [ ] Add `test/src/data/repository/qurancom_audio_repository_test.dart`.
-  - [ ] Mock providers/services and verify delegation.
-- [ ] **Dev log**
-  - [ ] Add `## Phase 4 – Repository` entry.
-- [ ] **Commit**
-  - [ ] Commit message: `feat(qurancom): add audio repository and update player`.
+- [x] **Create repository**
+  - [x] Create `lib/src/data/repository/qurancom_audio_repository.dart`.
+  - [x] Implement `AudioRepository` interface.
+  - [x] Inject `QuranComReciterProvider`, `QuranComTimingService`, `FlutterAudioPlayer`, `ReciterService`.
+  - [x] Implement `loadChapter`: fetch audio URL from `QuranComDataSource`, pass it to `FlutterAudioPlayer`.
+  - [x] Implement `getCurrentVerse` by querying `QuranComTimingService`.
+  - [x] Delegate all other `AudioRepository` methods to player/service.
+- [x] **Update `FlutterAudioPlayer` (if needed)**
+  - [x] Add optional `audioUrl` parameter to `loadChapter` so the Quran.com URL is used instead of `folderUrl`.
+- [x] **Tests**
+  - [x] Add `test/src/data/repository/qurancom_audio_repository_test.dart`.
+  - [x] Mock providers/services and verify delegation.
+- [x] **Dev log**
+  - [x] Add `## Phase 4 – Repository` entry.
+- [x] **Commit**
+  - [x] Commit message: `feat(qurancom): add audio repository and update player`.
+
+#### Refinement: Integration Testing
+- [x] **Standardize Logging**: Replaced `print` with `MushafLogger` in all integration test files.
+- [x] **Provider Coverage**: Added tests for `getReciterById`, `getDefaultReciter`, and `searchReciters`.
+- [x] **Repository Coverage**: Added tests for `loadChapter` (URL resolution) and `preloadTiming` (pre-fetching).
+- [x] **Search Quality**: Verified case-insensitive matching for both English and Arabic.
 
 ---
 
@@ -304,6 +310,8 @@ Each checkbox is a small, focused step that can usually be its own commit.
     - [ ] `QuranComTimingService`
     - [ ] `QuranComAudioRepository` (as the `AudioRepository` singleton)
   - [ ] Ensure `QuranComAudioRepository` is what is resolved wherever `AudioRepository` is expected.
+- [ ] **Data Locality Handling**
+  - [ ] Update `ReciterService` or similar UI-layer services to handle the absence of a `basePath` for Quran.com reciters (ensuring they are treated as purely remote).
 - [ ] **Dev log**
   - [ ] Add `## Phase 5 – Config & DI` to dev log.
 - [ ] **Commit**
