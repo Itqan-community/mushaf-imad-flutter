@@ -623,6 +623,87 @@ We ensured that every logical change was accompanied by its verification suite i
     - `preloadTiming`: Verified that timings can be fetched independently of playback for UI pre-rendering.
     - **Error Resilience**: Confirmed the repository logs errors correctly when the API returns 404/500 without crashing the playback loop.
 
+Results:
+
+1- QuranComReciterProvider
+```powershell
+00:02 +0: QuranComReciterProvider Integration fetchAllReciters returns a real list from Quran.foundation
+Mushaf[audio] INFO: --- TEST: fetchAllReciters ---
+Mushaf[audio] INFO: Fetching real reciters list from Quran.com API...
+Mushaf[network] INFO: Successfully fetched and cached new token (expires in 59 minutes & 59 seconds).
+Mushaf[network] INFO: Sending GET request to https://apis-prelive.quran.foundation/content/api/v4/resources/recitations?language=ar
+Mushaf[network] INFO: Successfully received response from resources/recitations?language=ar
+Mushaf[audio] INFO: ✅ Successfully fetched 2 reciters.
+00:03 +1: QuranComReciterProvider Integration getReciterById works with real data
+Mushaf[audio] INFO: --- TEST: getReciterById ---
+Mushaf[audio] INFO: ✅ Successfully found reciter by ID: Mahmoud Khalil Al-Husary
+00:03 +2: QuranComReciterProvider Integration searchReciters works with real data
+Mushaf[audio] INFO: --- TEST: searchReciters (Mishari) ---
+Mushaf[audio] INFO: ✅ Found 1 results matching "Mishari".
+00:03 +3: QuranComReciterProvider Integration getHafsReciters works with real data
+Mushaf[audio] INFO: --- TEST: getHafsReciters ---
+Mushaf[audio] INFO: ✅ Found 2 Hafs reciters.
+00:03 +4: QuranComReciterProvider Integration getDefaultReciter returns a real reciter
+Mushaf[audio] INFO: --- TEST: getDefaultReciter ---
+Mushaf[audio] INFO: ✅ Default reciter is: Mahmoud Khalil Al-Husary
+00:03 +5: All tests passed!
+```
+
+2- QuranComAudioRepository
+```powershell
+00:23 +0: QuranComAudioRepository Integration loadChapter fetches real URL from API and passes it to player
+Mushaf[audio] INFO: --- TEST: loadChapter (Hafs) ---
+Mushaf[audio] INFO: Fetching real audio URL for chapter 1...
+Mushaf[network] INFO: Successfully fetched and cached new token (expires in 59 minutes & 59 seconds).
+Mushaf[network] INFO: Sending GET request to https://apis-prelive.quran.foundation/content/api/v4/resources/recitations?language=ar
+Mushaf[network] INFO: Successfully received response from resources/recitations?language=ar
+Mushaf[audio] INFO: Using reciter: Mahmoud Khalil Al-Husary (ID: 6)
+Mushaf[network] INFO: Sending GET request to https://apis-prelive.quran.foundation/content/api/v4/chapter_recitations/6/1?segments=true
+Mushaf[network] INFO: Successfully received response from chapter_recitations/6/1?segments=true
+Mushaf[audio] INFO: ✅ Successfully retrieved real URL: https://download.quranicaudio.com/qdc/khalil_al_husary/murattal/1.mp3
+00:24 +1: QuranComAudioRepository Integration getChapterTimings fetches real timings from API
+Mushaf[audio] INFO: --- TEST: getChapterTimings (Fatiha) ---
+Mushaf[audio] INFO: Fetching timings for Mahmoud Khalil Al-Husary, Chapter 1...
+Mushaf[audio] INFO: ✅ Successfully fetched 7 verse timings.
+Mushaf[audio] INFO: ✅ First verse ends at: 5220ms
+00:24 +2: QuranComAudioRepository Integration preloadTiming works without error
+Mushaf[audio] INFO: --- TEST: preloadTiming ---
+Mushaf[audio] INFO: ✅ preloadTiming completed for reciter 6
+00:24 +3: QuranComAudioRepository Integration loadChapter handles invalid data gracefully
+Mushaf[audio] INFO: --- TEST: loadChapter Error (Invalid Chapter) ---
+Mushaf[network] INFO: Sending GET request to https://apis-prelive.quran.foundation/content/api/v4/chapter_recitations/6/115?segments=true
+Mushaf[network] ERROR: Failed to get data from Quran.com API: status 404 , error {"details":{"status":404,"error":"Surah number or slug is invalid. Please select valid slug or surah number from 1-114."},"message":"The requested resource could not be found","type":"not_found","success":false}      
+Mushaf[audio] ERROR: Failed to load Quran.com chapter audio
+  Error: Exception: Failed to get data from Quran.com API: status 404 , error {"details":{"status":404,"error":"Surah number or slug is invalid. Please select valid slug or surah number from 1-114."},"message":"The requested resource could not be found","type":"not_found","success":false}
+  StackTrace: #0      QuranComApiClient._getWithAuth (package:imad_flutter/src/data/audio/quran_com/qurancom_api_client.dart:212:9)
+<asynchronous suspension>
+#1      QuranComApiClient.fetchChapterAudio (package:imad_flutter/src/data/audio/quran_com/qurancom_api_client.dart:95:22)
+<asynchronous suspension>
+#2      QurancomDataSource.fetchChapterAudioUrl (package:imad_flutter/src/data/audio/quran_com/qurancom_data_source.dart:52:23)
+<asynchronous suspension>
+#3      QuranComAudioRepository.loadChapter (package:imad_flutter/src/data/repository/qurancom_audio_repository.dart:85:24)
+<asynchronous suspension>
+#4      _Completes.matchAsync.<anonymous closure> (package:matcher/src/expect/future_matchers.dart:54:22)
+<asynchronous suspension>
+#5      _expect.<anonymous closure> (package:matcher/src/expect/expect.dart:153:17)
+<asynchronous suspension>
+#6      StackZoneSpecification._registerCallback.<anonymous closure> (package:stack_trace/src/stack_zone_specification.dart:114:42)
+<asynchronous suspension>
+#7      expectLater.<anonymous closure> (package:flutter_test/src/widget_tester.dart:508:19)
+<asynchronous suspension>
+#8      main.<anonymous closure>.<anonymous closure> (file:///D:/dev/OpenSrcContreibutions/mushaf-imad-flutter/test/src/data/repository/qurancom_audio_repository_integration_test.dart:130:7)
+<asynchronous suspension>
+#9      Declarer.test.<anonymous closure>.<anonymous closure> (package:test_api/src/backend/declarer.dart:253:15)
+<asynchronous suspension>
+#10     Declarer.test.<anonymous closure> (package:test_api/src/backend/declarer.dart:250:11)
+<asynchronous suspension>
+#11     Invoker._waitForOutstandingCallbacks.<anonymous closure> (package:test_api/src/backend/invoker.dart:318:9)
+<asynchronous suspension>
+
+Mushaf[audio] INFO: ✅ loadChapter (Invalid) completed gracefully.
+00:25 +4: All tests passed!
+```
+
 ---
 
 ## Next Phase – Phase 5: Configuration & Dependency Injection
