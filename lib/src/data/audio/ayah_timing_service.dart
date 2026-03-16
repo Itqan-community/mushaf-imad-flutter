@@ -109,15 +109,21 @@ class AyahTimingService {
       try {
         final remoteTimings = await dataSource.fetchChapterTiming(reciterId, chapterNumber);
         if (remoteTimings != null) {
-          final mappedTimings = remoteTimings.map((timing) {
+          final List<AyahTiming> mappedTimings = [];
+          for (final timing in remoteTimings) {
             // Parse ayah number from "surah:ayah" or similar format
-            final ayahStr = timing.verseKey.split(':').last;
-            return AyahTiming(
-              ayah: int.parse(ayahStr),
+            final parts = timing.verseKey.split(':');
+            if (parts.length < 2) continue;
+
+            final ayahNumber = int.tryParse(parts.last);
+            if (ayahNumber == null) continue;
+
+            mappedTimings.add(AyahTiming(
+              ayah: ayahNumber,
               startTime: timing.timestampFrom,
               endTime: timing.timestampTo,
-            );
-          }).toList();
+            ));
+          }
 
           // Cache the dynamic result
           _dynamicChapterCache.putIfAbsent(reciterId, () => {})[chapterNumber] = mappedTimings;
