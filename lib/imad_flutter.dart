@@ -30,6 +30,7 @@ export 'src/di/core_module.dart'
 
 // Domain Models
 export 'src/domain/models/audio_player_state.dart';
+export 'src/domain/models/audio_source.dart';
 export 'src/domain/models/bookmark.dart';
 export 'src/domain/models/cache_stats.dart';
 export 'src/domain/models/chapter.dart';
