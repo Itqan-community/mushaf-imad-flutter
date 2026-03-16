@@ -4,9 +4,12 @@ import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../domain/models/audio_player_state.dart' as domain;
 import '../../domain/models/reciter_info.dart';
+import 'audio_player_interface.dart';
 
 /// App-specific AudioHandler that connects just_audio to audio_service
-class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
+class FlutterAudioPlayer extends BaseAudioHandler
+    with SeekHandler
+    implements AudioPlayerInterface {
   final AudioPlayer _player = AudioPlayer();
 
   int? _currentChapter;

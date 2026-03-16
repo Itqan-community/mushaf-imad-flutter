@@ -66,6 +66,7 @@ export 'src/domain/repository/verse_repository.dart';
 // Data Layer - Public interfaces for implementors
 export 'src/data/repository/database_service.dart';
 export 'src/data/local/dao/bookmark_dao.dart';
+export 'src/data/local/dao/preferences_dao.dart';
 export 'src/data/local/dao/reading_history_dao.dart';
 export 'src/data/local/dao/search_history_dao.dart';
 
@@ -84,6 +85,7 @@ export 'src/ui/history/reading_history_view_model.dart';
 export 'src/ui/settings/settings_view_model.dart';
 export 'src/ui/theme/theme_view_model.dart';
 export 'src/ui/theme/reading_theme.dart';
+export 'src/ui/verses/verses_list_view_model.dart';
 
 // Mushaf UI Widgets
 export 'src/ui/mushaf/mushaf_page_view.dart';
@@ -98,6 +100,7 @@ export 'src/ui/search/search_page.dart';
 export 'src/ui/settings/settings_page.dart';
 export 'src/ui/theme/theme_picker_widget.dart';
 export 'src/ui/theme/mushaf_theme_scope.dart';
+export 'src/ui/verses/verses_list_page.dart';
 
 // Quran Data
 export 'src/data/quran/quran_data_provider.dart';
@@ -107,5 +110,6 @@ export 'src/data/quran/verse_data_provider.dart';
 // Hive Database Implementations
 export 'src/data/local/hive_database_service.dart';
 export 'src/data/local/dao/hive/hive_bookmark_dao.dart';
+export 'src/data/local/dao/hive/hive_preferences_dao.dart';
 export 'src/data/local/dao/hive/hive_reading_history_dao.dart';
 export 'src/data/local/dao/hive/hive_search_history_dao.dart';

@@ -32,3 +32,6 @@ migrate_working_dir/
 /mushaf-imad-android/
 /scripts/
 quran.realm
+
+# FVM Version Cache
+.fvm/

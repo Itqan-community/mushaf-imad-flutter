@@ -1,43 +1,19 @@
 import 'dart:async';
 
-import 'package:hive/hive.dart';
-
-import '../../../imad_flutter.dart';
 import '../../domain/models/mushaf_type.dart';
 import '../../domain/models/theme.dart';
 import '../../domain/repository/preferences_repository.dart';
+import '../local/dao/hive/hive_preferences_dao.dart';
+import '../local/dao/preferences_dao.dart';
 
-/// Default implementation of PreferencesRepository.
-/// Uses in-memory state with Stream-based reactivity.
-/// For production, replace with SharedPreferences or Hive-backed implementation.
+/// Default implementation of [PreferencesRepository].
+///
+/// Persists all preferences via [PreferencesDao] (Hive-backed by default)
+/// and exposes reactive [Stream]s via broadcast [StreamController]s.
 class DefaultPreferencesRepository implements PreferencesRepository {
-  // Mushaf preferences — backing fields for Stream-based state.
-  // Values are currently written via setters and emitted to StreamControllers.
-  // Will be persisted via Hive when integrated.
-  // ignore: unused_field
-  MushafType _mushafType = MushafType.hafs1441;
-  // ignore: unused_field
-  int _currentPage = 1;
-  // ignore: unused_field
-  int? _lastReadChapter;
-  (int, int)? _lastReadVerse;
-  // ignore: unused_field
-  double _fontSizeMultiplier = 1.0;
-  // ignore: unused_field
-  bool _showTranslation = false;
+  final PreferencesDao _dao;
 
-  // Audio preferences
-  int _selectedReciterId = 1;
-  double _playbackSpeed = 1.0;
-  bool _repeatMode = false;
-  int? _lastAudioChapter;
-  int? _lastAudioVerse;
-  int _lastAudioPositionMs = 0;
-
-  // Theme preferences
-  ThemeConfig _themeConfig = const ThemeConfig();
-
-  // Stream controllers
+  // Stream controllers — broadcast so multiple listeners are supported
   final _mushafTypeController = StreamController<MushafType>.broadcast();
   final _currentPageController = StreamController<int>.broadcast();
   final _lastReadChapterController = StreamController<int?>.broadcast();
@@ -52,25 +28,17 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   final _lastAudioPositionController = StreamController<int>.broadcast();
   final _themeConfigController = StreamController<ThemeConfig>.broadcast();
 
-  // ========== Mushaf Reading Preferences ==========
+  DefaultPreferencesRepository({PreferencesDao? dao})
+      : _dao = dao ?? HivePreferencesDao();
 
-  DefaultPreferencesRepository();
-  @override
-  Future<int> getCurrentPage() async {
-    final box = await Hive.openBox('settings');
-    final rawPage = box.get('current_page', defaultValue: 1);
-
-    _currentPage = (rawPage as int).clamp(1, QuranDataProvider.totalPages);
-
-    return _currentPage;
-  }
+  // ── Mushaf Reading ────────────────────────────────────────────────────────
 
   @override
   Stream<MushafType> getMushafTypeStream() => _mushafTypeController.stream;
 
   @override
   Future<void> setMushafType(MushafType mushafType) async {
-    _mushafType = mushafType;
+    await _dao.setMushafType(mushafType);
     _mushafTypeController.add(mushafType);
   }
 
@@ -78,8 +46,11 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   Stream<int> getCurrentPageStream() => _currentPageController.stream;
 
   @override
+  Future<int> getCurrentPage() => _dao.getCurrentPage();
+
+  @override
   Future<void> setCurrentPage(int pageNumber) async {
-    _currentPage = pageNumber;
+    await _dao.setCurrentPage(pageNumber);
     _currentPageController.add(pageNumber);
   }
 
@@ -88,7 +59,7 @@ class DefaultPreferencesRepository implements PreferencesRepository {
 
   @override
   Future<void> setLastReadChapter(int chapterNumber) async {
-    _lastReadChapter = chapterNumber;
+    await _dao.setLastReadChapter(chapterNumber);
     _lastReadChapterController.add(chapterNumber);
   }
 
@@ -98,8 +69,8 @@ class DefaultPreferencesRepository implements PreferencesRepository {
 
   @override
   Future<void> setLastReadVerse(int chapterNumber, int verseNumber) async {
-    _lastReadVerse = (chapterNumber, verseNumber);
-    _lastReadVerseController.add(_lastReadVerse);
+    await _dao.setLastReadVerse(chapterNumber, verseNumber);
+    _lastReadVerseController.add((chapterNumber, verseNumber));
   }
 
   @override
@@ -107,7 +78,7 @@ class DefaultPreferencesRepository implements PreferencesRepository {
 
   @override
   Future<void> setFontSizeMultiplier(double multiplier) async {
-    _fontSizeMultiplier = multiplier;
+    await _dao.setFontSizeMultiplier(multiplier);
     _fontSizeController.add(multiplier);
   }
 
@@ -116,21 +87,21 @@ class DefaultPreferencesRepository implements PreferencesRepository {
 
   @override
   Future<void> setShowTranslation(bool show) async {
-    _showTranslation = show;
+    await _dao.setShowTranslation(show);
     _showTranslationController.add(show);
   }
 
-  // ========== Audio Preferences ==========
+  // ── Audio ─────────────────────────────────────────────────────────────────
 
   @override
   Stream<int> getSelectedReciterIdStream() => _reciterIdController.stream;
 
   @override
-  Future<int> getSelectedReciterId() async => _selectedReciterId;
+  Future<int> getSelectedReciterId() => _dao.getSelectedReciterId();
 
   @override
   Future<void> setSelectedReciterId(int reciterId) async {
-    _selectedReciterId = reciterId;
+    await _dao.setSelectedReciterId(reciterId);
     _reciterIdController.add(reciterId);
   }
 
@@ -138,11 +109,11 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   Stream<double> getPlaybackSpeedStream() => _playbackSpeedController.stream;
 
   @override
-  Future<double> getPlaybackSpeed() async => _playbackSpeed;
+  Future<double> getPlaybackSpeed() => _dao.getPlaybackSpeed();
 
   @override
   Future<void> setPlaybackSpeed(double speed) async {
-    _playbackSpeed = speed;
+    await _dao.setPlaybackSpeed(speed);
     _playbackSpeedController.add(speed);
   }
 
@@ -150,11 +121,11 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   Stream<bool> getRepeatModeStream() => _repeatModeController.stream;
 
   @override
-  Future<bool> getRepeatMode() async => _repeatMode;
+  Future<bool> getRepeatMode() => _dao.getRepeatMode();
 
   @override
   Future<void> setRepeatMode(bool enabled) async {
-    _repeatMode = enabled;
+    await _dao.setRepeatMode(enabled);
     _repeatModeController.add(enabled);
   }
 
@@ -163,11 +134,11 @@ class DefaultPreferencesRepository implements PreferencesRepository {
       _lastAudioChapterController.stream;
 
   @override
-  Future<int?> getLastAudioChapter() async => _lastAudioChapter;
+  Future<int?> getLastAudioChapter() => _dao.getLastAudioChapter();
 
   @override
   Future<void> setLastAudioChapter(int? chapterNumber) async {
-    _lastAudioChapter = chapterNumber;
+    await _dao.setLastAudioChapter(chapterNumber);
     _lastAudioChapterController.add(chapterNumber);
   }
 
@@ -175,11 +146,11 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   Stream<int?> getLastAudioVerseStream() => _lastAudioVerseController.stream;
 
   @override
-  Future<int?> getLastAudioVerse() async => _lastAudioVerse;
+  Future<int?> getLastAudioVerse() => _dao.getLastAudioVerse();
 
   @override
   Future<void> setLastAudioVerse(int? verseNumber) async {
-    _lastAudioVerse = verseNumber;
+    await _dao.setLastAudioVerse(verseNumber);
     _lastAudioVerseController.add(verseNumber);
   }
 
@@ -188,74 +159,68 @@ class DefaultPreferencesRepository implements PreferencesRepository {
       _lastAudioPositionController.stream;
 
   @override
-  Future<int> getLastAudioPositionMs() async => _lastAudioPositionMs;
+  Future<int> getLastAudioPositionMs() => _dao.getLastAudioPositionMs();
 
   @override
   Future<void> setLastAudioPositionMs(int positionMs) async {
-    _lastAudioPositionMs = positionMs;
+    await _dao.setLastAudioPositionMs(positionMs);
     _lastAudioPositionController.add(positionMs);
   }
 
-  // ========== Theme Preferences ==========
+  // ── Theme ─────────────────────────────────────────────────────────────────
 
   @override
   Stream<ThemeConfig> getThemeConfigStream() => _themeConfigController.stream;
 
   @override
-  Future<ThemeConfig> getThemeConfig() async => _themeConfig;
+  Future<ThemeConfig> getThemeConfig() => _dao.getThemeConfig();
 
   @override
   Future<void> setThemeMode(MushafThemeMode mode) async {
-    _themeConfig = ThemeConfig(
+    final current = await _dao.getThemeConfig();
+    final updated = ThemeConfig(
       mode: mode,
-      colorScheme: _themeConfig.colorScheme,
-      useAmoled: _themeConfig.useAmoled,
+      colorScheme: current.colorScheme,
+      useAmoled: current.useAmoled,
     );
-    _themeConfigController.add(_themeConfig);
+    await _dao.setThemeConfig(updated);
+    _themeConfigController.add(updated);
   }
 
   @override
   Future<void> setColorScheme(MushafColorScheme scheme) async {
-    _themeConfig = ThemeConfig(
-      mode: _themeConfig.mode,
+    final current = await _dao.getThemeConfig();
+    final updated = ThemeConfig(
+      mode: current.mode,
       colorScheme: scheme,
-      useAmoled: _themeConfig.useAmoled,
+      useAmoled: current.useAmoled,
     );
-    _themeConfigController.add(_themeConfig);
+    await _dao.setThemeConfig(updated);
+    _themeConfigController.add(updated);
   }
 
   @override
   Future<void> setAmoledMode(bool enabled) async {
-    _themeConfig = ThemeConfig(
-      mode: _themeConfig.mode,
-      colorScheme: _themeConfig.colorScheme,
+    final current = await _dao.getThemeConfig();
+    final updated = ThemeConfig(
+      mode: current.mode,
+      colorScheme: current.colorScheme,
       useAmoled: enabled,
     );
-    _themeConfigController.add(_themeConfig);
+    await _dao.setThemeConfig(updated);
+    _themeConfigController.add(updated);
   }
 
   @override
   Future<void> updateThemeConfig(ThemeConfig config) async {
-    _themeConfig = config;
+    await _dao.setThemeConfig(config);
     _themeConfigController.add(config);
   }
 
-  // ========== General ==========
+  // ── General ───────────────────────────────────────────────────────────────
 
   @override
   Future<void> clearAll() async {
-    _mushafType = MushafType.hafs1441;
-    _currentPage = 1;
-    _lastReadChapter = null;
-    _lastReadVerse = null;
-    _fontSizeMultiplier = 1.0;
-    _showTranslation = false;
-    _selectedReciterId = 1;
-    _playbackSpeed = 1.0;
-    _repeatMode = false;
-    _lastAudioChapter = null;
-    _lastAudioVerse = null;
-    _lastAudioPositionMs = 0;
-    _themeConfig = const ThemeConfig();
+    await _dao.clearAll();
   }
 }
