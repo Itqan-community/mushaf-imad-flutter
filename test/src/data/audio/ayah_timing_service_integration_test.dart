@@ -29,6 +29,7 @@ void main() {
 
     late AyahTimingService timingService;
     late MushafAudioDataSource dataSource;
+    late QuranComApiClient apiClient;
     final logger = DefaultMushafLogger();
 
     setUpAll(() {
@@ -38,9 +39,13 @@ void main() {
         environment: QuranComEnvironment.prelive,
       );
 
-      final apiClient = QuranComApiClient(config: config);
+      apiClient = QuranComApiClient(config: config);
       dataSource = QurancomDataSource(apiClient: apiClient);
       timingService = AyahTimingService(dataSource: dataSource);
+    });
+
+    tearDownAll(() {
+      apiClient.dispose();
     });
 
     test(

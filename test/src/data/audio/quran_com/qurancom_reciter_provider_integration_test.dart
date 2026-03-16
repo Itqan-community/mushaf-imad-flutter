@@ -42,6 +42,10 @@ void main() {
       logger: logger,
     );
 
+    tearDownAll(() {
+      apiClient.dispose();
+    });
+
     test('fetchAllReciters returns a real list from Quran.foundation', () async {
       logger.info('--- TEST: fetchAllReciters ---', category: LogCategory.audio);
       logger.info('Fetching real reciters list from Quran.com API...', category: LogCategory.audio);
