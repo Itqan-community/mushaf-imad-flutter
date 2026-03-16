@@ -197,6 +197,47 @@ void main() {
 
         expect(result.id, _hafsReciter1.id);
       });
+
+      test('returns first available reciter when NO Hafs reciters exist', () async {
+        when(() => mockDataSource.fetchAllReciters())
+            .thenAnswer((_) async => [_warshReciter]);
+
+        final result = await provider.getDefaultReciter();
+
+        expect(result.id, _warshReciter.id);
+      });
+
+      test('throws StateError when fetchAllReciters returns empty list', () async {
+        when(() => mockDataSource.fetchAllReciters())
+            .thenAnswer((_) async => []);
+
+        expect(
+          () => provider.getDefaultReciter(),
+          throwsA(isA<StateError>()),
+        );
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // clearCache
+    // -----------------------------------------------------------------------
+
+    group('clearCache()', () {
+      test('forces a re-fetch from data source', () async {
+        when(() => mockDataSource.fetchAllReciters())
+            .thenAnswer((_) async => _sampleReciters);
+
+        // Populate cache
+        await provider.getAllReciters();
+        verify(() => mockDataSource.fetchAllReciters()).called(1);
+
+        // Clear and fetch again
+        provider.clearCache();
+        await provider.getAllReciters();
+
+        // Should have hit data source a second time
+        verify(() => mockDataSource.fetchAllReciters()).called(1);
+      });
     });
   });
 }

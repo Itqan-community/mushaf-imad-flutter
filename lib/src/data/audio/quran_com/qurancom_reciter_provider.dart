@@ -48,11 +48,7 @@ class QuranComReciterProvider {
   /// Returns the reciter matching [reciterId], or `null` if not found.
   Future<ReciterInfo?> getReciterById(int reciterId) async {
     final reciters = await getAllReciters();
-    try {
-      return reciters.firstWhere((r) => r.id == reciterId);
-    } catch (_) {
-      return null;
-    }
+    return reciters.where((r) => r.id == reciterId).firstOrNull;
   }
 
   /// Searches reciters by partial, case-insensitive name match.
