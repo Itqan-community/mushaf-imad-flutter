@@ -134,7 +134,7 @@ void main() {
           );
           final firstWord = firstVerse.segments!.first;
           logger.info(
-            '   -> Word $firstWord.wordIndex: $firstWord.startMs ms - $firstWord.endMs ms',
+            '   -> Word ${firstWord.wordIndex}: ${firstWord.startMs} ms - ${firstWord.endMs} ms',
             category: LogCategory.audio,
           );
         } else {

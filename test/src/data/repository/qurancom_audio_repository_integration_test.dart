@@ -61,6 +61,10 @@ void main() {
       logger: logger,
     );
 
+    tearDownAll(() {
+      apiClient.dispose();
+    });
+
     test('loadChapter fetches real URL from API and passes it to player', () async {
       logger.info('--- TEST: loadChapter (Hafs) ---', category: LogCategory.audio);
       logger.info('Fetching real audio URL for chapter 1...', category: LogCategory.audio);
