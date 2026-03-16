@@ -706,9 +706,36 @@ Mushaf[audio] INFO: ✅ loadChapter (Invalid) completed gracefully.
 
 ---
 
-## Next Phase – Phase 5: Configuration & Dependency Injection
+## Post Phase 4 – CodeRabbit Review Fixes
 
-**Planned focus:**
-- Wiring the brand-new components into the application's service locator (`get_it`).
-- Enhancing `MushafFlutter.initialize()` to support the new `QuranComApiConfig`.
-- Exposing the source toggle through the `MushafAudioSource` enum.
+**Date:** 17th Mar 2026
+
+Applied the following fixes based on automated code review findings before moving to Phase 5:
+
+- **Resource Disposal**: Added `tearDownAll { apiClient.dispose() }` to `QuranComReciterProvider`, `QuranComAudioRepository`, and `AyahTimingService` integration test suites to prevent HTTP connection leaks after test runs.
+- **String Interpolation Bug**: Fixed `$firstWord.wordIndex` → `${firstWord.wordIndex}` in `qurancom_api_client_integration_test.dart` log messages (literal text was printed instead of numeric values).
+- **Test Stability (Anti-Flakiness)**: Raised `Stopwatch` thresholds from `100ms` to `500ms` in `AyahTimingService` integration tests to avoid false failures on slow/warm-up runs while still asserting local asset priority over the network.
+- **`getReciterById` Flow Control**: Replaced `try/catch` around `firstWhere` in `QuranComReciterProvider` with `firstOrNull` to avoid using exceptions for flow control.
+- **Edge-Case Unit Tests**: Added 3 new tests to `qurancom_reciter_provider_test.dart`:
+  - Fallback to first available reciter when no Hafs reciters exist.
+  - `StateError` thrown when reciter list is empty.
+  - `clearCache()` correctly forces a re-fetch from the data source.
+- **Defensive `verseKey` Parsing**: Refactored the `remoteTimings` mapping in `AyahTimingService.getChapterTimings` to use `split(':')` validation and `int.tryParse` instead of `int.parse`, so malformed API tokens are silently skipped instead of throwing `FormatException`.
+
+> **Scope note:** `MushafLogger` was intentionally NOT added to `AyahTimingService` or `FlutterAudioPlayer` to keep the PR diff minimal and focused on the Quran.com feature boundary.
+
+---
+
+## Phase 5 – Configuration & Dependency Injection
+
+**Date:** 17th Mar 2026
+
+**Focus:** Exposing the new audio source to library consumers by wiring all Quran.com components into the DI container and providing a clean public API for initialization.
+
+### 5.1 – MushafAudioSource Enum
+
+- Created `lib/src/domain/models/audio_source.dart` with the `MushafAudioSource` enum.
+- Added two values:
+  - `local` – the pre-existing default, backed by bundled MP3 assets and the original `DefaultAudioRepository`.
+  - `quranCom` – the new value, signalling that the library should use `QuranComAudioRepository` with streaming URLs from the Quran.Foundation API.
+- Exported the new file from `imad_flutter.dart` so library consumers can reference it at initialization time without any internal imports.

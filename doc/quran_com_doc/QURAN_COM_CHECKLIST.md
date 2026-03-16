@@ -285,11 +285,12 @@ Each checkbox is a small, focused step that can usually be its own commit.
 
 ### 5.1 – AudioSource Enum
 
-- [ ] **Add/update enum**
-  - [ ] Add `quranCom` value to the `MushafAudioSource` enum (check if PR #24 already added it).
-  - [ ] Locate or create `lib/src/domain/models/audio_source.dart`.
-- [ ] **Commit**
-  - [ ] Commit message: `feat(audio): add qurancom to AudioSource enum`.
+- [x] **Add/update enum**
+  - [x] Add `quranCom` value to the `MushafAudioSource` enum 
+  - [x] Locate or create `lib/src/domain/models/audio_source.dart`.
+  - [x] Export `audio_source.dart` from `imad_flutter.dart`.
+- [x] **Commit**
+  - [x] Commit message: `feat(audio): add MushafAudioSource enum with local and quranCom values`.
 
 ### 5.2 – QuranComAudioSourceConfig
 
