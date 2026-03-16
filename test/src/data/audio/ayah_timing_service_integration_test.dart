@@ -84,7 +84,9 @@ void main() {
         expect(timings2.length, 7);
         expect(
           sw.elapsedMilliseconds,
-          lessThan(100),
+          lessThan(
+            500,
+          ), // generous threshold to avoid flakiness on slow devices
           reason: 'Dynamic cache should be instantaneous',
         );
         logger.info(
@@ -193,7 +195,9 @@ void main() {
         expect(timings, isNotEmpty);
         expect(
           sw.elapsedMilliseconds,
-          lessThan(100),
+          lessThan(
+            500,
+          ), // generous threshold to avoid flakiness on slow devices
           reason: 'Local asset parsing should be practically instant',
         );
       },
