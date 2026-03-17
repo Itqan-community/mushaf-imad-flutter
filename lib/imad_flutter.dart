@@ -72,6 +72,8 @@ export 'src/data/local/dao/search_history_dao.dart';
 
 // Data Layer - Audio (public utilities)
 export 'src/data/audio/reciter_data_provider.dart';
+export 'src/data/audio/quran_com/qurancom_audio_source_config.dart';
+export 'src/data/audio/quran_com/qurancom_environment.dart';
 
 // Logging
 export 'src/logging/mushaf_logger.dart';
