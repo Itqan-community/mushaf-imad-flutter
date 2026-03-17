@@ -294,29 +294,24 @@ Each checkbox is a small, focused step that can usually be its own commit.
 
 ### 5.2 – QuranComAudioSourceConfig
 
-- [ ] **Create caller-facing config**
-  - [ ] Create `QuranComAudioSourceConfig` (similar to `CmsAudioSourceConfig`).
-  - [ ] Fields: `clientId`, `clientSecret`, `environment` (`QuranComEnvironment`).
-  - [ ] This is what the host app passes at `MushafFlutter.initialize(...)`.
+- [x] **Create caller-facing config**
+  - [x] Create `QuranComAudioSourceConfig` in `lib/src/data/audio/quran_com/qurancom_audio_source_config.dart`.
+  - [x] Fields: `clientId`, `clientSecret`, `environment` (`QuranComEnvironment`, defaults to `production`).
+  - [x] Add `toApiConfig()` helper to derive the internal `QuranComApiConfig`.
+  - [x] Export config and `QuranComEnvironment` from `imad_flutter.dart`.
 
 ### 5.3 – Initialization Wiring
 
-- [ ] **Extend library entrypoint**
-  - [ ] In the core init flow, intercept when `MushafAudioSource.quranCom` is chosen.
-  - [ ] Instantiate `QuranComApiClient` with the provided config.
-  - [ ] Register all Quran.com services in DI:
-    - [ ] `QuranComApiClient`
-    - [ ] `QuranComDataSource`
-    - [ ] `QuranComReciterProvider`
-    - [ ] `QuranComTimingService`
-    - [ ] `QuranComAudioRepository` (as the `AudioRepository` singleton)
-  - [ ] Ensure `QuranComAudioRepository` is what is resolved wherever `AudioRepository` is expected.
-- [ ] **Data Locality Handling**
-  - [ ] Update `ReciterService` or similar UI-layer services to handle the absence of a `basePath` for Quran.com reciters (ensuring they are treated as purely remote).
-- [ ] **Dev log**
-  - [ ] Add `## Phase 5 – Config & DI` to dev log.
-- [ ] **Commit**
-  - [ ] Commit message: `feat(audio): wire qurancom source into library initialization`.
+- [x] **Extend library entrypoint**
+  - [x] Add `audioSource` (defaults to `MushafAudioSource.local`) and optional `quranComConfig` parameters to `setupMushafDependencies`.
+  - [x] Add `assert` guard: `quranComConfig` must be provided when `quranCom` is selected.
+  - [x] Instantiate `QuranComApiClient` with `quranComConfig.toApiConfig()`.
+  - [x] Register `QuranComApiClient`, `QurancomDataSource`, `QuranComReciterProvider` as singletons.
+  - [x] Re-register `AyahTimingService` with the live `dataSource` injected (replaces the no-dataSource default).
+  - [x] Register `QuranComAudioRepository` as the `AudioRepository` singleton.
+  - [x] `DefaultAudioRepository` (local) remains the default path in the `else` branch.
+- [x] **Commit**
+  - [x] Commit message: `feat(di): wire QuranComAudioRepository into setupMushafDependencies`.
 
 ---
 

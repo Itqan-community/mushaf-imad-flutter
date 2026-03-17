@@ -739,3 +739,21 @@ Applied the following fixes based on automated code review findings before movin
   - `local` – the pre-existing default, backed by bundled MP3 assets and the original `DefaultAudioRepository`.
   - `quranCom` – the new value, signalling that the library should use `QuranComAudioRepository` with streaming URLs from the Quran.Foundation API.
 - Exported the new file from `imad_flutter.dart` so library consumers can reference it at initialization time without any internal imports.
+
+### 5.2 – QuranComAudioSourceConfig
+
+- Created `lib/src/data/audio/quran_com/qurancom_audio_source_config.dart`.
+- Fields: `clientId`, `clientSecret`, and `environment` (defaults to `production`).
+- Added a `toApiConfig()` helper to bridge from the public consumer-facing config to the internal `QuranComApiConfig` without leaking internal types.
+- Exported alongside `QuranComEnvironment` from the public barrel `imad_flutter.dart`.
+
+### 5.3 – Initialization Wiring
+
+- Extended `setupMushafDependencies` in `lib/src/di/core_module.dart` with two new optional parameters:
+  - `audioSource` – `MushafAudioSource`, defaults to `MushafAudioSource.local` (no breaking change for existing callers).
+  - `quranComConfig` – `QuranComAudioSourceConfig?`, required when `audioSource == MushafAudioSource.quranCom`.
+- Added a **debug `assert`** to catch misconfiguration early (config missing when Quran.com source selected).
+- **Branching DI logic**:
+  - `quranCom` path: instantiates `QuranComApiClient`, `QurancomDataSource`, `QuranComReciterProvider`, re-registers `AyahTimingService` with the live data source injected, and registers `QuranComAudioRepository` as the `AudioRepository` singleton.
+  - `local` (default) path: unchanged — registers `DefaultAudioRepository` exactly as before.
+- **Zero breaking changes** for existing library consumers; the new parameters are optional with safe defaults.
