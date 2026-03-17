@@ -3,6 +3,10 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import '../data/audio/ayah_timing_service.dart';
 import '../data/audio/reciter_service.dart';
+import '../data/audio/quran_com/qurancom_api_client.dart';
+import '../data/audio/quran_com/qurancom_audio_source_config.dart';
+import '../data/audio/quran_com/qurancom_data_source.dart';
+import '../data/audio/quran_com/qurancom_reciter_provider.dart';
 import '../data/cache/chapters_data_cache.dart';
 import '../data/cache/quran_data_cache_service.dart';
 import '../data/local/hive_database_service.dart';
@@ -12,6 +16,7 @@ import '../data/local/dao/hive/hive_search_history_dao.dart';
 import '../data/audio/flutter_audio_player.dart';
 import '../data/repository/database_service.dart';
 import '../data/repository/default_audio_repository.dart';
+import '../data/repository/qurancom_audio_repository.dart';
 import 'package:audio_service/audio_service.dart';
 import '../data/repository/default_bookmark_repository.dart';
 import '../data/repository/default_chapter_repository.dart';
@@ -25,6 +30,7 @@ import '../data/repository/default_verse_repository.dart';
 import '../data/local/dao/bookmark_dao.dart';
 import '../data/local/dao/reading_history_dao.dart';
 import '../data/local/dao/search_history_dao.dart';
+import '../domain/models/audio_source.dart';
 import '../domain/repository/audio_repository.dart';
 import '../domain/repository/bookmark_repository.dart';
 import '../domain/repository/chapter_repository.dart';
@@ -49,13 +55,23 @@ final GetIt mushafGetIt = GetIt.instance;
 /// [bookmarkDao], [readingHistoryDao], [searchHistoryDao] must be
 /// provided for the full feature set, or the library will use stubs.
 ///
-/// Example:
+/// Pass [audioSource] to select the audio backend:
+/// - [MushafAudioSource.local] (default): bundled MP3 assets.
+/// - [MushafAudioSource.quranCom]: streams from Quran.Foundation API;
+///   requires [quranComConfig] to be supplied.
+///
+/// Example – Quran.com source:
 /// ```dart
 /// await setupMushafDependencies(
 ///   databaseService: HiveDatabaseService(),
 ///   bookmarkDao: HiveBookmarkDao(),
 ///   readingHistoryDao: HiveReadingHistoryDao(),
 ///   searchHistoryDao: HiveSearchHistoryDao(),
+///   audioSource: MushafAudioSource.quranCom,
+///   quranComConfig: QuranComAudioSourceConfig(
+///     clientId: const String.fromEnvironment('QF_ID'),
+///     clientSecret: const String.fromEnvironment('QF_SECRET'),
+///   ),
 /// );
 /// ```
 Future<void> setupMushafDependencies({
@@ -64,7 +80,13 @@ Future<void> setupMushafDependencies({
   required ReadingHistoryDao readingHistoryDao,
   required SearchHistoryDao searchHistoryDao,
   MushafLogger? logger,
+  MushafAudioSource audioSource = MushafAudioSource.local,
+  QuranComAudioSourceConfig? quranComConfig,
 }) async {
+  assert(
+    audioSource != MushafAudioSource.quranCom || quranComConfig != null,
+    'quranComConfig must be provided when audioSource is MushafAudioSource.quranCom',
+  );
   // Logger
   mushafGetIt.registerSingleton<MushafLogger>(logger ?? DefaultMushafLogger());
 
@@ -141,13 +163,43 @@ Future<void> setupMushafDependencies({
     ),
   );
 
-  mushafGetIt.registerSingleton<AudioRepository>(
-    DefaultAudioRepository(
-      mushafGetIt<ReciterService>(),
-      mushafGetIt<AyahTimingService>(),
-      audioPlayer,
-    ),
-  );
+  // Wire AudioRepository based on the selected source
+  if (audioSource == MushafAudioSource.quranCom) {
+    final apiClient = QuranComApiClient(config: quranComConfig!.toApiConfig());
+    final dataSource = QurancomDataSource(apiClient: apiClient);
+    final resolvedLogger = mushafGetIt<MushafLogger>();
+
+    mushafGetIt.registerSingleton<QuranComApiClient>(apiClient);
+    mushafGetIt.registerSingleton<QurancomDataSource>(dataSource);
+    mushafGetIt.registerSingleton<QuranComReciterProvider>(
+      QuranComReciterProvider(dataSource: dataSource, logger: resolvedLogger),
+    );
+
+    // AyahTimingService is already registered above; re-use the same instance
+    // but supply the Quran.com dataSource so the API fallback is wired up.
+    mushafGetIt.unregister<AyahTimingService>();
+    mushafGetIt.registerSingleton<AyahTimingService>(
+      AyahTimingService(dataSource: dataSource),
+    );
+
+    mushafGetIt.registerSingleton<AudioRepository>(
+      QuranComAudioRepository(
+        reciterProvider: mushafGetIt<QuranComReciterProvider>(),
+        timingService: mushafGetIt<AyahTimingService>(),
+        dataSource: dataSource,
+        audioPlayer: audioPlayer,
+        logger: resolvedLogger,
+      ),
+    );
+  } else {
+    mushafGetIt.registerSingleton<AudioRepository>(
+      DefaultAudioRepository(
+        mushafGetIt<ReciterService>(),
+        mushafGetIt<AyahTimingService>(),
+        audioPlayer,
+      ),
+    );
+  }
 
   mushafGetIt.registerSingleton<DataExportRepository>(
     DefaultDataExportRepository(
