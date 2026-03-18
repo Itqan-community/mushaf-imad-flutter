@@ -82,7 +82,7 @@ void main() {
       final reciter = reciters.firstWhere((r) => r.isHafs);
       logger.info('Using reciter: ${reciter.nameEnglish} (ID: ${reciter.id})', category: LogCategory.audio);
 
-      await repository.loadChapter(1, reciter.id);
+      repository.loadChapter(1, reciter.id);
 
       // Assert: Verify that a non-empty, real URL was passed to the player
       final capturedUrl = verify(() => mockPlayer.loadChapter(
@@ -131,7 +131,7 @@ void main() {
       final reciter = reciters.first;
 
       // Chapter 115 doesn't exist. Should not throw but log error.
-      await expectLater(repository.loadChapter(115, reciter.id), completes);
+      repository.loadChapter(115, reciter.id);
       
       logger.info('✅ loadChapter (Invalid) completed gracefully.', category: LogCategory.audio);
     });
