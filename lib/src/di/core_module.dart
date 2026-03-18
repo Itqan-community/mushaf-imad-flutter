@@ -97,14 +97,14 @@ Future<void> setupMushafDependencies({
   mushafGetIt.registerSingleton<ChaptersDataCache>(ChaptersDataCache());
   mushafGetIt.registerSingleton<QuranDataCacheService>(QuranDataCacheService());
 
-  // Audio services
-  mushafGetIt.registerSingleton<AyahTimingService>(AyahTimingService());
-  mushafGetIt.registerSingleton<ReciterService>(ReciterService());
-
   // DAOs
   mushafGetIt.registerSingleton<BookmarkDao>(bookmarkDao);
   mushafGetIt.registerSingleton<ReadingHistoryDao>(readingHistoryDao);
   mushafGetIt.registerSingleton<SearchHistoryDao>(searchHistoryDao);
+
+  // Audio services
+  mushafGetIt.registerSingleton<AyahTimingService>(AyahTimingService());
+  mushafGetIt.registerSingleton<ReciterService>(ReciterService());
 
   // Repositories
   mushafGetIt.registerSingleton<QuranRepository>(
@@ -220,7 +220,11 @@ Future<void> setupMushafDependencies({
 /// ```dart
 /// await setupMushafWithHive();
 /// ```
-Future<void> setupMushafWithHive({MushafLogger? logger}) async {
+Future<void> setupMushafWithHive({
+  MushafLogger? logger,
+  MushafAudioSource audioSource = MushafAudioSource.local,
+  QuranComAudioSourceConfig? quranComConfig,
+}) async {
   // Initialize Hive
   await Hive.initFlutter();
 
@@ -234,5 +238,7 @@ Future<void> setupMushafWithHive({MushafLogger? logger}) async {
     readingHistoryDao: HiveReadingHistoryDao(),
     searchHistoryDao: HiveSearchHistoryDao(),
     logger: logger,
+    audioSource: audioSource,
+    quranComConfig: quranComConfig,
   );
 }
