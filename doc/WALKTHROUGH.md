@@ -17,7 +17,11 @@ lib/
     │   ├── models/                ← 20 data models (Verse, Chapter, Bookmark, etc.)
     │   └── repository/            ← 10 abstract repository interfaces
     ├── data/
-    │   ├── audio/                 ← ReciterDataProvider, AyahTimingService, ReciterService
+    │   ├── audio/                 
+    │   │   ├── quran_com/         ← (NEW) Quran.com API Integration
+    │   │   ├── mushaf_audio_data_source.dart
+    │   │   ├── ayah_timing_service.dart
+    │   │   └── reciter_service.dart
     │   ├── cache/                 ← ChaptersDataCache, QuranDataCacheService
     │   ├── local/dao/             ← DAO interfaces (BookmarkDao, etc.)
     │   └── repository/            ← DatabaseService + 10 Default implementations
@@ -42,6 +46,8 @@ lib/
 | **ChangeNotifier** for VMs | Lightest Flutter state management, compatible with `Provider` |
 | **Dart sealed class** for `Result` | Direct port of Kotlin sealed class |
 | **Stream\<T\>** for reactivity | Equivalent of Kotlin `Flow<T>` / `StateFlow<T>` |
+| **Dual-Source Audio** | Hybrid architecture (Local Assets + Quran.com Streaming) |
+| **Single-Trip Fetching** | Timing-ahead logic (caches verse data with audio URL) |
 
 ## Kotlin → Dart Mapping
 
