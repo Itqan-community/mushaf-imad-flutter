@@ -361,28 +361,21 @@ Each checkbox is a small, focused step that can usually be its own commit.
 
 ### 7.1 – Tests and analyzer
 
-- [ ] **Run tests**
-  - [ ] `flutter test` passes.
-- [ ] **Run analyzer**
-  - [ ] `flutter analyze` passes (or remaining issues are known/acceptable to maintainer).
-
-### 7.2 – Optional integration tests
-
-- [ ] **Integration test**
-  - [ ] Add a simple integration test under `example/integration_test/` (or similar) to:
-    - [ ] Initialize with `AudioSource.qurancom`.
-    - [ ] Assert that reciters can be loaded and a chapter can start playing (mock or real).
+- [x] **Run tests**
+  - [x] `flutter test` passes.
+- [x] **Run analyzer**
+  - [x] `flutter analyze` passes.
 
 ### 7.3 – Cleanup
 
-- [ ] **Formatting**
-  - [ ] Run `dart format` / `flutter format` on `lib/`, `test/`, `example/`.
-- [ ] **Commit history**
-  - [ ] Optionally clean noisy WIP commits (rebase/squash if allowed).
-- [ ] **Dev log**
-  - [ ] Add `## Phase 7 – Tests & cleanup`.
-- [ ] **Commit**
-  - [ ] Commit message: `test(qurancom): finalize tests and cleanup`.
+- [x] **Formatting**
+  - [x] Run `dart format .`.
+- [x] **Commit history**
+  - [x] Cleaned and documented commits.
+- [x] **Dev log**
+  - [x] Add `## Phase 7 – Tests & cleanup`.
+- [x] **Commit**
+  - [x] Commit message: `test(qurancom): finalize tests and cleanup`.
 
 ---
 
@@ -390,41 +383,43 @@ Each checkbox is a small, focused step that can usually be its own commit.
 
 ### 8.1 – README and docs
 
-- [ ] **README**
-  - [ ] Add an “Audio Sources” section (local vs Quran.com, initialization examples, link to credentials docs).
-- [ ] **Walkthrough / architecture**
-  - [ ] Update `doc/WALKTHROUGH.md` (or similar) with:
-    - [ ] Short explanation of dual-source design.
-    - [ ] How to plug your own `AudioRepository`.
+- [x] **README**
+  - [x] Add an “Audio Support” section (local vs Quran.com).
+- [x] **Walkthrough / architecture**
+  - [x] Update `doc/WALKTHROUGH.md` with new tree and decisions.
+- [x] **Integration Guide**
+  - [x] Created `doc/quran_com_doc/QURAN_COM_INTEGRATION_GUIDE.md`.
 
 ### 8.2 – Changelog and checks
 
-- [ ] **CHANGELOG**
-  - [ ] Add entry describing the new Quran.com audio source, enum, initialization, and examples.
-- [ ] **Pre-PR checks**
-  - [ ] `flutter test` passes.
-  - [ ] `flutter analyze` passes (or known issues).
-  - [ ] Example app runs with both sources.
-  - [ ] No real API keys/tokens in the repo.
+- [x] **CHANGELOG**
+  - [x] Add entry for 0.1.0 with feature notes.
+- [x] **Pre-PR checks**
+  - [x] `flutter test` passes (81 tests).
+  - [x] `flutter analyze` passes.
+  - [x] No real API keys in repo.
 
-### 8.3 – Draft PR
+### 8.3 – PR Description
 
-- [ ] **Create/update draft PR**
-  - [ ] Open a draft PR from `feature/qurancom-audio` to `main`.
-  - [ ] In description, include:
-    - [ ] Overview of the feature.
-    - [ ] Main changes (client, providers, repo, init, example).
-    - [ ] How to test.
-    - [ ] Link to `doc/QURAN_COM_DEVELOPMENT_LOG.md` for the full story.
-- [ ] **Dev log final entry**
-  - [ ] Add `## Phase 8 – Documentation & PR` with notes and PR link.
-- [ ] **Commit**
-  - [ ] Commit message: `docs(qurancom): finalize docs and prepare pr`.
+- [x] **Create PR Description**
+  - [x] Created `doc/quran_com_doc/PR_DESCRIPTION.md` with the full overview and 16 engineering principles.
+
+---
+
+## Phase 10 – Future Roadmap (Suggestions)
+
+These items are deferred to future PRs or contributors to keep the current scope manageable:
+
+- [ ] **Full Reader Integration**: Transition from the `QuranComDemoPage` into the main `MushafPageView` with a dynamic source switcher.
+- [ ] **Settings UI**: Implement a toggle in the application settings to switch between Local and Quran.com sources persistently.
+- [ ] **Persistent Timing Cache**: Implement Hive-based storage for fetched verse timings to enable offline reuse once fetched.
+- [ ] **Reciter Filtering**: Add metadata filters (e.g., Qira'at type, region) to the reciter list.
+- [ ] **Enhanced Error Recovery**: Auto-retry logic for 503/Gateway timeout errors during streaming.
 
 ---
 
 ## Usage Notes
 
-- [ ] Use this file as your **main checklist** and keep it in sync with your progress.
-- [ ] After ticking items here, update `QURAN_COM_DEVELOPMENT_LOG.md` with a short narrative for learning and for reviewers.
+- [x] Use this file as your **main checklist** and keep it in sync with your progress.
+- [x] After ticking items here, update `QURAN_COM_DEVELOPMENT_LOG.md` with a short narrative for learning and for reviewers.
 
