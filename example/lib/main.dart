@@ -165,7 +165,7 @@ class LibraryHomePage extends StatelessWidget {
 
           // ─── New Features Section ───
           _SectionHeader(
-            title: 'Quran.com API (Phase 6)',
+            title: 'Quran.com API',
             subtitle: 'Testing new streaming audio provider',
           ),
           _MenuCard(
