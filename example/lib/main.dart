@@ -1,9 +1,37 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:imad_flutter/imad_flutter.dart';
+import 'package:imad_flutter/src/data/audio/quran_com/qurancom_reciter_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await setupMushafWithHive();
+
+  // For testing Quran.com API in the example app:
+  // Use MushafAudioSource.quranCom and provide credentials via dart-define:
+  // flutter run --dart-define=QF_ID=xxx --dart-define=QF_SECRET=yyy
+  const qfId = String.fromEnvironment('QF_ID');
+  const qfSecret = String.fromEnvironment('QF_SECRET');
+  const qfEnv = String.fromEnvironment('QF_ENV', defaultValue: 'production');
+  final environment = qfEnv == 'prelive' ? QuranComEnvironment.prelive : QuranComEnvironment.production;
+
+  final useQuranCom = qfId != '' && qfSecret != '';
+
+  if (useQuranCom) {
+    // Initialize with live Quran.com API in one shot
+    await setupMushafWithHive(
+      logger: DefaultMushafLogger(),
+      audioSource: MushafAudioSource.quranCom,
+      quranComConfig: QuranComAudioSourceConfig(
+        clientId: qfId,
+        clientSecret: qfSecret,
+        environment: environment,
+      ),
+    );
+  } else {
+    // Default: local assets
+    await setupMushafWithHive();
+  }
+
   runApp(const MushafApp());
 }
 
@@ -132,6 +160,19 @@ class LibraryHomePage extends StatelessWidget {
             title: 'Domain Models',
             subtitle: 'View all Quran data models',
             onTap: () => _push(context, const DomainModelsPage()),
+          ),
+          const SizedBox(height: 24),
+
+          // ─── New Features Section ───
+          _SectionHeader(
+            title: 'Quran.com API (Phase 6)',
+            subtitle: 'Testing new streaming audio provider',
+          ),
+          _MenuCard(
+            icon: Icons.cloud_download,
+            title: 'Quran.com Demo',
+            subtitle: 'Live API streaming & dynamic reciters',
+            onTap: () => _push(context, const QuranComDemoPage()),
           ),
         ],
       ),
@@ -609,6 +650,508 @@ class DomainModelsPage extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Quran.com Demo Page — Demonstrates Phase 4 & 5 integration
+// ──────────────────────────────────────────────────────────────────────────────
+
+class QuranComDemoPage extends StatefulWidget {
+  const QuranComDemoPage({super.key});
+
+  @override
+  State<QuranComDemoPage> createState() => _QuranComDemoPageState();
+}
+
+class _QuranComDemoPageState extends State<QuranComDemoPage> {
+  // Use a nullable reference or a check to prevent DI crash if not in quranCom mode
+  QuranComReciterProvider? get _reciterProvider =>
+      mushafGetIt.isRegistered<QuranComReciterProvider>() ? mushafGetIt<QuranComReciterProvider>() : null;
+
+  final _audioRepo = mushafGetIt<AudioRepository>();
+
+  List<ReciterInfo> _reciters = [];
+  ReciterInfo? _selectedReciter;
+  int _selectedChapter = 1;
+  bool _useArabic = false;
+  double _playbackSpeed = 1.0;
+  bool _isLoading = true;
+  String? _error;
+  String? _playerError;
+
+  AudioPlayerState? _playerState;
+  StreamSubscription? _playerSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReciters();
+    _playerSub = _audioRepo.getPlayerStateStream().listen((state) {
+      if (mounted) {
+        setState(() {
+          _playerState = state;
+          if (state.errorMessage != null) {
+            _playerError = state.errorMessage;
+          }
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _playerSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadReciters() async {
+    final provider = _reciterProvider;
+    if (provider == null) {
+      if (mounted) {
+        setState(() {
+          _error = 'QuranComReciterProvider not registered in DI.\nMake sure you run with API credentials provided.';
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
+    try {
+      final list = await provider.getAllReciters();
+      if (list.isEmpty) throw Exception('No reciters found');
+      if (mounted) {
+        setState(() {
+          _reciters = list;
+          _selectedReciter = list.isNotEmpty ? list.first : null;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load reciters. Confirm your credentials.';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _stopAudio() async {
+    _audioRepo.stop();
+    if (mounted) {
+      setState(() {
+        _playerError = null;
+      });
+    }
+  }
+
+  Future<void> _onChapterChanged(int chapter) async {
+    _stopAudio();
+    if (mounted) {
+      setState(() {
+        _selectedChapter = chapter;
+      });
+    }
+  }
+
+  Future<void> _onReciterChanged(ReciterInfo? reciter) async {
+    _stopAudio();
+    if (mounted) {
+      setState(() {
+        _selectedReciter = reciter;
+      });
+    }
+  }
+
+  Future<void> _onTogglePlay() async {
+    if (_selectedReciter == null) return;
+    setState(() => _playerError = null);
+
+    try {
+      final isPlaying = _playerState?.isPlaying ?? false;
+      final isCompleted = _playerState?.playbackState == PlaybackState.stopped &&
+          (_playerState?.currentPositionMs ?? 0) > 0;
+
+      if (isPlaying) {
+        _audioRepo.pause();
+      } else {
+        // If it's a different chapter/reciter, or it was completed, load it
+        final needsLoad = _playerState?.currentChapter != _selectedChapter ||
+            _playerState?.currentReciterId != _selectedReciter?.id ||
+            isCompleted;
+
+        if (needsLoad) {
+          _audioRepo.loadChapter(_selectedChapter, _selectedReciter!.id, autoPlay: true);
+        } else {
+          _audioRepo.play();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Playback error: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Quran.com Demo')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_error != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Quran.com Demo')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 64),
+                const SizedBox(height: 16),
+                Text(_error!, textAlign: TextAlign.center),
+                const SizedBox(height: 16),
+                const Text(
+                  'Make sure you run with:\n--dart-define=QF_ID=xxx --dart-define=QF_SECRET=yyy',
+                  style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Quran.com Demo'),
+        actions: [
+          TextButton.icon(
+            onPressed: () => setState(() => _useArabic = !_useArabic),
+            icon: Icon(_useArabic ? Icons.language : Icons.translate, color: Colors.white),
+            label: Text(_useArabic ? 'EN' : 'AR', style: const TextStyle(color: Colors.white)),
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.black,
+            ),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _SectionLabel(_useArabic ? '١. اختر القارئ' : '1. Choose Reciter (Live from API)'),
+            _ReciterDropdown(
+              items: _reciters,
+              value: _selectedReciter,
+              useArabic: _useArabic,
+              onChanged: _onReciterChanged,
+            ),
+            const SizedBox(height: 24),
+            _SectionLabel(_useArabic ? '٢. اختر السورة' : '2. Select Chapter'),
+            _ChapterDropdown(
+              value: _selectedChapter,
+              useArabic: _useArabic,
+              onChanged: (v) => _onChapterChanged(v!),
+            ),
+            const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 16),
+            if (_playerState != null && _playerState!.durationMs > 0) ...[
+              _SectionLabel(_useArabic ? 'التقدم' : 'Seek'),
+              Slider(
+                value: _playerState!.currentPositionMs.toDouble().clamp(0, _playerState!.durationMs.toDouble()),
+                max: _playerState!.durationMs.toDouble(),
+                onChanged: (v) => _audioRepo.seekTo(v.toInt()),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(_formatDuration(Duration(milliseconds: _playerState!.currentPositionMs))),
+                    Text(_formatDuration(Duration(milliseconds: _playerState!.durationMs))),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _SectionLabel(_useArabic ? 'السرعة' : 'Speed'),
+                DropdownButton<double>(
+                  value: _playbackSpeed,
+                  items: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map((s) {
+                    return DropdownMenuItem(value: s, child: Text('${s}x'));
+                  }).toList(),
+                  onChanged: (v) {
+                    if (v != null) {
+                      setState(() => _playbackSpeed = v);
+                      _audioRepo.setPlaybackSpeed(v);
+                    }
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: Column(
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: (_selectedReciter == null || (_playerState?.isBuffering ?? false)) ? null : _onTogglePlay,
+                    icon: (_playerState?.isBuffering ?? false)
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Icon(_playerState?.isPlaying ?? false ? Icons.pause : Icons.play_arrow),
+                    label: Text(
+                      (_playerState?.isBuffering ?? false)
+                          ? (_useArabic ? 'جاري التحميل...' : 'Loading...')
+                          : (_playerState?.isPlaying ?? false
+                              ? (_useArabic ? 'إيقاف' : 'Pause')
+                              : (_useArabic ? 'تشغيل' : 'Fetch & Play')),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(200, 50),
+                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                    ),
+                  ),
+                  if (_playerError != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(8)),
+                      child: Text(
+                        '${_useArabic ? "خطأ" : "Error"}: $_playerError',
+                        style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+            _PlayerSyncCard(state: _playerState, useArabic: _useArabic),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDuration(Duration d) {
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String label;
+  const _SectionLabel(this.label);
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        label,
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+      ),
+    );
+  }
+}
+
+class _ReciterDropdown extends StatelessWidget {
+  final List<ReciterInfo> items;
+  final ReciterInfo? value;
+  final bool useArabic;
+  final ValueChanged<ReciterInfo?> onChanged;
+
+  const _ReciterDropdown({
+    required this.items,
+    required this.value,
+    required this.useArabic,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<ReciterInfo>(
+          isExpanded: true,
+          value: value,
+          items: items.map((r) {
+            final name = useArabic ? r.nameArabic : r.nameEnglish;
+            return DropdownMenuItem(
+              value: r,
+              child: Text(
+                '$name (${r.rewaya})',
+                textDirection: useArabic ? TextDirection.rtl : TextDirection.ltr,
+              ),
+            );
+          }).toList(),
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+}
+
+class _ChapterDropdown extends StatelessWidget {
+  final int value;
+  final bool useArabic;
+  final ValueChanged<int?> onChanged;
+
+  const _ChapterDropdown({
+    required this.value,
+    required this.useArabic,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int>(
+          isExpanded: true,
+          value: value,
+          items: List.generate(114, (i) => i + 1).map((num) {
+            final chapter = QuranDataProvider.instance.getChapter(num);
+            final name = useArabic ? chapter.arabicTitle : chapter.englishTitle;
+            return DropdownMenuItem(
+              value: num,
+              child: Text(
+                useArabic ? 'سورة $name' : 'Surah $num: $name',
+                textDirection: useArabic ? TextDirection.rtl : TextDirection.ltr,
+              ),
+            );
+          }).toList(),
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+}
+
+// Removed _VerseDropdown class
+
+class _PlayerSyncCard extends StatelessWidget {
+  final AudioPlayerState? state;
+  final bool useArabic;
+  const _PlayerSyncCard({this.state, required this.useArabic});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isPlaying = state?.isPlaying ?? false;
+    final verse = state?.currentVerse;
+
+    return Card(
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Icon(
+                  isPlaying ? Icons.volume_up : Icons.volume_mute,
+                  color: isPlaying ? theme.colorScheme.primary : Colors.grey,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  isPlaying
+                      ? (useArabic ? 'البث المباشر حالياً' : 'Currently Streaming')
+                      : (useArabic ? 'المشغل متوقف' : 'Player Idle'),
+                  style: theme.textTheme.titleMedium,
+                ),
+              ],
+            ),
+            const Divider(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _StatItem(
+                  label: useArabic ? 'السورة' : 'Surah',
+                  value: state?.currentChapter?.toString() ?? '-',
+                ),
+                _StatItem(
+                  label: useArabic ? 'الآية' : 'Verse',
+                  value: verse?.toString() ?? '-',
+                  highlight: true,
+                ),
+                _StatItem(
+                  label: useArabic ? 'الوقت' : 'Progress',
+                  value: _formatDuration(
+                    state != null ? Duration(milliseconds: state!.currentPositionMs) : null,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDuration(Duration? d) {
+    if (d == null) return '00:00';
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool highlight;
+
+  const _StatItem({
+    required this.label,
+    required this.value,
+    this.highlight = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        Text(label, style: theme.textTheme.labelSmall),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: highlight ? theme.colorScheme.primary : null,
+          ),
+        ),
+      ],
     );
   }
 }
