@@ -8,6 +8,7 @@ It is meant for both **reviewers** and **future contributors** to understand the
 - [Quran.com Audio Feature – Development Log](#qurancom-audio-feature--development-log)
   - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
+  - [Core Engineering Principles & Decisions](#core-engineering-principles--decisions)
   - [Phase 0 – Setup \& Baseline](#phase-0--setup--baseline)
     - [0.1 – Repository setup and remotes](#01--repository-setup-and-remotes)
     - [0.2 – Syncing main and creating the feature branch](#02--syncing-main-and-creating-the-feature-branch)
@@ -56,6 +57,31 @@ It is meant for both **reviewers** and **future contributors** to understand the
 - **Goal**: Add Quran.com (Quran Foundation) API as an optional audio source alongside the existing local audio implementation, with clean architecture, tests, and documentation.
 - **Companion docs**:
   - Task checklist: `doc/quran_com_doc/QURAN_COM_CHECKLIST.md`
+
+---
+
+## Core Engineering Principles & Decisions
+
+Implementing the Quran.com audio integration required a series of deliberate architectural and engineering decisions.
+
+| # | Principle / Decision | Description |
+|---|----------------------|-------------|
+| 1 | **Memory Optimization (Records)** | Used Dart Named Records for timing data to minimize object overhead in large datasets. |
+| 2 | **Performance-Driven Parsing** | Manual iteration in model factories for peak speed. |
+| 3 | **Robust Data Handling** | Defensive casting for API inconsistencies (num to int). |
+| 4 | **Test-Driven Foundation** | 100% unit tests for all models and core services. |
+| 5 | **Token Fetch Locking** | Future-based mutex to prevent OAuth token stampedes. |
+| 6 | **Lazy Timing Architecture** | Per-chapter loading on-demand to avoid bulk network overhead. |
+| 7 | **Single-Trip Fetching** | Eager-caching of timing data during the first audio URL request. |
+| 8 | **Hybrid Timing Hierarchy** | Priority flow: RAM -> Local Asset -> API Fallback. |
+| 9 | **Unified Telemetry** | Standardized `MushafLogger` categorization for all audio/network events. |
+| 10 | **OCP Compliance** | Refactored existing services as extensions to preserve legacy stability. |
+| 11 | **Async Handshake Pattern** | Fully decoupled player resolution from UI binding for remote URLs. |
+| 12 | **Reactive State Enrichment** | Real-time injection of verse metadata via Stream Transformers. |
+| 13 | **Clean Interface Preservation** | Kept `void` return types for public methods to ensure zero breaking changes. |
+| 14 | **Test Synchronization Protocol** | Used `untilCalled` to stabilize verification of asynchronous void flows. |
+| 15 | **Decoupled DI Setup** | Runtime source-switching enabled via `setupMushafWithHive` parameters. |
+| 16 | **Environment-Aware Client** | Strict environment typing (prelive/production) for audit transparency. |
 
 ---
 
@@ -794,3 +820,30 @@ During the final integration of the Demo Page, the following "leftovers" and ext
     -   *Decision*: Initially planned a "Verse Dropdown" for the demo, but it was removed to keep the PR scope focused and avoid introducing too much new logic in `main.dart`.
 4.  **Interface Consistency (void vs Future)**:
     -   *Technical Debt*: To maintain minimal impact on the core library, `AudioRepository.loadChapter` remains `void`. While internally synchronized using `autoPlay`, a future refactor to `Future<void>` would be architecturally cleaner but is deferred to avoid breaking existing implementations in this PR.
+
+---
+
+### Phase 8: Final Polish & Documentation (PR Ready)
+
+**Status:** Completed ✅
+
+#### Final Verification Metrics:
+- **Test Coverage**: 81/81 Passed (Verified on real `prelive` API).
+- **Static Analysis**: Clean (`flutter analyze`).
+- **Dependencies**: Added `http` for API communication.
+
+#### Final Implementation Notes:
+1. **Race Condition Resolution**: Addressed asynchronous timing issues in tests by using `untilCalled` to synchronize with the internal async `loadChapter` logic.
+2. **Hybrid Timing Priority**: Successfully integrated the `AyahTimingService` with a priority hierarchy: RAM -> Asset -> Remote.
+3. **PR Readiness**: All documentation (README, Walkthrough, User Guide, PR Description) has been finalized to reflect the new dual-source capability.
+
+**PR Status**: Ready for final review and merge. 🚀
+
+---
+
+>الحمد لله الذي بنعمته تتم الصالحات  
+رب اغفر وارحم وتجاوز عما تعلم
+"ربنا تقبل منا إنك أنت السميع العليم"
+"ربنا آتنا في الدنيا حسنة وفي الآخرة حسنة وقنا عذاب النار"
+جزاكم الله خيرا ونفع الله بنا وبكم
+والحمد لله رب العالمين
