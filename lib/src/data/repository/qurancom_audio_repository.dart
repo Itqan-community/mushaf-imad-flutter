@@ -73,7 +73,7 @@ class QuranComAudioRepository implements AudioRepository {
   // ---------------------------------------------------------------------------
 
   @override
-  Future<void> loadChapter(
+  void loadChapter(
     int chapterNumber,
     int reciterId, {
     bool autoPlay = false,
