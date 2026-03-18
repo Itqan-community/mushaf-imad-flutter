@@ -75,6 +75,12 @@ void main() {
           )).thenAnswer((_) async {});
 
       repository.loadChapter(chapterNumber, reciterId);
+      await untilCalled(() => mockAudioPlayer.loadChapter(
+            any(),
+            any(),
+            autoPlay: any(named: 'autoPlay'),
+            audioUrl: any(named: 'audioUrl'),
+          ));
 
       verify(() => mockDataSource.fetchChapterAudioUrl(reciterId, chapterNumber))
           .called(1);
@@ -94,6 +100,12 @@ void main() {
           .thenThrow(Exception('API Error'));
 
       repository.loadChapter(1, 7);
+      await untilCalled(() => mockLogger.error(
+            any(),
+            error: any(named: 'error'),
+            stackTrace: any(named: 'stackTrace'),
+            category: any(named: 'category'),
+          ));
 
       verify(() => mockLogger.error(
             any(),

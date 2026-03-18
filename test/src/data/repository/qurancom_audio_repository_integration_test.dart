@@ -83,6 +83,12 @@ void main() {
       logger.info('Using reciter: ${reciter.nameEnglish} (ID: ${reciter.id})', category: LogCategory.audio);
 
       repository.loadChapter(1, reciter.id);
+      await untilCalled(() => mockPlayer.loadChapter(
+        any(),
+        any(),
+        autoPlay: any(named: 'autoPlay'),
+        audioUrl: any(named: 'audioUrl'),
+      ));
 
       // Assert: Verify that a non-empty, real URL was passed to the player
       final capturedUrl = verify(() => mockPlayer.loadChapter(
@@ -132,6 +138,8 @@ void main() {
 
       // Chapter 115 doesn't exist. Should not throw but log error.
       repository.loadChapter(115, reciter.id);
+      // Wait for the async error to be caught and logged
+      await Future.delayed(const Duration(seconds: 1));
       
       logger.info('✅ loadChapter (Invalid) completed gracefully.', category: LogCategory.audio);
     });
