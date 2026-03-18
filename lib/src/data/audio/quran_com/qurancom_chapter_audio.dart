@@ -7,7 +7,7 @@ class QuranComAudioFile {
   /// The chapter ID that this audio file corresponds to.
   final int chapterId;
   /// The size of the audio file in bytes.
-  final double fileSize;
+  final double? fileSize;
   /// The audio format (e.g., "mp3").
   final String format;
   /// The URL where the audio file can be accessed.
@@ -18,7 +18,7 @@ class QuranComAudioFile {
   QuranComAudioFile({
     required this.id,
     required this.chapterId,
-    required this.fileSize,
+    this.fileSize,
     required this.format,
     required this.audioUrl,
     this.timestamps,
@@ -34,10 +34,10 @@ class QuranComAudioFile {
     }
 
     return QuranComAudioFile(
-      id: (json['id'] as num).toInt(),
-      chapterId: (json['chapter_id'] as num).toInt(),
-      fileSize: (json['file_size'] as num).toDouble(),
-      format: json['format'] as String,
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      chapterId: (json['chapter_id'] as num?)?.toInt() ?? 0,
+      fileSize: (json['file_size'] as num?)?.toDouble(),
+      format: json['format'] as String? ?? 'mp3',
       audioUrl: json['audio_url'] as String,
       timestamps: timestampsJson != null
           ? [
