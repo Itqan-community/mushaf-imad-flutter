@@ -756,4 +756,41 @@ Applied the following fixes based on automated code review findings before movin
 - **Branching DI logic**:
   - `quranCom` path: instantiates `QuranComApiClient`, `QurancomDataSource`, `QuranComReciterProvider`, re-registers `AyahTimingService` with the live data source injected, and registers `QuranComAudioRepository` as the `AudioRepository` singleton.
   - `local` (default) path: unchanged — registers `DefaultAudioRepository` exactly as before.
-- **Zero breaking changes** for existing library consumers; the new parameters are optional with safe defaults.
+### 6.1 – QuranComDemoPage & Refinements
+
+**Date:** 18th Mar 2026
+
+- **Isolated Testing Approach**: Added a new, self-contained `QuranComDemoPage` to the example app's home menu. This allows testing the full Quran.com stack (API client, Data Source, Reciter Provider, Timing Service, and Repository) without affecting the existing local-focused Mushaf reader.
+- **Dynamic Initialization**: Updated `main.dart` to check for `QF_ID` and `QF_SECRET` via `--dart-define`.
+  - **Environment Detection**: Added `QF_ENV` support (defaults to `production`).
+- **Audio Playback Synchronization (Deep Fixes)**:
+  - **Issue identified**: A race condition where `play()` was called before `loadChapter()` finished, causing the player to get stuck on the previous track.
+  - **Revert for Scope**: Initially considered changing `AudioRepository` methods to `Future<void>`, but **reverted** to `void` to keep the core library interface unchanged as per PR requirements.
+  - **Final Solution**: Utilized the `autoPlay: true` parameter in `loadChapter`. This allows the UI to fire-and-forget the load request while the repository handles the sequential `await setAudioSource(...)` followed by `play()` internally.
+- **UI State & Buffering**: 
+  - Subscribed to `AudioPlayerState.isBuffering` in the demo page.
+  - Implemented a dynamic "Loading..." state on the button that disables interaction during network fetches, preventing overlapping load requests.
+- **Robust JSON Parsing (Null Safety)**:
+  - **Issue**: Certain reciters returned `null` for `file_size` or timestamps, causing a `type 'Null' is not a subtype of type 'num'` crash during JSON decoding.
+  - **Fix**: Updated `QuranComAudioFile.fromJson` and `QuranComVerseTiming.fromJson` with defensive null checks and default values. `fileSize` was made nullable.
+- **Playback Error Analysis**: Investigated `Source error` (ExoPlayer) for specific reciters (e.g., Siddiq Al-Minshawi Mujawwad). Confirmed via `curl` that these are server-side `404 Not Found` errors from the Quran.com data sources, not application bugs.
+- **Developer Experience**: Added `.vscode/launch.json` to allow one-click debugging from VS Code with pre-configured `--dart-define` tokens.
+
+**Final Status of Phase 6**: The demo screen is now highly resilient, handles common API data inconsistencies gracefully, and provides clear visual feedback during audio synchronization.
+
+---
+
+### Phase 6 Leftovers & Known Issues
+
+During the final integration of the Demo Page, the following "leftovers" and external issues were identified:
+
+1.  **Broken Source URLs (404)**: 
+    -   *Issue*: Some reciters (specifically "Siddiq Al-Minshawi - Mujawwad") have broken audio URLs on the Quran.com/quranicaudio.com servers. 
+    -   *Status*: Documented as an external data issue. The app correctly catches the `Source error` and displays it to the user.
+2.  **Missing Timestamps**:
+    -   *Observation*: Some reciters return empty `timestamps` or `segments` arrays.
+    -   *Resolution*: Our models now handle these as `null` or empty lists gracefully. Audio playback still works, but word-highlighting/verse-sync will be disabled automatically for these reciters.
+3.  **Verse Selection (Removed)**:
+    -   *Decision*: Initially planned a "Verse Dropdown" for the demo, but it was removed to keep the PR scope focused and avoid introducing too much new logic in `main.dart`.
+4.  **Interface Consistency (void vs Future)**:
+    -   *Technical Debt*: To maintain minimal impact on the core library, `AudioRepository.loadChapter` remains `void`. While internally synchronized using `autoPlay`, a future refactor to `Future<void>` would be architecturally cleaner but is deferred to avoid breaking existing implementations in this PR.

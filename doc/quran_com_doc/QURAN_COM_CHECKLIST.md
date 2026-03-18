@@ -317,30 +317,47 @@ Each checkbox is a small, focused step that can usually be its own commit.
 
 ## Phase 6 – Example App & UI
 
-### 6.1 – Example initialization
+### 6.1 – Demo Screen: QuranComDemoPage
 
-- [ ] **Update example main**
-  - [ ] In `example/lib/main.dart`, show:
-    - [ ] Initialization with local source.
-    - [ ] Initialization with Quran.com source using placeholder credentials.
-- [ ] **Reciter list + play**
-  - [ ] Ensure example reads `AudioRepository` from DI.
-  - [ ] Load and display reciters, allow selection, play a simple surah.
+**Approach:** A self-contained demo screen added as a new menu card in the Example App's home page. It does NOT modify the existing Mushaf reader — it proves the full Quran.com stack works end-to-end from DI to playback.
 
-### 6.2 – (Optional) Source switcher UI
+- [x] **Create `QuranComDemoPage`** in `example/lib/main.dart`
+  - [x] On load: fetch reciters from `QuranComReciterProvider` via DI.
+  - [x] Display a list of available reciters (fetched live from the API).
+  - [x] Allow user to select a reciter and a chapter (default: Al-Fatiha).
+  - [x] "Play Chapter" button calls `AudioRepository.loadChapter()`.
+  - [x] Show current verse number during playback (from `getPlayerStateStream`).
+  - [x] Show a loading indicator while fetching and a graceful error message if credentials are missing.
+- [x] **Add menu card** in `LibraryHomePage`
+  - [x] New section: `Quran.com Audio Source (Demo)`
+  - [x] Card: "Quran.com Reciters" → navigates to `QuranComDemoPage`.
+- [x] **Initialize with Quran.com source**
+  - [x] Update `main()` to call `setupMushafDependencies` with `audioSource: MushafAudioSource.quranCom` and credentials from `--dart-define`.
+  - [x] Keep a comment showing the `local` alternative for reviewers.
+- [x] **Dev log**
+  - [x] Add `### 6.1 – QuranComDemoPage` entry.
+- [x] **Commit**
+  - [x] Commit message: `feat(example): add QuranComDemoPage to demonstrate live Quran.com audio source`.
 
-- [ ] **Toggle widget**
-  - [ ] Add a minimal widget to toggle between `local` and `qurancom`.
-  - [ ] Reinitialize the library on change and refresh UI.
+### 6.2 – Stability & Robustness Refinements
 
-- [ ] **Dev log**
-  - [ ] Add `## Phase 6 – Example & UI`.
-- [ ] **Commit**
-  - [ ] Commit message: `feat(example): demonstrate qurancom audio source`.
+- [x] **Sync logic** – Fixed race condition by using `autoPlay: true` in `loadChapter`.
+- [x] **JSON robustness** – Added null-safety for `file_size` and empty timings.
+- [x] **Dev Productivity** – Added `.vscode/launch.json` for token management.
+- [x] **Technical Debt** – Documented the "void vs Future" interface trade-off in Devlog.
 
 ---
 
-## Phase 7 – Testing & Cleanup
+## Phase 7 – (Optional) Settings & Mushaf Integration
+
+**Status:** Under discussion. Currently, the feature is fully functional in the Demo Page. Integration with the main reader adds significant scope but would be the final "wow" factor.
+
+- [ ] **Source Switcher** in Settings.
+- [ ] **Streaming Support** in main `QuranPageWidget`.
+
+---
+
+## Phase 8 – Testing & Cleanup
 
 ### 7.1 – Tests and analyzer
 
