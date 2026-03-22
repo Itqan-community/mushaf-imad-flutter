@@ -51,13 +51,7 @@ class MushafViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Load last read position
-      _lastReadPosition = await _readingHistoryRepository.getLastReadPosition(
-        _mushafType,
-      );
-      if (_lastReadPosition != null) {
-        _currentPage = _lastReadPosition!.pageNumber;
-      }
+      _currentPage = await _preferencesRepository.getCurrentPage();
 
       await loadPage(_currentPage);
     } finally {

@@ -1,13 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../di/core_module.dart';
-import '../../domain/repository/audio_repository.dart';
-import '../../data/quran/quran_data_provider.dart';
-import '../../data/quran/verse_data_provider.dart';
+import '../../../imad_flutter.dart';
 import '../player/audio_player_bar.dart';
-import '../theme/reading_theme.dart';
-import '../theme/mushaf_theme_scope.dart';
-import 'quran_page_widget.dart';
 
 /// MushafPageView — the main Mushaf reader screen.
 ///
@@ -18,7 +12,7 @@ import 'quran_page_widget.dart';
 /// Port of the Android MushafView composable.
 class MushafPageView extends StatefulWidget {
   /// Initial page to display (1-604).
-  final int initialPage;
+  final int? initialPage;
 
   /// Callback when page changes.
   final ValueChanged<int>? onPageChanged;
@@ -38,15 +32,19 @@ class MushafPageView extends StatefulWidget {
   /// Reading theme for the Mushaf pages. Defaults to light.
   final ReadingTheme readingTheme;
 
+  /// Color used to highlight the currently playing verse during audio playback.
+  final Color? audioHighlightsColor;
+
   const MushafPageView({
     super.key,
-    this.initialPage = 1,
+    this.initialPage,
     this.onPageChanged,
     this.showNavigationControls = true,
     this.showPageInfo = true,
     this.showAudioPlayer = true,
     this.onOpenChapterIndex,
     this.readingTheme = ReadingTheme.light,
+    this.audioHighlightsColor,
   });
 
   @override
@@ -54,21 +52,69 @@ class MushafPageView extends StatefulWidget {
 }
 
 class MushafPageViewState extends State<MushafPageView> {
-  late PageController _pageController;
-  int _currentPage = 1;
+   PageController? _pageController;
+  int _currentPage = 0;
   int? _selectedVerseKey; // chapterNumber * 1000 + verseNumber
+  int? _currentAudioVerseKey;
   bool _showControls = true;
   StreamSubscription? _audioSubscription;
 
   @override
   void initState() {
     super.initState();
-    _currentPage = widget.initialPage.clamp(1, QuranDataProvider.totalPages);
+
+    if (widget.initialPage != null) {
+      _currentPage = widget.initialPage!.clamp(1, QuranDataProvider.totalPages);
+      _initController();
+      mushafGetIt<PreferencesRepository>().setCurrentPage(_currentPage);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          widget.onPageChanged?.call(_currentPage);
+        }
+      });
+    } else {
+      _initSavedPage();
+    }
+    _loadVerseData();
+  }
+
+  Future<void> _initSavedPage() async {
+    try {
+      final prefs = mushafGetIt<PreferencesRepository>();
+      final savedPage = await prefs.getCurrentPage();
+
+      if (mounted) {
+        setState(() {
+          _currentPage = savedPage.clamp(1, QuranDataProvider.totalPages);
+          _initController();
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            widget.onPageChanged?.call(_currentPage);
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _currentPage = 1;
+          _initController();
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            widget.onPageChanged?.call(_currentPage);
+          }
+        });
+      }
+    }
+  }
+
+  void _initController() {
     _pageController = PageController(
       initialPage: QuranDataProvider.totalPages - _currentPage,
     );
-    _loadVerseData();
   }
+
 
   Future<void> _loadVerseData() async {
     await VerseDataProvider.instance.initialize();
@@ -79,14 +125,14 @@ class MushafPageViewState extends State<MushafPageView> {
           if (!mounted) return;
           if (state.currentChapter != null && state.currentVerse != null) {
             final key = state.currentChapter! * 1000 + state.currentVerse!;
-            if (_selectedVerseKey != key) {
+            if (_currentAudioVerseKey != key) {
               setState(() {
-                _selectedVerseKey = key;
+                _currentAudioVerseKey = key;
               });
             }
-          } else if (state.isPlaying && _selectedVerseKey != null) {
+          } else if (!state.isPlaying && _currentAudioVerseKey != null) {
             setState(() {
-              _selectedVerseKey = null;
+              _currentAudioVerseKey = null;
             });
           }
         });
@@ -99,7 +145,7 @@ class MushafPageViewState extends State<MushafPageView> {
   @override
   void dispose() {
     _audioSubscription?.cancel();
-    _pageController.dispose();
+    _pageController?.dispose();
     super.dispose();
   }
 
@@ -110,7 +156,10 @@ class MushafPageViewState extends State<MushafPageView> {
       _currentPage = clampedPage;
       _selectedVerseKey = null;
     });
-    _pageController.jumpToPage(QuranDataProvider.totalPages - clampedPage);
+    _pageController?.jumpToPage(QuranDataProvider.totalPages - clampedPage);
+    mushafGetIt<PreferencesRepository>().setCurrentPage(clampedPage);
+
+    widget.onPageChanged?.call(clampedPage);
   }
 
   void _onPageChanged(int pageIndex) {
@@ -120,11 +169,14 @@ class MushafPageViewState extends State<MushafPageView> {
       _selectedVerseKey = null;
     });
     widget.onPageChanged?.call(newPage);
+
+    mushafGetIt<PreferencesRepository>().setCurrentPage(newPage);
   }
+
 
   void _goToNextPage() {
     if (_currentPage < QuranDataProvider.totalPages) {
-      _pageController.previousPage(
+      _pageController?.previousPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
@@ -133,7 +185,7 @@ class MushafPageViewState extends State<MushafPageView> {
 
   void _goToPreviousPage() {
     if (_currentPage > 1) {
-      _pageController.nextPage(
+      _pageController?.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
@@ -146,6 +198,11 @@ class MushafPageViewState extends State<MushafPageView> {
 
   @override
   Widget build(BuildContext context) {
+    if (_currentPage == 0) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator.adaptive()),
+      );
+    }
     final dataProvider = QuranDataProvider.instance;
     final chapters = dataProvider.getChaptersForPage(_currentPage);
     final juz = dataProvider.getJuzForPage(_currentPage);
@@ -179,6 +236,10 @@ class MushafPageViewState extends State<MushafPageView> {
                         selectedVerseKey: pageNumber == _currentPage
                             ? _selectedVerseKey
                             : null,
+                        audioVerseKey: pageNumber == _currentPage
+                            ? _currentAudioVerseKey
+                            : null,
+                        audioHighlightsColor: widget.audioHighlightsColor,
                         onVerseTap: (chapter, verse) {
                           final key = chapter * 1000 + verse;
                           setState(() {
