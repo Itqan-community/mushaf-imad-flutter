@@ -83,10 +83,14 @@ Future<void> setupMushafDependencies({
   MushafAudioSource audioSource = MushafAudioSource.local,
   QuranComAudioSourceConfig? quranComConfig,
 }) async {
+  // Guard: if already registered, skip entirely
+  if (mushafGetIt.isRegistered<MushafLogger>()) return;
+
   assert(
     audioSource != MushafAudioSource.quranCom || quranComConfig != null,
     'quranComConfig must be provided when audioSource is MushafAudioSource.quranCom',
   );
+
   // Logger
   mushafGetIt.registerSingleton<MushafLogger>(logger ?? DefaultMushafLogger());
 

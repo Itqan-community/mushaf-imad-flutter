@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:imad_flutter/imad_flutter.dart';
 import 'package:imad_flutter/src/data/audio/quran_com/qurancom_reciter_provider.dart';
+// ignore: depend_on_referenced_packages
+import 'package:collection/collection.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,6 +33,14 @@ void main() async {
     // Default: local assets
     await setupMushafWithHive();
   }
+
+  // Initialize MushafLibrary with actual DAO instances
+  await MushafLibrary.initialize(
+    databaseService: mushafGetIt<DatabaseService>(),
+    bookmarkDao: mushafGetIt<BookmarkDao>(),
+    readingHistoryDao: mushafGetIt<ReadingHistoryDao>(),
+    searchHistoryDao: mushafGetIt<SearchHistoryDao>(),
+  );
 
   runApp(const MushafApp());
 }
