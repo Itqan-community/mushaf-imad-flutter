@@ -4,6 +4,11 @@
 - **Core**: Implemented OAuth2 client with in-memory token caching and concurrency locking.
 - **Docs**: Comprehensive technical guide and setup documentation added.
 
+## 0.0.4
+
+* Added CMS Audio Data Source Integration `CmsAudioRepository`.
+* Added `CmsAudioConfig` parameter to `MushafLibrary.initialize()`.
+
 ## 0.0.3
 
 * Added app screenshots to README.md.

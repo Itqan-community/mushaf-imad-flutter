@@ -14,6 +14,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install native SQLite (required by sqflite_common_ffi)
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:

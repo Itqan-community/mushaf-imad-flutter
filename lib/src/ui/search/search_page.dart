@@ -135,39 +135,60 @@ class _SearchPageState extends State<SearchPage> {
 
   Widget _buildFilterChips(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          FilterChip(
-            selected: _viewModel.searchType == SearchType.general,
-            label: const Text('All'),
-            onSelected: (_) => _viewModel.setSearchType(SearchType.general),
-          ),
-          const SizedBox(width: 8),
-          FilterChip(
-            selected: _viewModel.searchType == SearchType.verse,
-            label: const Text('Verses'),
-            onSelected: (_) => _viewModel.setSearchType(SearchType.verse),
-          ),
-          const SizedBox(width: 8),
-          FilterChip(
-            selected: _viewModel.searchType == SearchType.chapter,
-            label: const Text('Chapters'),
-            onSelected: (_) => _viewModel.setSearchType(SearchType.chapter),
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            FilterChip(
+              selected: _viewModel.searchType == SearchType.general,
+              label: const Text('All'),
+              onSelected: (_) => _viewModel.setSearchType(SearchType.general),
+            ),
+            const SizedBox(width: 8),
+            FilterChip(
+              selected: _viewModel.searchType == SearchType.verse,
+              label: const Text('Verses'),
+              onSelected: (_) => _viewModel.setSearchType(SearchType.verse),
+            ),
+            const SizedBox(width: 8),
+            FilterChip(
+              selected: _viewModel.searchType == SearchType.chapter,
+              label: const Text('Chapters'),
+              onSelected: (_) => _viewModel.setSearchType(SearchType.chapter),
+            ),
+            const SizedBox(width: 8),
+            const VerticalDivider(width: 16, thickness: 1),
+            const SizedBox(width: 8),
+            FilterChip(
+              selected: _viewModel.searchType == SearchType.exact,
+              label: const Text('🤖 بحث ذكي'),
+              onSelected: (_) => _viewModel.setSearchType(SearchType.exact),
+            ),
+            const SizedBox(width: 8),
+            FilterChip(
+              selected: _viewModel.searchType == SearchType.root,
+              label: const Text('🤖 جذري'),
+              onSelected: (_) => _viewModel.setSearchType(SearchType.root),
+            ),
+            const SizedBox(width: 8),
+            FilterChip(
+              selected: _viewModel.searchType == SearchType.prefix,
+              label: const Text('🤖 موضوعي'),
+              onSelected: (_) => _viewModel.setSearchType(SearchType.prefix),
+            ),
+          ],
+        ),
       ),
     );
   }
-
   // ─────────────────────────────────────────────────────────────────────────
-  // Content Router (matches Android SearchView when/else blocks)
+  // Content Router
   // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildContent(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Loading state
     if (_viewModel.isSearching) {
       return Center(
         child: Column(
@@ -186,27 +207,23 @@ class _SearchPageState extends State<SearchPage> {
       );
     }
 
-    // Error state (matching Android ErrorView)
     if (_viewModel.error != null) {
       return _buildErrorView(context);
     }
 
-    // Empty results after search
     if (_viewModel.hasSearched && _viewModel.totalResults == 0) {
       return _buildEmptyResultsView(context);
     }
 
-    // Search results
     if (_viewModel.hasSearched) {
       return _buildSearchResults(context);
     }
 
-    // Initial state — search history (matching Android SearchHistoryView)
     return _buildPreSearchContent(context);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Error View (matching Android ErrorView)
+  // Error View
   // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildErrorView(BuildContext context) {
@@ -242,7 +259,6 @@ class _SearchPageState extends State<SearchPage> {
       ),
     );
   }
-
   // ─────────────────────────────────────────────────────────────────────────
   // Empty Results View (matching Android EmptyResultsView)
   // ─────────────────────────────────────────────────────────────────────────
@@ -439,6 +455,18 @@ class _SearchPageState extends State<SearchPage> {
               onTap: () => widget.onVerseSelected?.call(verse.pageNumber),
             ),
           ),
+          // Load more button for AlKetab results
+          if (_viewModel.hasMorePages || _viewModel.isLoadingMore) ...[
+            const SizedBox(height: 16),
+            Center(
+              child: _viewModel.isLoadingMore
+                  ? const CircularProgressIndicator()
+                  : FilledButton.tonal(
+                      onPressed: _viewModel.loadMoreResults,
+                      child: const Text('تحميل المزيد'),
+                    ),
+            ),
+          ],
           if (hasBookmarks) const SizedBox(height: 16),
         ],
 

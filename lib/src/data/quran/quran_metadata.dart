@@ -1,8 +1,6 @@
 /// Quran metadata — static data for all 114 chapters and 604 page mappings.
 ///
 /// Data based on the standard Hafs 1441H (Madina) Mushaf.
-/// This avoids needing to parse the Realm database for basic navigation.
-
 /// Chapter metadata for the 114 surahs.
 class ChapterData {
   final int number;

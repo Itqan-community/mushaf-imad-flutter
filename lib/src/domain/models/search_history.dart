@@ -1,14 +1,18 @@
 /// Search query types.
 /// Public API - exposed to library consumers.
 enum SearchType {
-  /// Search in verse text
+  general,
   verse,
-
-  /// Search in chapter names
   chapter,
 
-  /// General search across all fields
-  general,
+  /// AlKetab API — exact semantic search
+  exact,
+
+  /// AlKetab API — root/morphological search
+  root,
+
+  /// AlKetab API — prefix search
+  prefix,
 }
 
 /// Search history entry.

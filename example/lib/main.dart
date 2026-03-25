@@ -8,6 +8,10 @@ import 'package:collection/collection.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Configure AlKetab API service
+  const apiKey = String.fromEnvironment('ALKETAB_API_KEY');
+  AlKetabApiService.configure(apiKey);
+
   // For testing Quran.com API in the example app:
   // Use MushafAudioSource.quranCom and provide credentials via dart-define:
   // flutter run --dart-define=QF_ID=xxx --dart-define=QF_SECRET=yyy
@@ -34,13 +38,6 @@ void main() async {
     await setupMushafWithHive();
   }
 
-  // Initialize MushafLibrary with actual DAO instances
-  await MushafLibrary.initialize(
-    databaseService: mushafGetIt<DatabaseService>(),
-    bookmarkDao: mushafGetIt<BookmarkDao>(),
-    readingHistoryDao: mushafGetIt<ReadingHistoryDao>(),
-    searchHistoryDao: mushafGetIt<SearchHistoryDao>(),
-  );
   runApp(const MushafApp());
 }
 
@@ -706,11 +703,9 @@ class _MushafTypePageState extends State<MushafTypePage> {
               title: Text(type.name),
               subtitle: Text(_description(type)),
               leading: RadioGroup(
-                groupValue:_selected ,
+                groupValue: _selected,
                 onChanged: (v) => setState(() => _selected = v!),
-                child: Radio<MushafType>(
-                  value: type
-                ),
+                child: Radio<MushafType>(value: type),
               ),
               onTap: () => setState(() => _selected = type),
             ),
@@ -772,7 +767,7 @@ class DomainModelsPage extends StatelessWidget {
       appBar: AppBar(title: const Text('Domain Models')),
       body: ListView.separated(
         itemCount: models.length,
-        separatorBuilder: (_, _a) => const Divider(height: 1),
+        separatorBuilder: (_, dummy) => const Divider(height: 1),
         itemBuilder: (context, index) {
           final (name, desc) = models[index];
           return ListTile(
