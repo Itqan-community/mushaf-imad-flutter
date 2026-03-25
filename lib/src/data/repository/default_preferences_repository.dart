@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import '../../domain/models/mushaf_type.dart';
-import '../../domain/models/theme.dart';
-import '../../domain/repository/preferences_repository.dart';
+import 'package:hive/hive.dart';
+
+import '../../../imad_flutter.dart';
 
 /// Default implementation of PreferencesRepository.
 /// Uses in-memory state with Stream-based reactivity.
@@ -50,6 +50,17 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   final _themeConfigController = StreamController<ThemeConfig>.broadcast();
 
   // ========== Mushaf Reading Preferences ==========
+
+  DefaultPreferencesRepository();
+  @override
+  Future<int> getCurrentPage() async {
+    final box = await Hive.openBox('settings');
+    final rawPage = box.get('current_page', defaultValue: 1);
+
+    _currentPage = (rawPage as int).clamp(1, QuranDataProvider.totalPages);
+
+    return _currentPage;
+  }
 
   @override
   Stream<MushafType> getMushafTypeStream() => _mushafTypeController.stream;

@@ -28,7 +28,7 @@ Add mushaf to your Flutter application easily! A fully functional, modular Quran
 - 🔖 **Bookmarks and Reading History** system mapping natively to UI components.
 - 🏗️ **Clean Modular Architecture** with a strict separation of domain, data, and UI layers.
 - 🧩 **Ready-to-use UI Components:** (`MushafPageView`, `QuranPageWidget`, `SearchPage`, `SettingsPage`, `ChapterIndexDrawer`, etc.)
-- 🎵 **Audio Playback** (Under development). 
+- 🎵 **Audio Playback:** Includes support for both offline device assets and external streams like **Itqan CMS**.
 
 ---
 
@@ -173,6 +173,43 @@ setupMushafDependencies(
   // ...
 );
 ```
+
+### 🎧 Streaming Audio via Itqan CMS
+
+The framework allows you to easily plug into the the **Itqan CMS JSON API** (`cms.itqan.dev`) for audio playback and verse-level highlight syncing, removing the need to host MP3s locally.
+
+Pass `CmsAudioConfig` to `setupMushafWithHive` and `MushafLibrary.initialize` natively:
+
+```dart
+import 'package:imad_flutter/imad_flutter.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Define CMS configuration pointing to the Itqan API
+  const cmsConfig = CmsAudioConfig(
+    baseUrl: 'https://api.cms.itqan.dev',
+    defaultReciterId: 1, // e.g., Mishari Al-afasi
+  );
+
+  await setupMushafWithHive(cmsAudioConfig: cmsConfig);
+
+  // Initialize library using external DAOs and the CMS audio config
+  await MushafLibrary.initialize(
+    databaseService: mushafGetIt<DatabaseService>(),
+    bookmarkDao: mushafGetIt<BookmarkDao>(),
+    readingHistoryDao: mushafGetIt<ReadingHistoryDao>(),
+    searchHistoryDao: mushafGetIt<SearchHistoryDao>(),
+    cmsAudioConfig: cmsConfig, // Enables the CmsAudioRepository
+  );
+
+  runApp(const MyApp());
+}
+```
+
+This bypasses the `DefaultAudioRepository` and relies exclusively on `CmsAudioRepository` which parses server-provided verse timing boundaries dynamically.
+
+> 📚 **Detailed Guide:** For a comprehensive, step-by-step tutorial on how the audio syncing works under the hood and how to implement it, please see the [CMS Audio Integration Guide](docs/cms_audio.md).
 
 ---
 

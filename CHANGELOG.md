@@ -1,3 +1,8 @@
+## 0.0.4
+
+* Added CMS Audio Data Source Integration `CmsAudioRepository`.
+* Added `CmsAudioConfig` parameter to `MushafLibrary.initialize()`.
+
 ## 0.0.3
 
 * Added app screenshots to README.md.

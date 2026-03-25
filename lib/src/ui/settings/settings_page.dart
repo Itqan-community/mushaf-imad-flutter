@@ -219,16 +219,16 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _handleExport(BuildContext context) async {
     try {
-      final json = await _viewModel.exportData();
-      if (!mounted) return;
+      if (!mounted || !context.mounted) return;
+      final outputPath = await _viewModel.exportData();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Data exported (${json.length} characters)'),
+          content: Text('Data exported to: $outputPath'),
           action: SnackBarAction(label: 'OK', onPressed: () {}),
         ),
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || !context.mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Export failed: $e')));
@@ -266,7 +266,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     try {
       final importResult = await _viewModel.importData(result);
-      if (!mounted) return;
+      if (!mounted || !context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -276,7 +276,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || !context.mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Import failed: $e')));
