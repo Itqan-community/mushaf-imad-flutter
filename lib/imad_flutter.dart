@@ -71,6 +71,8 @@ export 'src/data/local/dao/search_history_dao.dart';
 
 // Data Layer - Audio (public utilities)
 export 'src/data/audio/reciter_data_provider.dart';
+export 'src/data/audio/cms_audio_config.dart';
+export 'src/data/audio/cms_audio_repository.dart';
 
 // Logging
 export 'src/logging/mushaf_logger.dart';
@@ -109,3 +111,5 @@ export 'src/data/local/hive_database_service.dart';
 export 'src/data/local/dao/hive/hive_bookmark_dao.dart';
 export 'src/data/local/dao/hive/hive_reading_history_dao.dart';
 export 'src/data/local/dao/hive/hive_search_history_dao.dart';
+// Remote API
+export 'src/data/remote/alketab_api_service.dart';

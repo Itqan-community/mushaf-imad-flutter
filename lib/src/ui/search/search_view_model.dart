@@ -8,11 +8,8 @@ import '../../domain/repository/verse_repository.dart';
 import '../../domain/repository/chapter_repository.dart';
 import '../../domain/repository/bookmark_repository.dart';
 import '../../domain/repository/search_history_repository.dart';
+import '../../data/remote/alketab_api_service.dart';
 
-/// ViewModel for unified Quran search functionality.
-///
-/// Matches Android's `SearchViewModel` — performs unified search across
-/// verses, chapters, and bookmarks with search history and suggestions.
 class SearchViewModel extends ChangeNotifier {
   final VerseRepository _verseRepository;
   final ChapterRepository _chapterRepository;
@@ -41,6 +38,12 @@ class SearchViewModel extends ChangeNotifier {
   String? _error;
   SearchType _searchType = SearchType.general;
 
+  // AlKetab pagination state
+  String? _alketabGeneratedQuery;
+  int _alketabCurrentPage = 1;
+  int _alketabTotalPages = 1;
+  bool _isLoadingMore = false;
+
   // Getters
   String get query => _query;
   List<Verse> get verseResults => _verseResults;
@@ -52,17 +55,22 @@ class SearchViewModel extends ChangeNotifier {
   bool get hasSearched => _hasSearched;
   String? get error => _error;
   SearchType get searchType => _searchType;
+  bool get isLoadingMore => _isLoadingMore;
+  bool get hasMorePages => _alketabCurrentPage < _alketabTotalPages;
   int get totalResults =>
       _verseResults.length + _chapterResults.length + _bookmarkResults.length;
 
-  /// Initialize search ViewModel.
+  bool get _isAlKetabType =>
+      _searchType == SearchType.exact ||
+      _searchType == SearchType.root ||
+      _searchType == SearchType.prefix;
+
   Future<void> initialize() async {
     _recentSearches = await _searchHistoryRepository.getRecentSearches();
     _suggestions = await _searchHistoryRepository.getPopularSearches();
     notifyListeners();
   }
 
-  /// Perform unified search (matching Android SearchViewModel.search).
   Future<void> search(String query) async {
     if (query.trim().isEmpty) {
       clearResults();
@@ -72,35 +80,40 @@ class SearchViewModel extends ChangeNotifier {
     _query = query;
     _isSearching = true;
     _error = null;
+    _alketabGeneratedQuery = null;
+    _alketabCurrentPage = 1;
+    _alketabTotalPages = 1;
     notifyListeners();
 
     try {
-      switch (_searchType) {
-        case SearchType.verse:
-          _verseResults = await _verseRepository.searchVerses(query);
-          _chapterResults = [];
-          _bookmarkResults = [];
-          break;
-        case SearchType.chapter:
-          _chapterResults = await _chapterRepository.searchChapters(query);
-          _verseResults = [];
-          _bookmarkResults = [];
-          break;
-        case SearchType.general:
-          // Unified search across all types (matching Android searchAll)
-          _verseResults = await _verseRepository.searchVerses(query);
-          _chapterResults = await _chapterRepository.searchChapters(query);
-          _bookmarkResults = await _bookmarkRepository.searchBookmarks(query);
-          break;
+      if (_isAlKetabType) {
+        await _searchWithAlKetab(query);
+      } else {
+        switch (_searchType) {
+          case SearchType.verse:
+            _verseResults = await _verseRepository.searchVerses(query);
+            _chapterResults = [];
+            _bookmarkResults = [];
+            break;
+          case SearchType.chapter:
+            _chapterResults = await _chapterRepository.searchChapters(query);
+            _verseResults = [];
+            _bookmarkResults = [];
+            break;
+          case SearchType.general:
+          default:
+            _verseResults = await _verseRepository.searchVerses(query);
+            _chapterResults = await _chapterRepository.searchChapters(query);
+            _bookmarkResults = await _bookmarkRepository.searchBookmarks(query);
+            break;
+        }
       }
 
-      // Record search in history
       await _searchHistoryRepository.recordSearch(
         query: query,
         resultCount: totalResults,
         searchType: _searchType,
       );
-
       _recentSearches = await _searchHistoryRepository.getRecentSearches();
       _hasSearched = true;
     } catch (e) {
@@ -111,14 +124,71 @@ class SearchViewModel extends ChangeNotifier {
     }
   }
 
-  /// Set search type and re-run if active query exists.
+  Future<void> _searchWithAlKetab(String query) async {
+    final response = await AlKetabApiService.search(query);
+    _alketabGeneratedQuery = response.generatedQuery;
+    _alketabTotalPages = response.totalPages;
+    _alketabCurrentPage = 1;
+    _verseResults = _mapAlKetabResults(response.results);
+    _chapterResults = [];
+    _bookmarkResults = [];
+  }
+
+  /// Load next page of AlKetab results and append to existing results
+  Future<void> loadMoreResults() async {
+    if (!hasMorePages || _isLoadingMore || _alketabGeneratedQuery == null) {
+      return;
+    }
+
+    _isLoadingMore = true;
+    notifyListeners();
+
+    try {
+      final nextPage = _alketabCurrentPage + 1;
+      final response = await AlKetabApiService.fetchPage(
+        _alketabGeneratedQuery!,
+        nextPage,
+      );
+      _alketabCurrentPage = nextPage;
+      _verseResults = [
+        ..._verseResults,
+        ..._mapAlKetabResults(response.results),
+      ];
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoadingMore = false;
+      notifyListeners();
+    }
+  }
+
+  List<Verse> _mapAlKetabResults(List<AlKetabResult> results) {
+    return results
+        .map(
+          (r) => Verse(
+            verseID: r.verseID,
+            humanReadableID: '${r.chapterNumber}_${r.verseNumber}',
+            number: r.verseNumber,
+            text: r.text,
+            textWithoutTashkil: r.text,
+            uthmanicHafsText: r.text,
+            hafsSmartText: r.text,
+            searchableText: r.text,
+            chapterNumber: r.chapterNumber,
+            pageNumber: r.pageNumber,
+            partNumber: 0,
+            hizbNumber: 0,
+          ),
+        )
+        .toList();
+  }
+
   void setSearchType(SearchType type) {
     _searchType = type;
     notifyListeners();
     if (_query.isNotEmpty) search(_query);
   }
 
-  /// Clear search results.
   void clearResults() {
     _query = '';
     _verseResults = [];
@@ -126,16 +196,17 @@ class SearchViewModel extends ChangeNotifier {
     _bookmarkResults = [];
     _hasSearched = false;
     _error = null;
+    _alketabGeneratedQuery = null;
+    _alketabCurrentPage = 1;
+    _alketabTotalPages = 1;
     notifyListeners();
   }
 
-  /// Clear error message.
   void clearError() {
     _error = null;
     notifyListeners();
   }
 
-  /// Clear search history.
   Future<void> clearHistory() async {
     await _searchHistoryRepository.clearSearchHistory();
     _recentSearches = [];
@@ -143,7 +214,6 @@ class SearchViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Toggle bookmark for a verse.
   Future<void> toggleBookmark(Verse verse) async {
     final isBookmarked = await _bookmarkRepository.isVerseBookmarked(
       verse.chapterNumber,

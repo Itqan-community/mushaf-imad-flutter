@@ -2,6 +2,8 @@ import 'package:get_it/get_it.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../data/audio/ayah_timing_service.dart';
+import '../data/audio/cms_audio_config.dart';
+import '../data/audio/cms_audio_repository.dart';
 import '../data/audio/reciter_service.dart';
 import '../data/cache/chapters_data_cache.dart';
 import '../data/cache/quran_data_cache_service.dart';
@@ -64,6 +66,10 @@ Future<void> setupMushafDependencies({
   required ReadingHistoryDao readingHistoryDao,
   required SearchHistoryDao searchHistoryDao,
   MushafLogger? logger,
+  CmsAudioConfig? cmsAudioConfig,
+  /// Provide a pre-built [FlutterAudioPlayer] to skip [AudioService.init].
+  /// Useful in tests where native platform channels are unavailable.
+  FlutterAudioPlayer? audioPlayer,
 }) async {
   // Guard: if already registered, skip entirely
   if (mushafGetIt.isRegistered<MushafLogger>()) return;
@@ -134,23 +140,30 @@ Future<void> setupMushafDependencies({
   );
 
   // Initialize AudioService for background playback
-  final audioPlayer = await AudioService.init<FlutterAudioPlayer>(
-    builder: () => FlutterAudioPlayer(),
-    config: const AudioServiceConfig(
-      androidNotificationChannelId: 'com.mushafimad.audio',
-      androidNotificationChannelName: 'Mushaf Audio Playback',
-      androidNotificationOngoing: true,
-      androidStopForegroundOnPause: true,
-    ),
-  );
+  final resolvedPlayer = audioPlayer ??
+      await AudioService.init<FlutterAudioPlayer>(
+        builder: () => FlutterAudioPlayer(),
+        config: const AudioServiceConfig(
+          androidNotificationChannelId: 'com.mushafimad.audio',
+          androidNotificationChannelName: 'Mushaf Audio Playback',
+          androidNotificationOngoing: true,
+          androidStopForegroundOnPause: true,
+        ),
+      );
 
-  mushafGetIt.registerSingleton<AudioRepository>(
-    DefaultAudioRepository(
-      mushafGetIt<ReciterService>(),
-      mushafGetIt<AyahTimingService>(),
-      audioPlayer,
-    ),
-  );
+  if (cmsAudioConfig != null) {
+    mushafGetIt.registerSingleton<AudioRepository>(
+      CmsAudioRepository(cmsAudioConfig, resolvedPlayer),
+    );
+  } else {
+    mushafGetIt.registerSingleton<AudioRepository>(
+      DefaultAudioRepository(
+        mushafGetIt<ReciterService>(),
+        mushafGetIt<AyahTimingService>(),
+        resolvedPlayer,
+      ),
+    );
+  }
 
   mushafGetIt.registerSingleton<DataExportRepository>(
     DefaultDataExportRepository(
@@ -167,11 +180,18 @@ Future<void> setupMushafDependencies({
 /// Call this for the simplest possible setup using the built-in Hive
 /// implementations for database, bookmarks, reading history, and search.
 ///
+/// Pass a pre-built [audioPlayer] in unit tests to avoid initialising
+/// AudioService (which requires native platform channels).
+///
 /// Example:
 /// ```dart
 /// await setupMushafWithHive();
 /// ```
-Future<void> setupMushafWithHive({MushafLogger? logger}) async {
+Future<void> setupMushafWithHive({
+  MushafLogger? logger,
+  CmsAudioConfig? cmsAudioConfig,
+  FlutterAudioPlayer? audioPlayer,
+}) async {
   // Initialize Hive
   await Hive.initFlutter();
 
@@ -185,5 +205,7 @@ Future<void> setupMushafWithHive({MushafLogger? logger}) async {
     readingHistoryDao: HiveReadingHistoryDao(),
     searchHistoryDao: HiveSearchHistoryDao(),
     logger: logger,
+    cmsAudioConfig: cmsAudioConfig,
+    audioPlayer: audioPlayer,
   );
 }

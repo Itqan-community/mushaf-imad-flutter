@@ -3,9 +3,7 @@ import 'dart:async';
 import 'package:hive/hive.dart';
 
 import '../../../imad_flutter.dart';
-import '../../domain/models/mushaf_type.dart';
-import '../../domain/models/theme.dart';
-import '../../domain/repository/preferences_repository.dart';
+
 
 /// Default implementation of PreferencesRepository.
 /// Uses in-memory state with Stream-based reactivity.

@@ -71,7 +71,7 @@ class DefaultAudioRepository implements AudioRepository {
     int reciterId, {
     bool autoPlay = false,
   }) async {
-    final reciter = await _reciterService.getReciterById(reciterId);
+    final reciter = _reciterService.getReciterById(reciterId);
     if (reciter != null) {
       await _audioPlayer.loadChapter(
         chapterNumber,
