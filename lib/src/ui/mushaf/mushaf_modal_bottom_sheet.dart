@@ -42,14 +42,15 @@ class MushafModalBottomSheet extends StatelessWidget {
             children: [
               if (title == null) const Expanded(child: SizedBox()),
               if (centerTitle && title != null) Expanded(child: SizedBox()),
-              Flexible(
-                child: DefaultTextStyle(
-                  style: textTheme.titleMedium!.copyWith(
-                    fontWeight: FontWeight.w600,
+              if (title != null)
+                Flexible(
+                  child: DefaultTextStyle(
+                    style: textTheme.titleMedium!.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    child: title!,
                   ),
-                  child: title!,
                 ),
-              ),
               if (centerTitle && title != null) Expanded(child: SizedBox()),
             ],
           ),

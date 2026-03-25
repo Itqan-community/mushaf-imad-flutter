@@ -268,6 +268,9 @@ class _MushafViewPageState extends State<MushafViewPage> {
         onOpenChapterIndex: () {
           _scaffoldKey.currentState?.openDrawer();
         },
+        onSelectVerse: (verse) {
+          showVerseOptionsBottomSheet(context, verse: verse);
+        },
       ),
     );
   }
@@ -772,7 +775,7 @@ Future<T?> showVerseOptionsBottomSheet<T>(
     context: context,
     builder: (context) {
       return Directionality(
-        textDirection: .rtl,
+        textDirection: TextDirection.rtl,
         child: MushafModalBottomSheet(
           title: Text('الآية ${verse.chapter}:${verse.number} - ${verse.text}'),
           body: Column(

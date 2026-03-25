@@ -249,8 +249,8 @@ class MushafPageViewState extends State<MushafPageView> {
                             // Track which verse was tapped for AudioPlayerBar.
                             // If user de-selects, clear so page-level context is used.
                             if (_selectedVerseKey != null) {
-                              _tappedVerseNumber = verse;
-                              _tappedChapterNumber = chapter;
+                              _tappedVerseNumber = verse.verseID;
+                              _tappedChapterNumber = verse.chapter;
                             } else {
                               _tappedVerseNumber = null;
                               _tappedChapterNumber = null;

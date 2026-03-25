@@ -20,7 +20,7 @@ class QuranPageWidget extends StatefulWidget {
   final int? audioVerseKey;
   final Color? audioHighlightsColor;
 
-  /// Called when a verse is tapped. Provides (chapterNumber, verseNumber).
+  /// Called when a verse is tapped. Provides (PageVerseData verse).
   final void Function(PageVerseData verse)? onVerseTap;
 
   /// Reading theme data for colors. Defaults to light theme.
