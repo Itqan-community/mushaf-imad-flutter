@@ -73,10 +73,11 @@ class QuranComAudioRepository implements AudioRepository {
   // ---------------------------------------------------------------------------
 
   @override
-  void loadChapter(
+  Future<void> loadChapter(
     int chapterNumber,
     int reciterId, {
     bool autoPlay = false,
+    int startVerseNumber = 1,
   }) async {
     final reciter = await _reciterProvider.getReciterById(reciterId);
     if (reciter == null) return;
