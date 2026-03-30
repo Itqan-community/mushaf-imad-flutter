@@ -33,7 +33,12 @@ abstract class AudioRepository {
   Stream<AudioPlayerState> getPlayerStateStream();
 
   /// Load and optionally play a chapter.
-  void loadChapter(int chapterNumber, int reciterId, {bool autoPlay = false});
+  Future<void> loadChapter(
+    int chapterNumber,
+    int reciterId, {
+    bool autoPlay = false,
+    int startVerseNumber = 1,
+  });
 
   /// Start or resume playback.
   void play();

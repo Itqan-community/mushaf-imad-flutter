@@ -1,7 +1,5 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-
 import '../../domain/models/audio_player_state.dart';
 import '../../domain/models/reciter_info.dart';
 import '../../domain/repository/audio_repository.dart';
@@ -11,7 +9,6 @@ import '../../domain/repository/preferences_repository.dart';
 class QuranPlayerViewModel extends ChangeNotifier {
   final AudioRepository _audioRepository;
   final PreferencesRepository _preferencesRepository;
-
   StreamSubscription<AudioPlayerState>? _playerStateSub;
   StreamSubscription<ReciterInfo?>? _reciterSub;
 
@@ -40,14 +37,11 @@ class QuranPlayerViewModel extends ChangeNotifier {
   Future<void> initialize() async {
     _isLoading = true;
     notifyListeners();
-
     try {
       _reciters = await _audioRepository.getAllReciters();
-
       final reciterId = await _preferencesRepository.getSelectedReciterId();
       _selectedReciter = await _audioRepository.getReciterById(reciterId);
       _selectedReciter ??= await _audioRepository.getDefaultReciter();
-
       _playbackSpeed = await _preferencesRepository.getPlaybackSpeed();
 
       // Observe player state
@@ -70,12 +64,16 @@ class QuranPlayerViewModel extends ChangeNotifier {
   }
 
   /// Play a chapter with the selected reciter.
-  void playChapter(int chapterNumber) {
+  ///
+  /// [startVerseNumber] controls where playback begins within the chapter.
+  /// Defaults to 1 (start of chapter) when not specified.
+  void playChapter(int chapterNumber, {int startVerseNumber = 1}) {
     if (_selectedReciter == null) return;
     _audioRepository.loadChapter(
       chapterNumber,
       _selectedReciter!.id,
       autoPlay: true,
+      startVerseNumber: startVerseNumber,
     );
   }
 

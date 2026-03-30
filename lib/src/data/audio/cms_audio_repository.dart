@@ -19,24 +19,20 @@ class CmsAudioRepository implements AudioRepository {
 
   // In-memory cache for API responses
   final Map<int, List<ReciterInfo>> _recitersCache = {};
-  
+
   // Maps reciter ID to their primary recitation asset ID
   final Map<int, int> _reciterToAssetCache = {};
-  
+
   // Maps asset ID to a list of surah tracks
   final Map<int, List<CmsRecitationSurahTrack>> _tracksCache = {};
-  
+
   // Track selected reciter
   final _selectedReciterStream = StreamController<ReciterInfo?>.broadcast();
 
   // Track the current chapter timing for highlighting
   List<AyahTiming> _currentChapterTimings = [];
 
-  CmsAudioRepository(
-    this._config,
-    this._audioPlayer, {
-    this.client,
-  });
+  CmsAudioRepository(this._config, this._audioPlayer, {this.client});
 
   Future<http.Response> _get(Uri url, {Map<String, String>? headers}) {
     if (client != null) {
@@ -48,7 +44,7 @@ class CmsAudioRepository implements AudioRepository {
   @override
   Future<List<ReciterInfo>> getAllReciters() async {
     // Note: If /reciters/ endpoint is fully implemented in CMS we'd fetch here.
-    // As per instructions, we map what we need. For demonstration, we could return a 
+    // As per instructions, we map what we need. For demonstration, we could return a
     // basic list or fetch from API. We'll implement a basic fetch.
     try {
       final response = await _get(
@@ -59,7 +55,7 @@ class CmsAudioRepository implements AudioRepository {
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
         final results = data['results'] as List<dynamic>? ?? [];
-        
+
         final reciters = results.map((json) {
           return ReciterInfo(
             id: json['id'] as int,
@@ -69,14 +65,16 @@ class CmsAudioRepository implements AudioRepository {
             folderUrl: '', // URL is fetched per recitation in CMS
           );
         }).toList();
-        
+
         _recitersCache[1] = reciters;
         return reciters;
       }
     } catch (e) {
-      MushafLibrary.logger.error('[CmsAudioRepository] Error fetching reciters: $e');
+      MushafLibrary.logger.error(
+        '[CmsAudioRepository] Error fetching reciters: $e',
+      );
     }
-    
+
     // Fallback if API fails or doesn't match
     return [
       ReciterInfo(
@@ -106,7 +104,7 @@ class CmsAudioRepository implements AudioRepository {
   }) async {
     final reciters = await getAllReciters();
     final normalizedQuery = query.toLowerCase();
-    
+
     return reciters.where((r) {
       if (languageCode == 'ar') {
         return r.nameArabic.contains(normalizedQuery);
@@ -125,7 +123,7 @@ class CmsAudioRepository implements AudioRepository {
   Future<ReciterInfo> getDefaultReciter() async {
     final reciters = await getAllReciters();
     if (reciters.isNotEmpty) return reciters.first;
-    
+
     return ReciterInfo(
       id: _config.defaultReciterId,
       nameArabic: 'مقرئ الافتراضي',
@@ -148,11 +146,11 @@ class CmsAudioRepository implements AudioRepository {
   Stream<AudioPlayerState> getPlayerStateStream() async* {
     await for (final state in _audioPlayer.domainStateStream) {
       int? verse;
-      
+
       // Calculate current verse using in-memory timings from the CMS response
       if (_currentChapterTimings.isNotEmpty) {
         for (final timing in _currentChapterTimings) {
-          if (state.currentPositionMs >= timing.startTime && 
+          if (state.currentPositionMs >= timing.startTime &&
               state.currentPositionMs < timing.endTime) {
             verse = timing.ayah;
             break;
@@ -169,15 +167,18 @@ class CmsAudioRepository implements AudioRepository {
     if (_reciterToAssetCache.containsKey(reciterId)) {
       return _reciterToAssetCache[reciterId]!;
     }
-    
+
     try {
       final endpoint = '${_config.baseUrl}/recitations/?reciter_id=$reciterId';
-      final response = await _get(Uri.parse(endpoint), headers: _config.headers);
-      
+      final response = await _get(
+        Uri.parse(endpoint),
+        headers: _config.headers,
+      );
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final results = data['results'] as List<dynamic>? ?? [];
-        
+
         if (results.isNotEmpty) {
           final assetId = results.first['id'] as int;
           _reciterToAssetCache[reciterId] = assetId;
@@ -185,16 +186,19 @@ class CmsAudioRepository implements AudioRepository {
         }
       }
     } catch (e) {
-      MushafLibrary.logger.error('[CmsAudioRepository] Error fetching asset for reciter $reciterId: $e');
+      MushafLibrary.logger.error(
+        '[CmsAudioRepository] Error fetching asset for reciter $reciterId: $e',
+      );
     }
     return null;
   }
 
   @override
-  void loadChapter(
+  Future<void> loadChapter(
     int chapterNumber,
     int reciterId, {
     bool autoPlay = false,
+    int startVerseNumber = 1,
   }) async {
     try {
       final assetId = await _fetchAssetIdForReciter(reciterId);
@@ -208,23 +212,32 @@ class CmsAudioRepository implements AudioRepository {
         tracks = _tracksCache[assetId]!;
       } else {
         // Fetch tracks from the CMS API for this asset
-        final endpoint = '${_config.baseUrl}/recitations/$assetId/?page_size=114';
-        final response = await _get(Uri.parse(endpoint), headers: _config.headers);
-        
+        final endpoint =
+            '${_config.baseUrl}/recitations/$assetId/?page_size=114';
+        final response = await _get(
+          Uri.parse(endpoint),
+          headers: _config.headers,
+        );
+
         if (response.statusCode == 200) {
           final json = jsonDecode(response.body);
           final results = json['results'] as List<dynamic>? ?? [];
-          tracks = results.map((e) => CmsRecitationSurahTrack.fromJson(e)).toList();
+          tracks = results
+              .map((e) => CmsRecitationSurahTrack.fromJson(e))
+              .toList();
           _tracksCache[assetId] = tracks;
         } else {
-          throw Exception('Failed to load recitation tracks: ${response.statusCode}');
+          throw Exception(
+            'Failed to load recitation tracks: ${response.statusCode}',
+          );
         }
       }
 
       // Find the specific surah track
       final surahTrack = tracks.firstWhere(
         (t) => t.surahNumber == chapterNumber,
-        orElse: () => throw Exception('Surah $chapterNumber not found in track list'),
+        orElse: () =>
+            throw Exception('Surah $chapterNumber not found in track list'),
       );
 
       // Map timestamps to library AyahTiming model
@@ -232,8 +245,8 @@ class CmsAudioRepository implements AudioRepository {
           .map((t) => t.toAyahTiming())
           .toList();
 
-      final reciter = await getReciterById(reciterId) ?? 
-          await getDefaultReciter();
+      final reciter =
+          await getReciterById(reciterId) ?? await getDefaultReciter();
 
       // Pass the audio URL to the flutter audio player
       await _audioPlayer.loadFromUrl(
@@ -242,9 +255,10 @@ class CmsAudioRepository implements AudioRepository {
         reciter: reciter,
         autoPlay: autoPlay,
       );
-      
     } catch (e) {
-      MushafLibrary.logger.error('[CmsAudioRepository] Error loading chapter from CMS: $e');
+      MushafLibrary.logger.error(
+        '[CmsAudioRepository] Error loading chapter from CMS: $e',
+      );
     }
   }
 
@@ -317,7 +331,7 @@ class CmsAudioRepository implements AudioRepository {
   @override
   bool hasTimingForReciter(int reciterId) {
     // CMS always implies timing is available via API payload
-    return true; 
+    return true;
   }
 
   @override

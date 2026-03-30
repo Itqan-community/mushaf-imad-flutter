@@ -4,7 +4,6 @@ import 'package:hive/hive.dart';
 
 import '../../../imad_flutter.dart';
 
-
 /// Default implementation of PreferencesRepository.
 /// Uses in-memory state with Stream-based reactivity.
 /// For production, replace with SharedPreferences or Hive-backed implementation.

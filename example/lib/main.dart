@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:imad_flutter/imad_flutter.dart';
 import 'package:imad_flutter/src/data/audio/quran_com/qurancom_reciter_provider.dart';
-// ignore: depend_on_referenced_packages
 import 'package:collection/collection.dart';
 
 void main() async {
@@ -295,6 +294,9 @@ class _MushafViewPageState extends State<MushafViewPage> {
         onOpenChapterIndex: () {
           _scaffoldKey.currentState?.openDrawer();
         },
+        onSelectVerse: (verse) {
+          showVerseOptionsBottomSheet(context, verse: verse);
+        },
       ),
     );
   }
@@ -423,6 +425,9 @@ class _MushafAtPageState extends State<_MushafAtPage> {
         },
         onOpenChapterIndex: () {
           _scaffoldKey.currentState?.openDrawer();
+        },
+        onSelectVerse: (verse) {
+          showVerseOptionsBottomSheet(context, verse: verse);
         },
       ),
     );
@@ -785,6 +790,48 @@ class DomainModelsPage extends StatelessWidget {
       ),
     );
   }
+}
+
+// use case example of the above component, can be used in multiple places in the app with different content.
+Future<T?> showVerseOptionsBottomSheet<T>(
+  BuildContext context, {
+  required PageVerseData verse,
+}) {
+  return showModalBottomSheet(
+    context: context,
+    builder: (context) {
+      return Directionality(
+        textDirection: TextDirection.rtl,
+        child: MushafModalBottomSheet(
+          title: Text('الآية ${verse.chapter}:${verse.number} - ${verse.text}'),
+          body: Column(
+            children: [
+              BottomSheetOption(
+                icon: Icons.play_arrow,
+                label: 'الاستماع من هذه الآية',
+                onTap: () {},
+              ),
+              BottomSheetOption(
+                icon: Icons.share,
+                label: 'مشاركة الآية',
+                onTap: () {},
+              ),
+              BottomSheetOption(
+                icon: Icons.bookmark_add,
+                label: 'إضافة إلى المفضلة',
+                onTap: () {},
+              ),
+              BottomSheetOption(
+                icon: Icons.info_outline,
+                label: 'معلومات الآية',
+                onTap: () {},
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
 
 // ──────────────────────────────────────────────────────────────────────────────

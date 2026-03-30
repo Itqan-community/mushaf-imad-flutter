@@ -149,14 +149,16 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
     String album,
     bool autoPlay,
   ) async {
-    MushafLibrary.logger.info('[FlutterAudioPlayer] Loading title: $title from URL: $url');
-
-    mediaItem.add(
-      MediaItem(id: url, album: album, title: title),
+    MushafLibrary.logger.info(
+      '[FlutterAudioPlayer] Loading title: $title from URL: $url',
     );
 
+    mediaItem.add(MediaItem(id: url, album: album, title: title));
+
     try {
-      MushafLibrary.logger.info('[FlutterAudioPlayer] Calling setAudioSource...');
+      MushafLibrary.logger.info(
+        '[FlutterAudioPlayer] Calling setAudioSource...',
+      );
       await _player.setAudioSource(AudioSource.uri(Uri.parse(url)));
       MushafLibrary.logger.info(
         '[FlutterAudioPlayer] setAudioSource completed successfully. autoPlay=$autoPlay',
@@ -165,7 +167,9 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
         play();
       }
     } catch (e, stack) {
-      MushafLibrary.logger.error('[FlutterAudioPlayer] ERROR loading audio source: $e');
+      MushafLibrary.logger.error(
+        '[FlutterAudioPlayer] ERROR loading audio source: $e',
+      );
       MushafLibrary.logger.error(stack.toString());
       _domainStateController.add(
         domain.AudioPlayerState(
@@ -185,7 +189,9 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
       await _player.play();
       MushafLibrary.logger.info('[FlutterAudioPlayer] Play completed.');
     } catch (e, stack) {
-      MushafLibrary.logger.error('[FlutterAudioPlayer] ERROR during play(): $e');
+      MushafLibrary.logger.error(
+        '[FlutterAudioPlayer] ERROR during play(): $e',
+      );
       MushafLibrary.logger.error(stack.toString());
     }
   }

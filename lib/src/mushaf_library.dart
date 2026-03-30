@@ -45,7 +45,7 @@ class MushafLibrary {
     required dynamic searchHistoryDao,
     MushafLogger? logger,
     MushafAnalytics? analytics,
-    dynamic cmsAudioConfig, 
+    dynamic cmsAudioConfig,
   }) async {
     if (_isInitialized) return;
 

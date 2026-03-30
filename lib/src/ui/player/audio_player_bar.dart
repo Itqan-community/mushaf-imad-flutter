@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
-import '../../di/core_module.dart';
-import '../../domain/models/audio_player_state.dart';
-import '../../domain/repository/audio_repository.dart';
-import '../../domain/repository/preferences_repository.dart';
-import 'quran_player_view_model.dart';
+import 'package:imad_flutter/imad_flutter.dart';
 
 /// A bottom bar widget that provides audio playback controls for the Mujawwad/Quran recitations.
 class AudioPlayerBar extends StatefulWidget {
   final int chapterNumber;
   final String chapterName;
   final bool autoPlay;
+  final int?
+  startVerseNumber; // Explicit verse to start from (e.g. tapped verse)
+  final int?
+  currentPage; // Current page, used to derive start verse if no explicit verse
 
   const AudioPlayerBar({
     super.key,
     required this.chapterNumber,
     required this.chapterName,
     this.autoPlay = false,
+    this.currentPage,
+    this.startVerseNumber,
   });
 
   @override
@@ -36,22 +38,53 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
     _initViewModel();
   }
 
+  /// Resolves which verse to start playback from.
+  ///
+  /// Priority:
+  ///   1. Explicit [startVerseNumber] — user tapped a specific verse
+  ///   2. First verse on [currentPage] — derived from QuranDataProvider
+  ///   3. Fallback: verse 1
+  int _resolveStartVerse() {
+    if (widget.startVerseNumber != null) {
+      MushafLibrary.logger.debug(
+        '[AudioPlayerBar] _resolveStartVerse → explicit startVerseNumber=${widget.startVerseNumber}',
+      );
+      return widget.startVerseNumber!;
+    }
+
+    if (widget.currentPage != null) {
+      final verses = VerseDataProvider.instance.getVersesForPage(
+        widget.currentPage!,
+      );
+      MushafLibrary.logger.debug(
+        '[AudioPlayerBar] _resolveStartVerse → page=${widget.currentPage}, versesOnPage=${verses.length}, first=${verses.isNotEmpty ? verses.first.number : "NONE"}',
+      );
+      if (verses.isNotEmpty) return verses.first.number;
+    }
+
+    MushafLibrary.logger.debug(
+      '[AudioPlayerBar] _resolveStartVerse → fallback verse=1',
+    );
+    return 1;
+  }
+
   Future<void> _initViewModel() async {
     await _viewModel.initialize();
 
     if (mounted) {
       setState(() => _initialized = true);
-      // Auto-load current chapter
+
       if (widget.chapterNumber > 0 && _viewModel.selectedReciter != null) {
-        if (widget.autoPlay) {
-          _viewModel.playChapter(widget.chapterNumber);
-        } else {
-          mushafGetIt<AudioRepository>().loadChapter(
-            widget.chapterNumber,
-            _viewModel.selectedReciter!.id,
-            autoPlay: false,
-          );
-        }
+        final startVerse = _resolveStartVerse();
+        MushafLibrary.logger.debug(
+          '[AudioPlayerBar] _initViewModel → chapter=${widget.chapterNumber}, reciter=${_viewModel.selectedReciter!.id}, startVerse=$startVerse, autoPlay=${widget.autoPlay}',
+        );
+        await mushafGetIt<AudioRepository>().loadChapter(
+          widget.chapterNumber,
+          _viewModel.selectedReciter!.id,
+          autoPlay: widget.autoPlay,
+          startVerseNumber: startVerse,
+        );
       }
     }
   }
@@ -59,16 +92,32 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
   @override
   void didUpdateWidget(covariant AudioPlayerBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.chapterNumber != oldWidget.chapterNumber && _initialized) {
-      if (_viewModel.selectedReciter != null &&
-          _viewModel.playerState.currentChapter != widget.chapterNumber) {
-        mushafGetIt<AudioRepository>().loadChapter(
-          widget.chapterNumber,
-          _viewModel.selectedReciter!.id,
-          autoPlay: widget.autoPlay,
-        );
-      }
-    }
+
+    if (!_initialized) return;
+
+    final chapterChanged = widget.chapterNumber != oldWidget.chapterNumber;
+    final pageChanged = widget.currentPage != oldWidget.currentPage;
+    final verseChanged = widget.startVerseNumber != oldWidget.startVerseNumber;
+
+    // Re-load whenever chapter, page, or explicit verse changes.
+    // NOTE: removed the `currentChapter != widget.chapterNumber` guard —
+    // that condition was preventing seeks within the same chapter when the
+    // user scrolled to a new page or tapped a different verse.
+    if (!chapterChanged && !pageChanged && !verseChanged) return;
+
+    if (_viewModel.selectedReciter == null) return;
+
+    final startVerse = _resolveStartVerse();
+    MushafLibrary.logger.debug(
+      '[AudioPlayerBar] didUpdateWidget → chapter=${widget.chapterNumber} (chapterChanged=$chapterChanged), page=${widget.currentPage} (pageChanged=$pageChanged), startVerse=$startVerse (verseChanged=$verseChanged)',
+    );
+
+    mushafGetIt<AudioRepository>().loadChapter(
+      widget.chapterNumber,
+      _viewModel.selectedReciter!.id,
+      autoPlay: widget.autoPlay,
+      startVerseNumber: startVerse,
+    );
   }
 
   @override
@@ -264,8 +313,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
                       // Previous Chapter (Stub)
                       IconButton(
                         icon: const Icon(Icons.skip_previous),
-                        onPressed:
-                            () {}, // Handled by MushafPage navigation ideally or playlist
+                        onPressed: () {},
                         tooltip: 'Previous',
                       ),
 

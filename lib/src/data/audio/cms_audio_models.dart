@@ -17,7 +17,8 @@ class CmsRecitationSurahTrack {
     return CmsRecitationSurahTrack(
       surahNumber: json['surah_number'] as int,
       audioUrl: json['audio_url'] as String,
-      ayahsTimings: (json['ayahs_timings'] as List<dynamic>?)
+      ayahsTimings:
+          (json['ayahs_timings'] as List<dynamic>?)
               ?.map((e) => CmsAyahTiming.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
@@ -48,12 +49,7 @@ class CmsAyahTiming {
   AyahTiming toAyahTiming() {
     final parts = ayahKey.split(':');
     final ayahNum = parts.length > 1 ? int.parse(parts[1]) : 0;
-    
-    return AyahTiming(
-      ayah: ayahNum,
-      startTime: startMs,
-      endTime: endMs,
-    );
+
+    return AyahTiming(ayah: ayahNum, startTime: startMs, endTime: endMs);
   }
 }
-

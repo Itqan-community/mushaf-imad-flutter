@@ -1,12 +1,9 @@
 import 'dart:async';
 
-import '../../domain/models/audio_player_state.dart';
-import '../../domain/models/reciter_info.dart';
-import '../../domain/models/reciter_timing.dart';
-import '../../domain/repository/audio_repository.dart';
 import '../audio/ayah_timing_service.dart';
 import '../audio/flutter_audio_player.dart';
 import '../audio/reciter_service.dart';
+import 'package:imad_flutter/imad_flutter.dart';
 
 /// Default implementation of AudioRepository.
 class DefaultAudioRepository implements AudioRepository {
@@ -65,18 +62,80 @@ class DefaultAudioRepository implements AudioRepository {
     }
   }
 
+  // Tracks what is currently loaded to avoid race conditions from double loads
+  int? _loadedChapter;
+  int? _loadedReciterId;
+
   @override
-  void loadChapter(
+  Future<void> loadChapter(
     int chapterNumber,
     int reciterId, {
     bool autoPlay = false,
+    int startVerseNumber = 1,
   }) async {
+    MushafLibrary.logger.debug(
+      '[DefaultAudioRepository] loadChapter → chapter=$chapterNumber, reciter=$reciterId, startVerse=$startVerseNumber, autoPlay=$autoPlay',
+    );
+
     final reciter = _reciterService.getReciterById(reciterId);
-    if (reciter != null) {
-      await _audioPlayer.loadChapter(
+    if (reciter == null) {
+      MushafLibrary.logger.debug(
+        '[DefaultAudioRepository] loadChapter → reciter NOT FOUND for id=$reciterId',
+      );
+      return;
+    }
+
+    // Only reload audio if chapter or reciter changed.
+    // This prevents the race where _initViewModel (verse=1) and
+    // didUpdateWidget (verse=10) both call loadChapter — the first reload
+    // completing after the second seek would reset position to 0.
+    final needsLoad =
+        _loadedChapter != chapterNumber || _loadedReciterId != reciterId;
+
+    if (needsLoad) {
+      await _audioPlayer.loadChapter(chapterNumber, reciter, autoPlay: false);
+      _loadedChapter = chapterNumber;
+      _loadedReciterId = reciterId;
+      MushafLibrary.logger.debug(
+        '[DefaultAudioRepository] loadChapter → audio loaded for chapter=$chapterNumber',
+      );
+    } else {
+      MushafLibrary.logger.debug(
+        '[DefaultAudioRepository] loadChapter → chapter already loaded, skipping reload',
+      );
+    }
+
+    // Always seek — even for verse 1 (seek to zero) so position is deterministic
+    if (startVerseNumber > 1) {
+      final timing = await _ayahTimingService.getAyahTiming(
+        reciterId,
         chapterNumber,
-        reciter,
-        autoPlay: autoPlay,
+        startVerseNumber,
+      );
+
+      if (timing != null) {
+        MushafLibrary.logger.debug(
+          '[DefaultAudioRepository] loadChapter → seeking to verse=$startVerseNumber at ${timing.startTime}ms',
+        );
+        await _audioPlayer.seek(Duration(milliseconds: timing.startTime));
+      } else {
+        MushafLibrary.logger.debug(
+          '[DefaultAudioRepository] loadChapter → ⚠️ NO timing found for verse=$startVerseNumber — seeking to start',
+        );
+        await _audioPlayer.seek(Duration.zero);
+      }
+    } else {
+      MushafLibrary.logger.debug(
+        '[DefaultAudioRepository] loadChapter → startVerse=1, seeking to beginning',
+      );
+      await _audioPlayer.seek(Duration.zero);
+    }
+
+    // Start playback if required
+    if (autoPlay) {
+      await _audioPlayer.play();
+      MushafLibrary.logger.debug(
+        '[DefaultAudioRepository] loadChapter → playback started',
       );
     }
   }
@@ -103,11 +162,6 @@ class DefaultAudioRepository implements AudioRepository {
   @override
   bool isRepeatEnabled() => _audioPlayer.isRepeatMode();
 
-  // These synchronous getters might need an async await if audio_service is isolated,
-  // but just_audio within BaseAudioHandler holds synchronous state if in same isolate.
-  // For now, these are not strictly available synchronously from base handler, so we can stub
-  // or return default if we don't store them locally anymore. We'll return 0 for now since
-  // UI mostly relies on the Stream<AudioPlayerState>.
   @override
   int getCurrentPosition() => 0;
 
