@@ -4,37 +4,40 @@ import 'package:imad_flutter/src/domain/models/reciter_timing.dart';
 
 void main() {
   group('AyahTiming parsing via QuranComAudioFile', () {
-    test('fromJson should parse verse timing correctly from Quran.com JSON', () {
-      final json = {
-        "id": 1,
-        "chapter_id": 1,
-        "file_size": 100.0,
-        "format": "mp3",
-        "audio_url": "https://example.com/1.mp3",
-        "timestamps": [
-          {
-            "verse_key": "1:2",
-            "timestamp_from": 4072,
-            "timestamp_to": 9705,
-            "duration": -5633,
-            "segments": [
-              [1, 4072, 5312],
-              [2, 5312, 6322],
-            ],
-          },
-        ],
-      };
+    test(
+      'fromJson should parse verse timing correctly from Quran.com JSON',
+      () {
+        final json = {
+          "id": 1,
+          "chapter_id": 1,
+          "file_size": 100.0,
+          "format": "mp3",
+          "audio_url": "https://example.com/1.mp3",
+          "timestamps": [
+            {
+              "verse_key": "1:2",
+              "timestamp_from": 4072,
+              "timestamp_to": 9705,
+              "duration": -5633,
+              "segments": [
+                [1, 4072, 5312],
+                [2, 5312, 6322],
+              ],
+            },
+          ],
+        };
 
-      final audioFile = QuranComAudioFile.fromJson(json);
+        final audioFile = QuranComAudioFile.fromJson(json);
 
-      expect(audioFile.timestamps, isNotNull);
-      expect(audioFile.timestamps!.length, 1);
+        expect(audioFile.timestamps, isNotNull);
+        expect(audioFile.timestamps!.length, 1);
 
-      final timing = audioFile.timestamps!.first;
-      expect(timing.ayah, 2);
-      expect(timing.startTime, 4072);
-      expect(timing.endTime, 9705);
-    });
+        final timing = audioFile.timestamps!.first;
+        expect(timing.ayah, 2);
+        expect(timing.startTime, 4072);
+        expect(timing.endTime, 9705);
+      },
+    );
 
     test('fromJson should handle null timestamps', () {
       final json = {
@@ -56,9 +59,7 @@ void main() {
         fileSize: 500,
         format: "mp3",
         audioUrl: "url",
-        timestamps: [
-          AyahTiming(ayah: 1, startTime: 100, endTime: 200),
-        ],
+        timestamps: [AyahTiming(ayah: 1, startTime: 100, endTime: 200)],
       );
 
       final json = audioFile.toJson();

@@ -1,8 +1,5 @@
 /// Which Quran.com environment the client should talk to.
-enum QuranComEnvironment {
-  prelive,
-  production,
-}
+enum QuranComEnvironment { prelive, production }
 
 extension QuranComEnvironmentX on QuranComEnvironment {
   String get authBaseUrl {

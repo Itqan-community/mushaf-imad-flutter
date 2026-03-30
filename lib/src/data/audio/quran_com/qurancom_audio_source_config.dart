@@ -47,8 +47,8 @@ class QuranComAudioSourceConfig {
   /// Used internally by the DI wiring so the rest of the library never needs
   /// to depend on this public-facing class directly.
   QuranComApiConfig toApiConfig() => QuranComApiConfig(
-        clientId: clientId,
-        clientSecret: clientSecret,
-        environment: environment,
-      );
+    clientId: clientId,
+    clientSecret: clientSecret,
+    environment: environment,
+  );
 }

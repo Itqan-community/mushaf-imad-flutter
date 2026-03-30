@@ -17,7 +17,9 @@ void main() async {
   const qfId = String.fromEnvironment('QF_ID');
   const qfSecret = String.fromEnvironment('QF_SECRET');
   const qfEnv = String.fromEnvironment('QF_ENV', defaultValue: 'production');
-  final environment = qfEnv == 'prelive' ? QuranComEnvironment.prelive : QuranComEnvironment.production;
+  final environment = qfEnv == 'prelive'
+      ? QuranComEnvironment.prelive
+      : QuranComEnvironment.production;
 
   final useQuranCom = qfId != '' && qfSecret != '';
 
@@ -848,7 +850,9 @@ class QuranComDemoPage extends StatefulWidget {
 class _QuranComDemoPageState extends State<QuranComDemoPage> {
   // Use a nullable reference or a check to prevent DI crash if not in quranCom mode
   QuranComReciterProvider? get _reciterProvider =>
-      mushafGetIt.isRegistered<QuranComReciterProvider>() ? mushafGetIt<QuranComReciterProvider>() : null;
+      mushafGetIt.isRegistered<QuranComReciterProvider>()
+      ? mushafGetIt<QuranComReciterProvider>()
+      : null;
 
   final _audioRepo = mushafGetIt<AudioRepository>();
 
@@ -891,7 +895,8 @@ class _QuranComDemoPageState extends State<QuranComDemoPage> {
     if (provider == null) {
       if (mounted) {
         setState(() {
-          _error = 'QuranComReciterProvider not registered in DI.\nMake sure you run with API credentials provided.';
+          _error =
+              'QuranComReciterProvider not registered in DI.\nMake sure you run with API credentials provided.';
           _isLoading = false;
         });
       }
@@ -951,28 +956,34 @@ class _QuranComDemoPageState extends State<QuranComDemoPage> {
 
     try {
       final isPlaying = _playerState?.isPlaying ?? false;
-      final isCompleted = _playerState?.playbackState == PlaybackState.stopped &&
+      final isCompleted =
+          _playerState?.playbackState == PlaybackState.stopped &&
           (_playerState?.currentPositionMs ?? 0) > 0;
 
       if (isPlaying) {
         _audioRepo.pause();
       } else {
         // If it's a different chapter/reciter, or it was completed, load it
-        final needsLoad = _playerState?.currentChapter != _selectedChapter ||
+        final needsLoad =
+            _playerState?.currentChapter != _selectedChapter ||
             _playerState?.currentReciterId != _selectedReciter?.id ||
             isCompleted;
 
         if (needsLoad) {
-          _audioRepo.loadChapter(_selectedChapter, _selectedReciter!.id, autoPlay: true);
+          _audioRepo.loadChapter(
+            _selectedChapter,
+            _selectedReciter!.id,
+            autoPlay: true,
+          );
         } else {
           _audioRepo.play();
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Playback error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Playback error: $e')));
       }
     }
   }
@@ -1001,7 +1012,10 @@ class _QuranComDemoPageState extends State<QuranComDemoPage> {
                 const SizedBox(height: 16),
                 const Text(
                   'Make sure you run with:\n--dart-define=QF_ID=xxx --dart-define=QF_SECRET=yyy',
-                  style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+                  style: TextStyle(
+                    fontStyle: FontStyle.italic,
+                    color: Colors.grey,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -1017,11 +1031,15 @@ class _QuranComDemoPageState extends State<QuranComDemoPage> {
         actions: [
           TextButton.icon(
             onPressed: () => setState(() => _useArabic = !_useArabic),
-            icon: Icon(_useArabic ? Icons.language : Icons.translate, color: Colors.white),
-            label: Text(_useArabic ? 'EN' : 'AR', style: const TextStyle(color: Colors.white)),
-            style: TextButton.styleFrom(
-              backgroundColor: Colors.black,
+            icon: Icon(
+              _useArabic ? Icons.language : Icons.translate,
+              color: Colors.white,
             ),
+            label: Text(
+              _useArabic ? 'EN' : 'AR',
+              style: const TextStyle(color: Colors.white),
+            ),
+            style: TextButton.styleFrom(backgroundColor: Colors.black),
           ),
         ],
       ),
@@ -1030,7 +1048,11 @@ class _QuranComDemoPageState extends State<QuranComDemoPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _SectionLabel(_useArabic ? '١. اختر القارئ' : '1. Choose Reciter (Live from API)'),
+            _SectionLabel(
+              _useArabic
+                  ? '١. اختر القارئ'
+                  : '1. Choose Reciter (Live from API)',
+            ),
             _ReciterDropdown(
               items: _reciters,
               value: _selectedReciter,
@@ -1050,7 +1072,10 @@ class _QuranComDemoPageState extends State<QuranComDemoPage> {
             if (_playerState != null && _playerState!.durationMs > 0) ...[
               _SectionLabel(_useArabic ? 'التقدم' : 'Seek'),
               Slider(
-                value: _playerState!.currentPositionMs.toDouble().clamp(0, _playerState!.durationMs.toDouble()),
+                value: _playerState!.currentPositionMs.toDouble().clamp(
+                  0,
+                  _playerState!.durationMs.toDouble(),
+                ),
                 max: _playerState!.durationMs.toDouble(),
                 onChanged: (v) => _audioRepo.seekTo(v.toInt()),
               ),
@@ -1059,8 +1084,16 @@ class _QuranComDemoPageState extends State<QuranComDemoPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(_formatDuration(Duration(milliseconds: _playerState!.currentPositionMs))),
-                    Text(_formatDuration(Duration(milliseconds: _playerState!.durationMs))),
+                    Text(
+                      _formatDuration(
+                        Duration(milliseconds: _playerState!.currentPositionMs),
+                      ),
+                    ),
+                    Text(
+                      _formatDuration(
+                        Duration(milliseconds: _playerState!.durationMs),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -1089,34 +1122,50 @@ class _QuranComDemoPageState extends State<QuranComDemoPage> {
               child: Column(
                 children: [
                   ElevatedButton.icon(
-                    onPressed: (_selectedReciter == null || (_playerState?.isBuffering ?? false)) ? null : _onTogglePlay,
+                    onPressed:
+                        (_selectedReciter == null ||
+                            (_playerState?.isBuffering ?? false))
+                        ? null
+                        : _onTogglePlay,
                     icon: (_playerState?.isBuffering ?? false)
                         ? const SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : Icon(_playerState?.isPlaying ?? false ? Icons.pause : Icons.play_arrow),
+                        : Icon(
+                            _playerState?.isPlaying ?? false
+                                ? Icons.pause
+                                : Icons.play_arrow,
+                          ),
                     label: Text(
                       (_playerState?.isBuffering ?? false)
                           ? (_useArabic ? 'جاري التحميل...' : 'Loading...')
                           : (_playerState?.isPlaying ?? false
-                              ? (_useArabic ? 'إيقاف' : 'Pause')
-                              : (_useArabic ? 'تشغيل' : 'Fetch & Play')),
+                                ? (_useArabic ? 'إيقاف' : 'Pause')
+                                : (_useArabic ? 'تشغيل' : 'Fetch & Play')),
                     ),
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(200, 50),
-                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer,
                     ),
                   ),
                   if (_playerError != null) ...[
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(8)),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       child: Text(
                         '${_useArabic ? "خطأ" : "Error"}: $_playerError',
-                        style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -1185,7 +1234,9 @@ class _ReciterDropdown extends StatelessWidget {
               value: r,
               child: Text(
                 '$name (${r.rewaya})',
-                textDirection: useArabic ? TextDirection.rtl : TextDirection.ltr,
+                textDirection: useArabic
+                    ? TextDirection.rtl
+                    : TextDirection.ltr,
               ),
             );
           }).toList(),
@@ -1226,7 +1277,9 @@ class _ChapterDropdown extends StatelessWidget {
               value: num,
               child: Text(
                 useArabic ? 'سورة $name' : 'Surah $num: $name',
-                textDirection: useArabic ? TextDirection.rtl : TextDirection.ltr,
+                textDirection: useArabic
+                    ? TextDirection.rtl
+                    : TextDirection.ltr,
               ),
             );
           }).toList(),
@@ -1265,7 +1318,9 @@ class _PlayerSyncCard extends StatelessWidget {
                 const SizedBox(width: 12),
                 Text(
                   isPlaying
-                      ? (useArabic ? 'البث المباشر حالياً' : 'Currently Streaming')
+                      ? (useArabic
+                            ? 'البث المباشر حالياً'
+                            : 'Currently Streaming')
                       : (useArabic ? 'المشغل متوقف' : 'Player Idle'),
                   style: theme.textTheme.titleMedium,
                 ),
@@ -1287,7 +1342,9 @@ class _PlayerSyncCard extends StatelessWidget {
                 _StatItem(
                   label: useArabic ? 'الوقت' : 'Progress',
                   value: _formatDuration(
-                    state != null ? Duration(milliseconds: state!.currentPositionMs) : null,
+                    state != null
+                        ? Duration(milliseconds: state!.currentPositionMs)
+                        : null,
                   ),
                 ),
               ],

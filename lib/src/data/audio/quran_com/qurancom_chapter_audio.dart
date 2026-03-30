@@ -4,14 +4,19 @@ import 'package:imad_flutter/src/domain/models/reciter_timing.dart';
 class QuranComAudioFile {
   /// Unique identifier for the audio file.
   final int id;
+
   /// The chapter ID that this audio file corresponds to.
   final int chapterId;
+
   /// The size of the audio file in bytes.
   final double? fileSize;
+
   /// The audio format (e.g., "mp3").
   final String format;
+
   /// The URL where the audio file can be accessed.
   final String audioUrl;
+
   /// A list of verse timings that provide detailed timing information for each verse in the chapter.
   final List<AyahTiming>? timestamps;
 
@@ -47,7 +52,7 @@ class QuranComAudioFile {
                 else
                   throw FormatException(
                     "Expected each item in 'timestamps' to be a Map, but got ${x.runtimeType}",
-                  )
+                  ),
             ]
           : null,
     );

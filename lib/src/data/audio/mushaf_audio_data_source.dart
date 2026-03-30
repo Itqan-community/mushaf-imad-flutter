@@ -11,5 +11,8 @@ abstract class MushafAudioDataSource {
 
   /// Fetches bulk timing sequence (verse level timestamps) for a chapter.
   /// If [null] is returned, it implies the source cannot provide dynamic local timings.
-  Future<List<AyahTiming>?> fetchChapterTiming(int reciterId, int chapterNumber);
+  Future<List<AyahTiming>?> fetchChapterTiming(
+    int reciterId,
+    int chapterNumber,
+  );
 }

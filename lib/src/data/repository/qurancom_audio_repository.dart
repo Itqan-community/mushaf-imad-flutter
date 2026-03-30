@@ -41,7 +41,8 @@ class QuranComAudioRepository implements AudioRepository {
   // ---------------------------------------------------------------------------
 
   @override
-  Future<List<ReciterInfo>> getAllReciters() => _reciterProvider.getAllReciters();
+  Future<List<ReciterInfo>> getAllReciters() =>
+      _reciterProvider.getAllReciters();
 
   @override
   Future<ReciterInfo?> getReciterById(int reciterId) =>
@@ -54,10 +55,12 @@ class QuranComAudioRepository implements AudioRepository {
   }) => _reciterProvider.searchReciters(query, languageCode: languageCode);
 
   @override
-  Future<List<ReciterInfo>> getHafsReciters() => _reciterProvider.getHafsReciters();
+  Future<List<ReciterInfo>> getHafsReciters() =>
+      _reciterProvider.getHafsReciters();
 
   @override
-  Future<ReciterInfo> getDefaultReciter() => _reciterProvider.getDefaultReciter();
+  Future<ReciterInfo> getDefaultReciter() =>
+      _reciterProvider.getDefaultReciter();
 
   @override
   void saveSelectedReciter(ReciterInfo reciter) {

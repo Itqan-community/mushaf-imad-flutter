@@ -14,10 +14,15 @@ import 'package:mocktail/mocktail.dart';
 // Mocks
 // ---------------------------------------------------------------------------
 
-class MockQuranComReciterProvider extends Mock implements QuranComReciterProvider {}
+class MockQuranComReciterProvider extends Mock
+    implements QuranComReciterProvider {}
+
 class MockAyahTimingService extends Mock implements AyahTimingService {}
+
 class MockQurancomDataSource extends Mock implements QurancomDataSource {}
+
 class MockFlutterAudioPlayer extends Mock implements FlutterAudioPlayer {}
+
 class MockMushafLogger extends Mock implements MushafLogger {}
 
 class _FakeReciterInfo extends Fake implements ReciterInfo {}
@@ -44,8 +49,9 @@ void main() {
     mockLogger = MockMushafLogger();
 
     // Default stub for player stream to prevent early null crashes in stream-based tests
-    when(() => mockAudioPlayer.domainStateStream)
-        .thenAnswer((_) => const Stream.empty());
+    when(
+      () => mockAudioPlayer.domainStateStream,
+    ).thenAnswer((_) => const Stream.empty());
 
     repository = QuranComAudioRepository(
       reciterProvider: mockReciterProvider,
@@ -63,56 +69,71 @@ void main() {
       const audioUrl = 'https://example.com/audio.mp3';
       final reciter = _FakeReciterInfo();
 
-      when(() => mockReciterProvider.getReciterById(reciterId))
-          .thenAnswer((_) async => reciter);
-      when(() => mockDataSource.fetchChapterAudioUrl(reciterId, chapterNumber))
-          .thenAnswer((_) async => audioUrl);
-      when(() => mockAudioPlayer.loadChapter(
-            any(),
-            any(),
-            autoPlay: any(named: 'autoPlay'),
-            audioUrl: any(named: 'audioUrl'),
-          )).thenAnswer((_) async {});
+      when(
+        () => mockReciterProvider.getReciterById(reciterId),
+      ).thenAnswer((_) async => reciter);
+      when(
+        () => mockDataSource.fetchChapterAudioUrl(reciterId, chapterNumber),
+      ).thenAnswer((_) async => audioUrl);
+      when(
+        () => mockAudioPlayer.loadChapter(
+          any(),
+          any(),
+          autoPlay: any(named: 'autoPlay'),
+          audioUrl: any(named: 'audioUrl'),
+        ),
+      ).thenAnswer((_) async {});
 
       repository.loadChapter(chapterNumber, reciterId);
-      await untilCalled(() => mockAudioPlayer.loadChapter(
-            any(),
-            any(),
-            autoPlay: any(named: 'autoPlay'),
-            audioUrl: any(named: 'audioUrl'),
-          ));
+      await untilCalled(
+        () => mockAudioPlayer.loadChapter(
+          any(),
+          any(),
+          autoPlay: any(named: 'autoPlay'),
+          audioUrl: any(named: 'audioUrl'),
+        ),
+      );
 
-      verify(() => mockDataSource.fetchChapterAudioUrl(reciterId, chapterNumber))
-          .called(1);
-      verify(() => mockAudioPlayer.loadChapter(
-            chapterNumber,
-            reciter,
-            autoPlay: false,
-            audioUrl: audioUrl,
-          )).called(1);
+      verify(
+        () => mockDataSource.fetchChapterAudioUrl(reciterId, chapterNumber),
+      ).called(1);
+      verify(
+        () => mockAudioPlayer.loadChapter(
+          chapterNumber,
+          reciter,
+          autoPlay: false,
+          audioUrl: audioUrl,
+        ),
+      ).called(1);
     });
 
     test('loadChapter logs error when fetching audio URL fails', () async {
       final reciter = _FakeReciterInfo();
-      when(() => mockReciterProvider.getReciterById(any()))
-          .thenAnswer((_) async => reciter);
-      when(() => mockDataSource.fetchChapterAudioUrl(any(), any()))
-          .thenThrow(Exception('API Error'));
+      when(
+        () => mockReciterProvider.getReciterById(any()),
+      ).thenAnswer((_) async => reciter);
+      when(
+        () => mockDataSource.fetchChapterAudioUrl(any(), any()),
+      ).thenThrow(Exception('API Error'));
 
       repository.loadChapter(1, 7);
-      await untilCalled(() => mockLogger.error(
-            any(),
-            error: any(named: 'error'),
-            stackTrace: any(named: 'stackTrace'),
-            category: any(named: 'category'),
-          ));
+      await untilCalled(
+        () => mockLogger.error(
+          any(),
+          error: any(named: 'error'),
+          stackTrace: any(named: 'stackTrace'),
+          category: any(named: 'category'),
+        ),
+      );
 
-      verify(() => mockLogger.error(
-            any(),
-            error: any(named: 'error'),
-            stackTrace: any(named: 'stackTrace'),
-            category: LogCategory.audio,
-          )).called(1);
+      verify(
+        () => mockLogger.error(
+          any(),
+          error: any(named: 'error'),
+          stackTrace: any(named: 'stackTrace'),
+          category: LogCategory.audio,
+        ),
+      ).called(1);
     });
 
     test('getPlayerStateStream enriches state with verse number', () async {
@@ -123,10 +144,12 @@ void main() {
       );
 
       final controller = StreamController<AudioPlayerState>();
-      when(() => mockAudioPlayer.domainStateStream)
-          .thenAnswer((_) => controller.stream);
-      when(() => mockTimingService.getCurrentVerse(7, 1, 5000))
-          .thenAnswer((_) async => 3);
+      when(
+        () => mockAudioPlayer.domainStateStream,
+      ).thenAnswer((_) => controller.stream);
+      when(
+        () => mockTimingService.getCurrentVerse(7, 1, 5000),
+      ).thenAnswer((_) async => 3);
 
       final stream = repository.getPlayerStateStream();
       final expectation = expectLater(

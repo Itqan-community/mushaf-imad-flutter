@@ -72,7 +72,8 @@ class QuranComApiClient {
   ///
   /// Returns a [List<QuranComReciter>] object containing the reciter details.
   Future<List<QuranComReciter>> fetchReciters({String? language}) async {
-    final path = '${_config.recitersPath}${language != null ? '?language=$language' : ''}';
+    final path =
+        '${_config.recitersPath}${language != null ? '?language=$language' : ''}';
     final response = await _getWithAuth(path);
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     return QuranComRecitationsResponse.fromJson(data).reciters;

@@ -10,6 +10,7 @@ import 'package:mocktail/mocktail.dart';
 // ---------------------------------------------------------------------------
 
 class MockQurancomDataSource extends Mock implements QurancomDataSource {}
+
 class MockMushafLogger extends Mock implements MushafLogger {}
 
 // ---------------------------------------------------------------------------
@@ -83,8 +84,9 @@ void main() {
 
     group('getAllReciters()', () {
       test('fetches from data source on first call', () async {
-        when(() => mockDataSource.fetchAllReciters())
-            .thenAnswer((_) async => _sampleReciters);
+        when(
+          () => mockDataSource.fetchAllReciters(),
+        ).thenAnswer((_) async => _sampleReciters);
 
         final result = await provider.getAllReciters();
 
@@ -92,15 +94,19 @@ void main() {
         verify(() => mockDataSource.fetchAllReciters()).called(1);
       });
 
-      test('returns cached list on subsequent calls without re-fetching', () async {
-        when(() => mockDataSource.fetchAllReciters())
-            .thenAnswer((_) async => _sampleReciters);
+      test(
+        'returns cached list on subsequent calls without re-fetching',
+        () async {
+          when(
+            () => mockDataSource.fetchAllReciters(),
+          ).thenAnswer((_) async => _sampleReciters);
 
-        await provider.getAllReciters(); // First call — hits data source
-        await provider.getAllReciters(); // Second call — should use cache
+          await provider.getAllReciters(); // First call — hits data source
+          await provider.getAllReciters(); // Second call — should use cache
 
-        verify(() => mockDataSource.fetchAllReciters()).called(1);
-      });
+          verify(() => mockDataSource.fetchAllReciters()).called(1);
+        },
+      );
 
       test('gracefully handles data source failure and logs error', () async {
         final exception = Exception('Network unavailable');
@@ -109,12 +115,14 @@ void main() {
         final result = await provider.getAllReciters();
 
         expect(result, isEmpty);
-        verify(() => mockLogger.error(
-              any(),
-              error: any(named: 'error'),
-              stackTrace: any(named: 'stackTrace'),
-              category: LogCategory.audio,
-            )).called(1);
+        verify(
+          () => mockLogger.error(
+            any(),
+            error: any(named: 'error'),
+            stackTrace: any(named: 'stackTrace'),
+            category: LogCategory.audio,
+          ),
+        ).called(1);
       });
     });
 
@@ -124,8 +132,9 @@ void main() {
 
     group('getReciterById()', () {
       setUp(() {
-        when(() => mockDataSource.fetchAllReciters())
-            .thenAnswer((_) async => _sampleReciters);
+        when(
+          () => mockDataSource.fetchAllReciters(),
+        ).thenAnswer((_) async => _sampleReciters);
       });
 
       test('returns correct reciter for known ID', () async {
@@ -147,16 +156,20 @@ void main() {
 
     group('searchReciters()', () {
       setUp(() {
-        when(() => mockDataSource.fetchAllReciters())
-            .thenAnswer((_) async => _sampleReciters);
+        when(
+          () => mockDataSource.fetchAllReciters(),
+        ).thenAnswer((_) async => _sampleReciters);
       });
 
-      test('finds reciter by partial English name (case-insensitive)', () async {
-        final result = await provider.searchReciters('HUSARY');
+      test(
+        'finds reciter by partial English name (case-insensitive)',
+        () async {
+          final result = await provider.searchReciters('HUSARY');
 
-        expect(result.length, 1);
-        expect(result.first.id, 7);
-      });
+          expect(result.length, 1);
+          expect(result.first.id, 7);
+        },
+      );
 
       test('finds reciter by partial Arabic name', () async {
         final result = await provider.searchReciters('مشاري');
@@ -172,8 +185,9 @@ void main() {
 
     group('getHafsReciters()', () {
       setUp(() {
-        when(() => mockDataSource.fetchAllReciters())
-            .thenAnswer((_) async => _sampleReciters);
+        when(
+          () => mockDataSource.fetchAllReciters(),
+        ).thenAnswer((_) async => _sampleReciters);
       });
 
       test('returns only Hafs reciters', () async {
@@ -190,32 +204,41 @@ void main() {
 
     group('getDefaultReciter()', () {
       test('returns first Hafs reciter when available', () async {
-        when(() => mockDataSource.fetchAllReciters())
-            .thenAnswer((_) async => _sampleReciters);
+        when(
+          () => mockDataSource.fetchAllReciters(),
+        ).thenAnswer((_) async => _sampleReciters);
 
         final result = await provider.getDefaultReciter();
 
         expect(result.id, _hafsReciter1.id);
       });
 
-      test('returns first available reciter when NO Hafs reciters exist', () async {
-        when(() => mockDataSource.fetchAllReciters())
-            .thenAnswer((_) async => [_warshReciter]);
+      test(
+        'returns first available reciter when NO Hafs reciters exist',
+        () async {
+          when(
+            () => mockDataSource.fetchAllReciters(),
+          ).thenAnswer((_) async => [_warshReciter]);
 
-        final result = await provider.getDefaultReciter();
+          final result = await provider.getDefaultReciter();
 
-        expect(result.id, _warshReciter.id);
-      });
+          expect(result.id, _warshReciter.id);
+        },
+      );
 
-      test('throws StateError when fetchAllReciters returns empty list', () async {
-        when(() => mockDataSource.fetchAllReciters())
-            .thenAnswer((_) async => []);
+      test(
+        'throws StateError when fetchAllReciters returns empty list',
+        () async {
+          when(
+            () => mockDataSource.fetchAllReciters(),
+          ).thenAnswer((_) async => []);
 
-        expect(
-          () => provider.getDefaultReciter(),
-          throwsA(isA<StateError>()),
-        );
-      });
+          expect(
+            () => provider.getDefaultReciter(),
+            throwsA(isA<StateError>()),
+          );
+        },
+      );
     });
 
     // -----------------------------------------------------------------------
@@ -224,8 +247,9 @@ void main() {
 
     group('clearCache()', () {
       test('forces a re-fetch from data source', () async {
-        when(() => mockDataSource.fetchAllReciters())
-            .thenAnswer((_) async => _sampleReciters);
+        when(
+          () => mockDataSource.fetchAllReciters(),
+        ).thenAnswer((_) async => _sampleReciters);
 
         // Populate cache
         await provider.getAllReciters();

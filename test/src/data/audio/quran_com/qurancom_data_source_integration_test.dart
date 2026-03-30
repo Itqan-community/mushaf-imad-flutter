@@ -43,25 +43,40 @@ void main() {
       apiClient.dispose();
     });
 
-    test('should fetch real reciters and map to ReciterInfo with Arabic names', () async {
-      logger.info('\n--- TEST: Integration Fetch Reciters ---', category: LogCategory.audio);
-      final reciters = await dataSource.fetchAllReciters();
-      
-      expect(reciters, isNotEmpty);
-      final first = reciters.first;
-      
-      // Basic field checks
-      expect(first.id, isPositive);
-      expect(first.nameArabic, isNotEmpty);
-      expect(first.nameEnglish, isNotEmpty);
-      expect(first.rewaya, isNotEmpty);
-      
-      logger.info('✅ Successfully fetched ${reciters.length} reciters.', category: LogCategory.audio);
-      logger.info('✅ Mapped Example: English="${first.nameEnglish}", Arabic="${first.nameArabic}", Style="${first.rewaya}"', category: LogCategory.audio);
-    });
+    test(
+      'should fetch real reciters and map to ReciterInfo with Arabic names',
+      () async {
+        logger.info(
+          '\n--- TEST: Integration Fetch Reciters ---',
+          category: LogCategory.audio,
+        );
+        final reciters = await dataSource.fetchAllReciters();
+
+        expect(reciters, isNotEmpty);
+        final first = reciters.first;
+
+        // Basic field checks
+        expect(first.id, isPositive);
+        expect(first.nameArabic, isNotEmpty);
+        expect(first.nameEnglish, isNotEmpty);
+        expect(first.rewaya, isNotEmpty);
+
+        logger.info(
+          '✅ Successfully fetched ${reciters.length} reciters.',
+          category: LogCategory.audio,
+        );
+        logger.info(
+          '✅ Mapped Example: English="${first.nameEnglish}", Arabic="${first.nameArabic}", Style="${first.rewaya}"',
+          category: LogCategory.audio,
+        );
+      },
+    );
 
     test('should fetch and cache timings for a real chapter', () async {
-      logger.info('\n--- TEST: Integration Audio & Timing Cache ---', category: LogCategory.audio);
+      logger.info(
+        '\n--- TEST: Integration Audio & Timing Cache ---',
+        category: LogCategory.audio,
+      );
       // Test with Fatiha (chapter 1) and Mishari (id 7)
       final url = await dataSource.fetchChapterAudioUrl(7, 1);
       expect(url, contains('.mp3'));
@@ -71,14 +86,24 @@ void main() {
       final stopwatch = Stopwatch()..start();
       final timings = await dataSource.fetchChapterTiming(7, 1);
       stopwatch.stop();
-      
+
       expect(timings, isNotNull);
       expect(timings!.length, equals(7));
-      logger.info('✅ Timestamps count: ${timings.length}', category: LogCategory.audio);
-      logger.info('✅ Timing fetch duration (cached): ${stopwatch.elapsedMilliseconds}ms', category: LogCategory.audio);
-      
+      logger.info(
+        '✅ Timestamps count: ${timings.length}',
+        category: LogCategory.audio,
+      );
+      logger.info(
+        '✅ Timing fetch duration (cached): ${stopwatch.elapsedMilliseconds}ms',
+        category: LogCategory.audio,
+      );
+
       // In integration tests, 50ms is a safe "cached" threshold to account for CPU variation
-      expect(stopwatch.elapsedMilliseconds, lessThan(50), reason: 'Timing should be returned from cache');
+      expect(
+        stopwatch.elapsedMilliseconds,
+        lessThan(50),
+        reason: 'Timing should be returned from cache',
+      );
     });
   });
 }

@@ -18,107 +18,124 @@ void main() {
   });
 
   group('QurancomDataSource', () {
-    test('fetchAllReciters should fetch and map reciters with caching', () async {
-      final mockReciters = [
-        QuranComReciter(
+    test(
+      'fetchAllReciters should fetch and map reciters with caching',
+      () async {
+        final mockReciters = [
+          QuranComReciter(
+            id: 1,
+            reciterName: 'Reciter 1',
+            style: 'Murattal',
+            translatedName: QuranComTranslatedName(
+              name: 'test',
+              languageName: 'arabic',
+            ),
+          ),
+        ];
+
+        when(
+          () => mockApiClient.fetchReciters(language: 'ar'),
+        ).thenAnswer((_) async => mockReciters);
+
+        // First call - should trigger API
+        final result1 = await dataSource.fetchAllReciters();
+
+        expect(result1.length, 1);
+        expect(result1.first.id, 1);
+        expect(result1.first.nameEnglish, 'Reciter 1');
+        expect(result1.first.nameArabic, 'test');
+        expect(result1.first.rewaya, 'Murattal');
+        expect(result1.first.folderUrl, '');
+
+        // Second call - should be cached
+        final result2 = await dataSource.fetchAllReciters();
+        expect(result2, result1);
+        verify(() => mockApiClient.fetchReciters(language: 'ar')).called(1);
+      },
+    );
+
+    test(
+      'fetchChapterAudioUrl should fetch audio and eager-cache timings',
+      () async {
+        final mockAudioFile = QuranComAudioFile(
           id: 1,
-          reciterName: 'Reciter 1',
-          style: 'Murattal',
-          translatedName: QuranComTranslatedName(name: 'test', languageName: 'arabic'),
-        ),
-      ];
+          chapterId: 1,
+          fileSize: 100,
+          format: 'mp3',
+          audioUrl: 'https://example.com/audio.mp3',
+          timestamps: [AyahTiming(ayah: 1, startTime: 0, endTime: 1000)],
+        );
 
-      when(() => mockApiClient.fetchReciters(language: 'ar'))
-          .thenAnswer((_) async => mockReciters);
-
-      // First call - should trigger API
-      final result1 = await dataSource.fetchAllReciters();
-      
-      expect(result1.length, 1);
-      expect(result1.first.id, 1);
-      expect(result1.first.nameEnglish, 'Reciter 1');
-      expect(result1.first.nameArabic, 'test');
-      expect(result1.first.rewaya, 'Murattal');
-      expect(result1.first.folderUrl, '');
-
-      // Second call - should be cached
-      final result2 = await dataSource.fetchAllReciters();
-      expect(result2, result1);
-      verify(() => mockApiClient.fetchReciters(language: 'ar')).called(1);
-    });
-
-    test('fetchChapterAudioUrl should fetch audio and eager-cache timings', () async {
-      final mockAudioFile = QuranComAudioFile(
-        id: 1,
-        chapterId: 1,
-        fileSize: 100,
-        format: 'mp3',
-        audioUrl: 'https://example.com/audio.mp3',
-        timestamps: [
-          AyahTiming(ayah: 1, startTime: 0, endTime: 1000),
-        ],
-      );
-
-      when(() => mockApiClient.fetchChapterAudio(
+        when(
+          () => mockApiClient.fetchChapterAudio(
             reciterId: 1,
             chapterNumber: 1,
             segments: true,
-          )).thenAnswer((_) async => mockAudioFile);
+          ),
+        ).thenAnswer((_) async => mockAudioFile);
 
-      // Fetch URL
-      final url = await dataSource.fetchChapterAudioUrl(1, 1);
+        // Fetch URL
+        final url = await dataSource.fetchChapterAudioUrl(1, 1);
 
-      expect(url, 'https://example.com/audio.mp3');
-      
-      // Verify that calling fetchChapterTiming immediately returns from cache
-      final timings = await dataSource.fetchChapterTiming(1, 1);
-      expect(timings?.length, 1);
-      expect(timings?.first.ayah, 1);
-      expect(timings?.first.startTime, 0);
-      expect(timings?.first.endTime, 1000);
-      
-      // Verify API was ONLY called once total for both operations
-      verify(() => mockApiClient.fetchChapterAudio(
+        expect(url, 'https://example.com/audio.mp3');
+
+        // Verify that calling fetchChapterTiming immediately returns from cache
+        final timings = await dataSource.fetchChapterTiming(1, 1);
+        expect(timings?.length, 1);
+        expect(timings?.first.ayah, 1);
+        expect(timings?.first.startTime, 0);
+        expect(timings?.first.endTime, 1000);
+
+        // Verify API was ONLY called once total for both operations
+        verify(
+          () => mockApiClient.fetchChapterAudio(
             reciterId: 1,
             chapterNumber: 1,
             segments: true,
-          )).called(1);
-    });
+          ),
+        ).called(1);
+      },
+    );
 
-    test('fetchChapterTiming should fetch via fetchChapterAudioUrl if cache miss', () async {
-       final mockAudioFile = QuranComAudioFile(
-        id: 1,
-        chapterId: 1,
-        fileSize: 100,
-        format: 'mp3',
-        audioUrl: 'https://example.com/audio.mp3',
-        timestamps: [
-          AyahTiming(ayah: 1, startTime: 0, endTime: 1000),
-        ],
-      );
+    test(
+      'fetchChapterTiming should fetch via fetchChapterAudioUrl if cache miss',
+      () async {
+        final mockAudioFile = QuranComAudioFile(
+          id: 1,
+          chapterId: 1,
+          fileSize: 100,
+          format: 'mp3',
+          audioUrl: 'https://example.com/audio.mp3',
+          timestamps: [AyahTiming(ayah: 1, startTime: 0, endTime: 1000)],
+        );
 
-      when(() => mockApiClient.fetchChapterAudio(
+        when(
+          () => mockApiClient.fetchChapterAudio(
             reciterId: 1,
             chapterNumber: 1,
             segments: true,
-          )).thenAnswer((_) async => mockAudioFile);
+          ),
+        ).thenAnswer((_) async => mockAudioFile);
 
-      // Call timing directly (cache miss)
-      final timings = await dataSource.fetchChapterTiming(1, 1);
-      
-      expect(timings?.length, 1);
-      expect(timings?.first.ayah, 1);
-      
-      // Verify it delegated correctly to API via fetchChapterAudioUrl
-      verify(() => mockApiClient.fetchChapterAudio(
-        reciterId: 1, 
-        chapterNumber: 1, 
-        segments: true,
-      )).called(1);
-    });
+        // Call timing directly (cache miss)
+        final timings = await dataSource.fetchChapterTiming(1, 1);
+
+        expect(timings?.length, 1);
+        expect(timings?.first.ayah, 1);
+
+        // Verify it delegated correctly to API via fetchChapterAudioUrl
+        verify(
+          () => mockApiClient.fetchChapterAudio(
+            reciterId: 1,
+            chapterNumber: 1,
+            segments: true,
+          ),
+        ).called(1);
+      },
+    );
 
     test('fetchChapterTiming should handle null timestamps from API', () async {
-       final mockAudioFile = QuranComAudioFile(
+      final mockAudioFile = QuranComAudioFile(
         id: 1,
         chapterId: 1,
         fileSize: 100,
@@ -127,14 +144,16 @@ void main() {
         timestamps: null,
       );
 
-      when(() => mockApiClient.fetchChapterAudio(
-            reciterId: 1,
-            chapterNumber: 1,
-            segments: true,
-          )).thenAnswer((_) async => mockAudioFile);
+      when(
+        () => mockApiClient.fetchChapterAudio(
+          reciterId: 1,
+          chapterNumber: 1,
+          segments: true,
+        ),
+      ).thenAnswer((_) async => mockAudioFile);
 
       final timings = await dataSource.fetchChapterTiming(1, 1);
-      
+
       expect(timings, isNull);
     });
   });

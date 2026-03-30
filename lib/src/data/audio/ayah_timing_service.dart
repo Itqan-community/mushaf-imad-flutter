@@ -12,14 +12,15 @@ import 'mushaf_audio_data_source.dart';
 /// Internal implementation.
 class AyahTimingService {
   final Map<int, ReciterTiming> _timingCache = {};
-  
+
   /// Cache for dynamically fetched chapter timings (not from bulk JSON assets).
   /// Keyed by reciterId -> chapterNumber.
   final Map<int, Map<int, List<AyahTiming>>> _dynamicChapterCache = {};
 
   final MushafAudioDataSource? _dataSource;
 
-  AyahTimingService({MushafAudioDataSource? dataSource}) : _dataSource = dataSource;
+  AyahTimingService({MushafAudioDataSource? dataSource})
+    : _dataSource = dataSource;
 
   /// Load timing data for a specific reciter from assets.
   Future<ReciterTiming?> loadTimingData(int reciterId) async {
@@ -46,7 +47,7 @@ class AyahTimingService {
     int chapterNumber,
     int ayahNumber,
   ) async {
-        final timings = await getChapterTimings(reciterId, chapterNumber);
+    final timings = await getChapterTimings(reciterId, chapterNumber);
     if (timings.isEmpty) return null;
     final timing = await loadTimingData(reciterId);
     if (timing == null) {
@@ -91,7 +92,6 @@ class AyahTimingService {
     }
   }
 
-
   /// Get the current verse being recited based on playback position.
   Future<int?> getCurrentVerse(
     int reciterId,
@@ -108,7 +108,8 @@ class AyahTimingService {
     }
     return null;
   }
-/// Get all timing data for a chapter.
+
+  /// Get all timing data for a chapter.
   /// This method implements a "Local-First -> API-Fallback" strategy.
   Future<List<AyahTiming>> getChapterTimings(
     int reciterId,
@@ -117,7 +118,9 @@ class AyahTimingService {
     // 1. Check if the entire reciter profile is already cached (bulk JSON)
     if (_timingCache.containsKey(reciterId)) {
       try {
-        final chapter = _timingCache[reciterId]!.chapters.firstWhere((c) => c.id == chapterNumber);
+        final chapter = _timingCache[reciterId]!.chapters.firstWhere(
+          (c) => c.id == chapterNumber,
+        );
         return chapter.ayaTiming;
       } catch (_) {
         // Not in this bulk file, but continue to other sources
@@ -133,7 +136,9 @@ class AyahTimingService {
     final bulkTiming = await loadTimingData(reciterId);
     if (bulkTiming != null) {
       try {
-        final chapter = bulkTiming.chapters.firstWhere((c) => c.id == chapterNumber);
+        final chapter = bulkTiming.chapters.firstWhere(
+          (c) => c.id == chapterNumber,
+        );
         return chapter.ayaTiming;
       } catch (_) {
         // Asset exists but lacks this chapter
@@ -144,10 +149,14 @@ class AyahTimingService {
     final dataSource = _dataSource;
     if (dataSource != null) {
       try {
-        final remoteTimings = await dataSource.fetchChapterTiming(reciterId, chapterNumber);
+        final remoteTimings = await dataSource.fetchChapterTiming(
+          reciterId,
+          chapterNumber,
+        );
         if (remoteTimings != null) {
           // Cache the dynamic result
-          _dynamicChapterCache.putIfAbsent(reciterId, () => {})[chapterNumber] = remoteTimings;
+          _dynamicChapterCache.putIfAbsent(reciterId, () => {})[chapterNumber] =
+              remoteTimings;
           return remoteTimings;
         }
       } catch (e) {

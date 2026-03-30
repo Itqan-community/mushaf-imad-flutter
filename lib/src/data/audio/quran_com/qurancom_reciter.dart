@@ -87,7 +87,7 @@ class QuranComRecitationsResponse {
           else
             throw FormatException(
               "Expected each item in 'recitations' to be a Map, but got ${item.runtimeType}",
-            )
+            ),
       ],
     );
   }

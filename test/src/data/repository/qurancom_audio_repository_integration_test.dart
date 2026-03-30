@@ -49,7 +49,10 @@ void main() {
 
     final apiClient = QuranComApiClient(config: config);
     final dataSource = QurancomDataSource(apiClient: apiClient);
-    final provider = QuranComReciterProvider(dataSource: dataSource, logger: logger);
+    final provider = QuranComReciterProvider(
+      dataSource: dataSource,
+      logger: logger,
+    );
     final timingService = AyahTimingService(dataSource: dataSource);
     final mockPlayer = MockFlutterAudioPlayer();
 
@@ -65,60 +68,95 @@ void main() {
       apiClient.dispose();
     });
 
-    test('loadChapter fetches real URL from API and passes it to player', () async {
-      logger.info('--- TEST: loadChapter (Hafs) ---', category: LogCategory.audio);
-      logger.info('Fetching real audio URL for chapter 1...', category: LogCategory.audio);
+    test(
+      'loadChapter fetches real URL from API and passes it to player',
+      () async {
+        logger.info(
+          '--- TEST: loadChapter (Hafs) ---',
+          category: LogCategory.audio,
+        );
+        logger.info(
+          'Fetching real audio URL for chapter 1...',
+          category: LogCategory.audio,
+        );
 
-      // Arrange: Stub player
-      when(() => mockPlayer.loadChapter(
-        any(),
-        any(),
-        autoPlay: any(named: 'autoPlay'),
-        audioUrl: any(named: 'audioUrl'),
-      )).thenAnswer((_) async {});
+        // Arrange: Stub player
+        when(
+          () => mockPlayer.loadChapter(
+            any(),
+            any(),
+            autoPlay: any(named: 'autoPlay'),
+            audioUrl: any(named: 'audioUrl'),
+          ),
+        ).thenAnswer((_) async {});
 
-      // Act: Get a valid reciter
-      final reciters = await provider.getAllReciters();
-      final reciter = reciters.firstWhere((r) => r.isHafs);
-      logger.info('Using reciter: ${reciter.nameEnglish} (ID: ${reciter.id})', category: LogCategory.audio);
+        // Act: Get a valid reciter
+        final reciters = await provider.getAllReciters();
+        final reciter = reciters.firstWhere((r) => r.isHafs);
+        logger.info(
+          'Using reciter: ${reciter.nameEnglish} (ID: ${reciter.id})',
+          category: LogCategory.audio,
+        );
 
-      repository.loadChapter(1, reciter.id);
-      await untilCalled(() => mockPlayer.loadChapter(
-        any(),
-        any(),
-        autoPlay: any(named: 'autoPlay'),
-        audioUrl: any(named: 'audioUrl'),
-      ));
+        repository.loadChapter(1, reciter.id);
+        await untilCalled(
+          () => mockPlayer.loadChapter(
+            any(),
+            any(),
+            autoPlay: any(named: 'autoPlay'),
+            audioUrl: any(named: 'audioUrl'),
+          ),
+        );
 
-      // Assert: Verify that a non-empty, real URL was passed to the player
-      final capturedUrl = verify(() => mockPlayer.loadChapter(
-        1,
-        any(),
-        autoPlay: false,
-        audioUrl: captureAny(named: 'audioUrl'),
-      )).captured.first as String;
+        // Assert: Verify that a non-empty, real URL was passed to the player
+        final capturedUrl =
+            verify(
+                  () => mockPlayer.loadChapter(
+                    1,
+                    any(),
+                    autoPlay: false,
+                    audioUrl: captureAny(named: 'audioUrl'),
+                  ),
+                ).captured.first
+                as String;
 
-      expect(capturedUrl, isNotEmpty);
-      expect(capturedUrl.startsWith('http'), isTrue);
-      logger.info('✅ Successfully retrieved real URL: $capturedUrl', category: LogCategory.audio);
-    });
+        expect(capturedUrl, isNotEmpty);
+        expect(capturedUrl.startsWith('http'), isTrue);
+        logger.info(
+          '✅ Successfully retrieved real URL: $capturedUrl',
+          category: LogCategory.audio,
+        );
+      },
+    );
 
     test('getChapterTimings fetches real timings from API', () async {
-      logger.info('--- TEST: getChapterTimings (Fatiha) ---', category: LogCategory.audio);
-      
-      final reciters = await provider.getAllReciters();
-      final reciter = reciters.firstWhere((r) => r.isHafs); 
+      logger.info(
+        '--- TEST: getChapterTimings (Fatiha) ---',
+        category: LogCategory.audio,
+      );
 
-      logger.info('Fetching timings for ${reciter.nameEnglish}, Chapter 1...', category: LogCategory.audio);
+      final reciters = await provider.getAllReciters();
+      final reciter = reciters.firstWhere((r) => r.isHafs);
+
+      logger.info(
+        'Fetching timings for ${reciter.nameEnglish}, Chapter 1...',
+        category: LogCategory.audio,
+      );
       final timings = await repository.getChapterTimings(reciter.id, 1);
-      
+
       expect(timings, isNotEmpty);
       expect(timings.length, equals(7), reason: 'Fatiha should have 7 verses');
       expect(timings.first.ayah, 1);
       expect(timings.first.startTime, 0);
-      
-      logger.info('✅ Successfully fetched ${timings.length} verse timings.', category: LogCategory.audio);
-      logger.info('✅ First verse ends at: ${timings.first.endTime}ms', category: LogCategory.audio);
+
+      logger.info(
+        '✅ Successfully fetched ${timings.length} verse timings.',
+        category: LogCategory.audio,
+      );
+      logger.info(
+        '✅ First verse ends at: ${timings.first.endTime}ms',
+        category: LogCategory.audio,
+      );
     });
 
     test('preloadTiming works without error', () async {
@@ -127,12 +165,18 @@ void main() {
       final reciter = reciters.first;
 
       await expectLater(repository.preloadTiming(reciter.id), completes);
-      logger.info('✅ preloadTiming completed for reciter ${reciter.id}', category: LogCategory.audio);
+      logger.info(
+        '✅ preloadTiming completed for reciter ${reciter.id}',
+        category: LogCategory.audio,
+      );
     });
 
     test('loadChapter handles invalid data gracefully', () async {
-      logger.info('--- TEST: loadChapter Error (Invalid Chapter) ---', category: LogCategory.audio);
-      
+      logger.info(
+        '--- TEST: loadChapter Error (Invalid Chapter) ---',
+        category: LogCategory.audio,
+      );
+
       final reciters = await provider.getAllReciters();
       final reciter = reciters.first;
 
@@ -140,8 +184,11 @@ void main() {
       repository.loadChapter(115, reciter.id);
       // Wait for the async error to be caught and logged
       await Future.delayed(const Duration(seconds: 1));
-      
-      logger.info('✅ loadChapter (Invalid) completed gracefully.', category: LogCategory.audio);
+
+      logger.info(
+        '✅ loadChapter (Invalid) completed gracefully.',
+        category: LogCategory.audio,
+      );
     });
   });
 }
