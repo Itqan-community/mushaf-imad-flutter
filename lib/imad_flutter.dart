@@ -30,6 +30,7 @@ export 'src/di/core_module.dart'
 
 // Domain Models
 export 'src/domain/models/audio_player_state.dart';
+export 'src/domain/models/audio_source.dart';
 export 'src/domain/models/bookmark.dart';
 export 'src/domain/models/cache_stats.dart';
 export 'src/domain/models/chapter.dart';
@@ -71,6 +72,8 @@ export 'src/data/local/dao/search_history_dao.dart';
 
 // Data Layer - Audio (public utilities)
 export 'src/data/audio/reciter_data_provider.dart';
+export 'src/data/audio/quran_com/qurancom_audio_source_config.dart';
+export 'src/data/audio/quran_com/qurancom_environment.dart';
 export 'src/data/audio/cms_audio_config.dart';
 export 'src/data/audio/cms_audio_repository.dart';
 

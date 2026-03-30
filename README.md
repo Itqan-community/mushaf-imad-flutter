@@ -4,7 +4,7 @@ Add mushaf to your Flutter application easily! A fully functional, modular Quran
 
 [![Flutter](https://img.shields.io/badge/Platform-Flutter-02569B?logo=flutter)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.11.0-0175C2?logo=dart)](https://dart.dev)
-[![Version](https://img.shields.io/badge/version-0.0.3-blue.svg)]()
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)]()
 
 ---
 
@@ -28,7 +28,7 @@ Add mushaf to your Flutter application easily! A fully functional, modular Quran
 - 🔖 **Bookmarks and Reading History** system mapping natively to UI components.
 - 🏗️ **Clean Modular Architecture** with a strict separation of domain, data, and UI layers.
 - 🧩 **Ready-to-use UI Components:** (`MushafPageView`, `QuranPageWidget`, `SearchPage`, `SettingsPage`, `ChapterIndexDrawer`, etc.)
-- 🎵 **Audio Playback:** Includes support for both offline device assets and external streams like **Itqan CMS**.
+- 🎵 **Audio Playback:** Includes support for offline device assets, streaming from **Quran.com**, and external streams like **Itqan CMS**.
 
 ---
 
@@ -47,7 +47,7 @@ Add the package to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  imad_flutter: ^0.0.1
+  imad_flutter: ^0.1.0
 ```
 
 ### 2. Download Quran Images
@@ -86,7 +86,26 @@ void main() async {
 }
 ```
 
-### 4. Basic Usage (Displaying the Mushaf)
+### 4. Audio Configuration (Quran.com)
+
+The library supports two main audio sources: `local` (bundled assets) and `quranCom` (cloud streaming). To use Quran.com, provide your credentials during initialization:
+
+```dart
+await setupMushafWithHive(
+  audioSource: MushafAudioSource.quranCom,
+  quranComConfig: QuranComAudioSourceConfig(
+    clientId: 'your_client_id',
+    clientSecret: 'your_client_secret',
+    env: QuranComEnv.production, 
+  ),
+);
+```
+
+> **Note:** You can obtain credentials from the [Quran.com Request Access Page](https://api-docs.quran.foundation/request-access/) _(valid for 1 hour)_.
+
+> **Security Warning:** Do not commit your credentials to version control. Use environment variables instead.
+
+### 5. Basic Usage (Displaying the Mushaf)
 
 Once initialized, simply instantiate the `MushafPageView`.
 

@@ -249,12 +249,35 @@ class CmsAudioRepository implements AudioRepository {
           await getReciterById(reciterId) ?? await getDefaultReciter();
 
       // Pass the audio URL to the flutter audio player
+      // Load without autoPlay so we can seek first
       await _audioPlayer.loadFromUrl(
         surahTrack.audioUrl,
         chapterNumber: chapterNumber,
         reciter: reciter,
-        autoPlay: autoPlay,
+        autoPlay: false,
       );
+
+      // Seek to the requested verse's start time
+      if (startVerseNumber > 1) {
+        try {
+          final timing = _currentChapterTimings.firstWhere(
+            (a) => a.ayah == startVerseNumber,
+          );
+          MushafLibrary.logger.debug(
+            '[CmsAudioRepository] Seeking to verse=$startVerseNumber at ${timing.startTime}ms',
+          );
+          await _audioPlayer.seek(Duration(milliseconds: timing.startTime));
+        } catch (_) {
+          await _audioPlayer.seek(Duration.zero);
+        }
+      } else {
+        await _audioPlayer.seek(Duration.zero);
+      }
+
+      // Start playback if requested
+      if (autoPlay) {
+        await _audioPlayer.play();
+      }
     } catch (e) {
       MushafLibrary.logger.error(
         '[CmsAudioRepository] Error loading chapter from CMS: $e',
