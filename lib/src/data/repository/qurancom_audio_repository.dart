@@ -72,6 +72,10 @@ class QuranComAudioRepository implements AudioRepository {
   // Playback
   // ---------------------------------------------------------------------------
 
+  // Tracks what is currently loaded to avoid reloading the same chapter
+  int? _loadedChapter;
+  int? _loadedReciterId;
+
   @override
   Future<void> loadChapter(
     int chapterNumber,
@@ -83,16 +87,50 @@ class QuranComAudioRepository implements AudioRepository {
     if (reciter == null) return;
 
     try {
-      final audioUrl = await _dataSource.fetchChapterAudioUrl(
-        reciterId,
-        chapterNumber,
-      );
-      await _audioPlayer.loadChapter(
-        chapterNumber,
-        reciter,
-        autoPlay: autoPlay,
-        audioUrl: audioUrl,
-      );
+      // Only reload audio if chapter or reciter changed
+      final needsLoad =
+          _loadedChapter != chapterNumber || _loadedReciterId != reciterId;
+
+      if (needsLoad) {
+        final audioUrl = await _dataSource.fetchChapterAudioUrl(
+          reciterId,
+          chapterNumber,
+        );
+        // Load without autoPlay so we can seek first
+        await _audioPlayer.loadChapter(
+          chapterNumber,
+          reciter,
+          autoPlay: false,
+          audioUrl: audioUrl,
+        );
+        _loadedChapter = chapterNumber;
+        _loadedReciterId = reciterId;
+      }
+
+      // Seek to the requested verse's start time
+      if (startVerseNumber > 1) {
+        final timing = await _timingService.getAyahTiming(
+          reciterId,
+          chapterNumber,
+          startVerseNumber,
+        );
+        if (timing != null) {
+          _logger?.debug(
+            'Seeking to verse=$startVerseNumber at ${timing.startTime}ms',
+            category: LogCategory.audio,
+          );
+          await _audioPlayer.seek(Duration(milliseconds: timing.startTime));
+        } else {
+          await _audioPlayer.seek(Duration.zero);
+        }
+      } else {
+        await _audioPlayer.seek(Duration.zero);
+      }
+
+      // Start playback if requested
+      if (autoPlay) {
+        await _audioPlayer.play();
+      }
     } catch (e, s) {
       _logger?.error(
         'Failed to load Quran.com chapter audio',
@@ -100,8 +138,6 @@ class QuranComAudioRepository implements AudioRepository {
         stackTrace: s,
         category: LogCategory.audio,
       );
-      // Error is surfaced via the player's domain state stream (errorMessage).
-      // No re-throw here — the caller observes errors through getPlayerStateStream().
     }
   }
 
