@@ -1,5 +1,5 @@
-import 'package:imad_flutter/src/data/audio/quran_com/qurancom_verse_timing.dart';
 import 'package:imad_flutter/src/domain/models/reciter_info.dart';
+import 'package:imad_flutter/src/domain/models/reciter_timing.dart';
 
 /// Abstract contract for retrieving audio metadata and timings
 abstract class MushafAudioDataSource {
@@ -11,5 +11,5 @@ abstract class MushafAudioDataSource {
 
   /// Fetches bulk timing sequence (verse level timestamps) for a chapter.
   /// If [null] is returned, it implies the source cannot provide dynamic local timings.
-  Future<List<QuranComVerseTiming>?> fetchChapterTiming(int reciterId, int chapterNumber);
+  Future<List<AyahTiming>?> fetchChapterTiming(int reciterId, int chapterNumber);
 }

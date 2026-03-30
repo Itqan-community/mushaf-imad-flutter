@@ -1,62 +1,72 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:imad_flutter/src/data/audio/quran_com/qurancom_chapter_audio.dart';
-import 'package:imad_flutter/src/data/audio/quran_com/qurancom_verse_timing.dart';
+import 'package:imad_flutter/src/domain/models/reciter_timing.dart';
 
 void main() {
-  group('QuranComVerseTiming', () {
-    test('fromJson should parse verse timing with segments correctly', () {
+  group('AyahTiming parsing via QuranComAudioFile', () {
+    test('fromJson should parse verse timing correctly from Quran.com JSON', () {
       final json = {
-        "verse_key": "1:2",
-        "timestamp_from": 4072,
-        "timestamp_to": 9705,
-        "duration": -5633,
-        "segments": [
-          [1, 4072, 5312],
-          [2, 5312, 6322],
-          [3, 6322, 6882],
-          [4, 6882, 9307],
+        "id": 1,
+        "chapter_id": 1,
+        "file_size": 100.0,
+        "format": "mp3",
+        "audio_url": "https://example.com/1.mp3",
+        "timestamps": [
+          {
+            "verse_key": "1:2",
+            "timestamp_from": 4072,
+            "timestamp_to": 9705,
+            "duration": -5633,
+            "segments": [
+              [1, 4072, 5312],
+              [2, 5312, 6322],
+            ],
+          },
         ],
       };
 
-      final timing = QuranComVerseTiming.fromJson(json);
+      final audioFile = QuranComAudioFile.fromJson(json);
 
-      expect(timing.verseKey, "1:2");
-      expect(timing.timestampFrom, 4072);
-      expect(timing.timestampTo, 9705);
-      expect(timing.duration, -5633);
-      expect(timing.segments, isNotNull);
-      expect(timing.segments!.length, 4);
-      expect(timing.segments![0].wordIndex, 1);
-      expect(timing.segments![0].startMs, 4072);
-      expect(timing.segments![3].endMs, 9307);
+      expect(audioFile.timestamps, isNotNull);
+      expect(audioFile.timestamps!.length, 1);
+
+      final timing = audioFile.timestamps!.first;
+      expect(timing.ayah, 2);
+      expect(timing.startTime, 4072);
+      expect(timing.endTime, 9705);
     });
 
-    test('fromJson should handle null segments', () {
+    test('fromJson should handle null timestamps', () {
       final json = {
-        "verse_key": "1:1",
-        "timestamp_from": 0,
-        "timestamp_to": 4072,
-        "duration": 4072,
-        "segments": null,
+        "id": 1,
+        "chapter_id": 1,
+        "file_size": 100.0,
+        "format": "mp3",
+        "audio_url": "https://example.com/1.mp3",
       };
 
-      final timing = QuranComVerseTiming.fromJson(json);
-      expect(timing.segments, isNull);
+      final audioFile = QuranComAudioFile.fromJson(json);
+      expect(audioFile.timestamps, isNull);
     });
 
-    test('toJson should preserve segment structure', () {
-      final segments = [(wordIndex: 1, startMs: 100, endMs: 200)];
-      final timing = QuranComVerseTiming(
-        verseKey: "2:1",
-        timestampFrom: 100,
-        timestampTo: 200,
-        duration: 100,
-        segments: segments,
+    test('toJson should serialize AyahTiming list correctly', () {
+      final audioFile = QuranComAudioFile(
+        id: 7,
+        chapterId: 114,
+        fileSize: 500,
+        format: "mp3",
+        audioUrl: "url",
+        timestamps: [
+          AyahTiming(ayah: 1, startTime: 100, endTime: 200),
+        ],
       );
 
-      final json = timing.toJson();
-      expect(json['segments'], isList);
-      expect(json['segments'][0], [1, 100, 200]);
+      final json = audioFile.toJson();
+      expect(json['timestamps'], isList);
+      expect(json['timestamps'].length, 1);
+      expect(json['timestamps'][0]['ayah'], 1);
+      expect(json['timestamps'][0]['start_time'], 100);
+      expect(json['timestamps'][0]['end_time'], 200);
     });
   });
 
@@ -97,8 +107,10 @@ void main() {
       );
       expect(audioFile.timestamps, isNotNull);
       expect(audioFile.timestamps!.length, 1);
-      expect(audioFile.timestamps![0].verseKey, "1:1");
-      expect(audioFile.timestamps![0].segments!.length, 4);
+      // Now we get AyahTiming, not QuranComVerseTiming
+      expect(audioFile.timestamps![0].ayah, 1);
+      expect(audioFile.timestamps![0].startTime, 0);
+      expect(audioFile.timestamps![0].endTime, 6493);
     });
 
     test('fromJson should handle audio file without timestamps', () {

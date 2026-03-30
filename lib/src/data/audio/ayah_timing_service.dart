@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:collection/collection.dart';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:imad_flutter/imad_flutter.dart';
 
-import '../../domain/models/reciter_timing.dart';
 import 'mushaf_audio_data_source.dart';
 
 /// Service for loading and querying verse timing data for audio sync.
@@ -44,15 +46,51 @@ class AyahTimingService {
     int chapterNumber,
     int ayahNumber,
   ) async {
-    final timings = await getChapterTimings(reciterId, chapterNumber);
+        final timings = await getChapterTimings(reciterId, chapterNumber);
     if (timings.isEmpty) return null;
-
+    final timing = await loadTimingData(reciterId);
+    if (timing == null) {
+      MushafLibrary.logger.debug(
+        '[AyahTimingService] ❌ No timing data for reciter=$reciterId',
+      );
+      return timings.firstWhereOrNull((a) => a.ayah == ayahNumber);
+    }
     try {
-      return timings.firstWhere((a) => a.ayah == ayahNumber);
+      final chapter = timing.chapters.firstWhere((c) => c.id == chapterNumber);
+      final ayah = chapter.ayaTiming.firstWhere((a) => a.ayah == ayahNumber);
+
+      // DEBUG: print what we found
+      MushafLibrary.logger.debug(
+        '[AyahTimingService] getAyahTiming → '
+        'reciter=$reciterId, chapter=$chapterNumber, ayah=$ayahNumber → '
+        'start=${ayah.startTime}ms, end=${ayah.endTime}ms',
+      );
+      if (kDebugMode) {
+        // DEBUG: also print surrounding ayahs for context
+        final idx = chapter.ayaTiming.indexOf(ayah);
+        for (
+          int i = (idx - 2).clamp(0, chapter.ayaTiming.length - 1);
+          i <= (idx + 2).clamp(0, chapter.ayaTiming.length - 1);
+          i++
+        ) {
+          final t = chapter.ayaTiming[i];
+          final marker = t.ayah == ayahNumber ? ' ◄◄◄' : '';
+          MushafLibrary.logger.debug(
+            '[AyahTimingService]   [$i] ayah=${t.ayah}, '
+            'start=${t.startTime}ms, end=${t.endTime}ms$marker',
+          );
+        }
+      }
+
+      return ayah;
     } catch (_) {
+      MushafLibrary.logger.debug(
+        '[AyahTimingService] ❌ ayah=$ayahNumber not found in chapter=$chapterNumber',
+      );
       return null;
     }
   }
+
 
   /// Get the current verse being recited based on playback position.
   Future<int?> getCurrentVerse(
@@ -70,8 +108,7 @@ class AyahTimingService {
     }
     return null;
   }
-
-  /// Get all timing data for a chapter.
+/// Get all timing data for a chapter.
   /// This method implements a "Local-First -> API-Fallback" strategy.
   Future<List<AyahTiming>> getChapterTimings(
     int reciterId,
@@ -109,25 +146,9 @@ class AyahTimingService {
       try {
         final remoteTimings = await dataSource.fetchChapterTiming(reciterId, chapterNumber);
         if (remoteTimings != null) {
-          final List<AyahTiming> mappedTimings = [];
-          for (final timing in remoteTimings) {
-            // Parse ayah number from "surah:ayah" or similar format
-            final parts = timing.verseKey.split(':');
-            if (parts.length < 2) continue;
-
-            final ayahNumber = int.tryParse(parts.last);
-            if (ayahNumber == null) continue;
-
-            mappedTimings.add(AyahTiming(
-              ayah: ayahNumber,
-              startTime: timing.timestampFrom,
-              endTime: timing.timestampTo,
-            ));
-          }
-
           // Cache the dynamic result
-          _dynamicChapterCache.putIfAbsent(reciterId, () => {})[chapterNumber] = mappedTimings;
-          return mappedTimings;
+          _dynamicChapterCache.putIfAbsent(reciterId, () => {})[chapterNumber] = remoteTimings;
+          return remoteTimings;
         }
       } catch (e) {
         // Fallback to empty list gracefully so the audio player doesn't crash

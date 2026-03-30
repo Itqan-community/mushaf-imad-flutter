@@ -296,9 +296,9 @@ void main() {
       expect(result.chapterId, 1);
       expect(result.audioUrl, contains('1.mp3'));
       expect(result.timestamps?.length, 1);
-      expect(result.timestamps?.first.verseKey, '1:1');
-      expect(result.timestamps?.first.segments?.length, 2);
-      expect(result.timestamps?.first.segments?.first.wordIndex, 1);
+      expect(result.timestamps?.first.ayah, 1);
+      expect(result.timestamps?.first.startTime, 100);
+      expect(result.timestamps?.first.endTime, 500);
     });
   });
 

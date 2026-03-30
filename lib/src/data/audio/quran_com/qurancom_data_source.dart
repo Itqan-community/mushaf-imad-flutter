@@ -1,7 +1,7 @@
 import 'package:imad_flutter/src/data/audio/mushaf_audio_data_source.dart';
 import 'package:imad_flutter/src/data/audio/quran_com/qurancom_api_client.dart';
-import 'package:imad_flutter/src/data/audio/quran_com/qurancom_verse_timing.dart';
 import 'package:imad_flutter/src/domain/models/reciter_info.dart';
+import 'package:imad_flutter/src/domain/models/reciter_timing.dart';
 
 /// Implementation of [MushafAudioDataSource] that uses Quran.com API.
 class QurancomDataSource implements MushafAudioDataSource {
@@ -11,7 +11,7 @@ class QurancomDataSource implements MushafAudioDataSource {
   List<ReciterInfo>? _recitersCache;
 
   /// Cache for verse timings.
-  final Map<String, List<QuranComVerseTiming>> _timingCache = {};
+  final Map<String, List<AyahTiming>> _timingCache = {};
 
   QurancomDataSource({required QuranComApiClient apiClient})
     : _apiClient = apiClient;
@@ -68,9 +68,9 @@ class QurancomDataSource implements MushafAudioDataSource {
   /// [reciterId] The ID of the reciter.
   /// [chapterNumber] The number of the chapter.
   ///
-  /// Returns a [List<QuranComVerseTiming>] object containing the verse timings.
+  /// Returns a [List<AyahTiming>] object containing the verse timings.
   @override
-  Future<List<QuranComVerseTiming>?> fetchChapterTiming(
+  Future<List<AyahTiming>?> fetchChapterTiming(
     int reciterId,
     int chapterNumber,
   ) async {

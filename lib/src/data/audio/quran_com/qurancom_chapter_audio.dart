@@ -1,4 +1,4 @@
-import 'package:imad_flutter/src/data/audio/quran_com/qurancom_verse_timing.dart';
+import 'package:imad_flutter/src/domain/models/reciter_timing.dart';
 
 /// Models for Quran.com chapter audio response, including the audio file details and verse timings.
 class QuranComAudioFile {
@@ -13,7 +13,7 @@ class QuranComAudioFile {
   /// The URL where the audio file can be accessed.
   final String audioUrl;
   /// A list of verse timings that provide detailed timing information for each verse in the chapter.
-  final List<QuranComVerseTiming>? timestamps;
+  final List<AyahTiming>? timestamps;
 
   QuranComAudioFile({
     required this.id,
@@ -43,7 +43,7 @@ class QuranComAudioFile {
           ? [
               for (final x in timestampsJson)
                 if (x is Map<String, dynamic>)
-                  QuranComVerseTiming.fromJson(x)
+                  _parseAyahTiming(x)
                 else
                   throw FormatException(
                     "Expected each item in 'timestamps' to be a Map, but got ${x.runtimeType}",
@@ -63,6 +63,20 @@ class QuranComAudioFile {
       'timestamps': timestamps?.map((x) => x.toJson()).toList(),
     };
   }
+}
+
+/// Parses a Quran.com timestamp JSON object into an [AyahTiming].
+/// Extracts the ayah number from the "chapter:ayah" format in `verse_key`.
+AyahTiming _parseAyahTiming(Map<String, dynamic> json) {
+  final verseKey = json['verse_key'] as String? ?? '';
+  final parts = verseKey.split(':');
+  final ayahNumber = parts.length >= 2 ? (int.tryParse(parts.last) ?? 0) : 0;
+
+  return AyahTiming(
+    ayah: ayahNumber,
+    startTime: (json['timestamp_from'] as num?)?.toInt() ?? 0,
+    endTime: (json['timestamp_to'] as num?)?.toInt() ?? 0,
+  );
 }
 
 /// Wrapper for chapter audio response which typically contains an 'audio_file' key.

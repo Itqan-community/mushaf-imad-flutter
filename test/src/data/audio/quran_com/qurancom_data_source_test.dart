@@ -4,7 +4,7 @@ import 'package:imad_flutter/src/data/audio/quran_com/qurancom_api_client.dart';
 import 'package:imad_flutter/src/data/audio/quran_com/qurancom_data_source.dart';
 import 'package:imad_flutter/src/data/audio/quran_com/qurancom_reciter.dart';
 import 'package:imad_flutter/src/data/audio/quran_com/qurancom_chapter_audio.dart';
-import 'package:imad_flutter/src/data/audio/quran_com/qurancom_verse_timing.dart';
+import 'package:imad_flutter/src/domain/models/reciter_timing.dart';
 
 class MockQuranComApiClient extends Mock implements QuranComApiClient {}
 
@@ -24,7 +24,7 @@ void main() {
           id: 1,
           reciterName: 'Reciter 1',
           style: 'Murattal',
-          translatedName: QuranComTranslatedName(name: 'القارئ 1', languageName: 'arabic'),
+          translatedName: QuranComTranslatedName(name: 'test', languageName: 'arabic'),
         ),
       ];
 
@@ -37,7 +37,7 @@ void main() {
       expect(result1.length, 1);
       expect(result1.first.id, 1);
       expect(result1.first.nameEnglish, 'Reciter 1');
-      expect(result1.first.nameArabic, 'القارئ 1');
+      expect(result1.first.nameArabic, 'test');
       expect(result1.first.rewaya, 'Murattal');
       expect(result1.first.folderUrl, '');
 
@@ -55,12 +55,7 @@ void main() {
         format: 'mp3',
         audioUrl: 'https://example.com/audio.mp3',
         timestamps: [
-          QuranComVerseTiming(
-            verseKey: '1:1',
-            timestampFrom: 0,
-            timestampTo: 1000,
-            duration: 1000,
-          ),
+          AyahTiming(ayah: 1, startTime: 0, endTime: 1000),
         ],
       );
 
@@ -78,7 +73,9 @@ void main() {
       // Verify that calling fetchChapterTiming immediately returns from cache
       final timings = await dataSource.fetchChapterTiming(1, 1);
       expect(timings?.length, 1);
-      expect(timings?.first.verseKey, '1:1');
+      expect(timings?.first.ayah, 1);
+      expect(timings?.first.startTime, 0);
+      expect(timings?.first.endTime, 1000);
       
       // Verify API was ONLY called once total for both operations
       verify(() => mockApiClient.fetchChapterAudio(
@@ -96,12 +93,7 @@ void main() {
         format: 'mp3',
         audioUrl: 'https://example.com/audio.mp3',
         timestamps: [
-          QuranComVerseTiming(
-            verseKey: '1:1',
-            timestampFrom: 0,
-            timestampTo: 1000,
-            duration: 1000,
-          ),
+          AyahTiming(ayah: 1, startTime: 0, endTime: 1000),
         ],
       );
 
@@ -115,7 +107,7 @@ void main() {
       final timings = await dataSource.fetchChapterTiming(1, 1);
       
       expect(timings?.length, 1);
-      expect(timings?.first.verseKey, '1:1');
+      expect(timings?.first.ayah, 1);
       
       // Verify it delegated correctly to API via fetchChapterAudioUrl
       verify(() => mockApiClient.fetchChapterAudio(

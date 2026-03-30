@@ -116,33 +116,16 @@ void main() {
 
         for (int i = 0; i < timestamps.length; i++) {
           final verse = timestamps[i];
-          expect(verse.verseKey, equals('1:${i + 1}'));
-          expect(verse.timestampFrom, greaterThanOrEqualTo(0));
-          expect(verse.timestampTo, greaterThanOrEqualTo(verse.timestampFrom));
+          expect(verse.ayah, equals(i + 1));
+          expect(verse.startTime, greaterThanOrEqualTo(0));
+          expect(verse.endTime, greaterThanOrEqualTo(verse.startTime));
         }
 
         final firstVerse = timestamps.first;
         logger.info(
-          '✅ First verse [${firstVerse.verseKey}]: From ${firstVerse.timestampFrom}ms to ${firstVerse.timestampTo}ms',
+          '  First verse [ayah=${firstVerse.ayah}]: From ${firstVerse.startTime}ms to ${firstVerse.endTime}ms',
           category: LogCategory.audio,
         );
-
-        if (firstVerse.segments != null && firstVerse.segments!.isNotEmpty) {
-          logger.info(
-            '✅ First verse has ${firstVerse.segments!.length} word segments.',
-            category: LogCategory.audio,
-          );
-          final firstWord = firstVerse.segments!.first;
-          logger.info(
-            '   -> Word ${firstWord.wordIndex}: ${firstWord.startMs} ms - ${firstWord.endMs} ms',
-            category: LogCategory.audio,
-          );
-        } else {
-          logger.warning(
-            '⚠️ Warning: No segments found for the first verse (might be normal depending on reciter).',
-            category: LogCategory.audio,
-          );
-        }
       },
     );
 
@@ -163,15 +146,9 @@ void main() {
 
       final timestamps = audioFile.timestamps;
       if (timestamps != null && timestamps.isNotEmpty) {
-        logger.info('✅ Timestamps successfully retrieved without segments array', category: LogCategory.audio);
-        for (final verse in timestamps) {
-          expect(
-            verse.segments,
-            isNull,
-            reason:
-                'Segments array should be null when requested without segments',
-          );
-        }
+        logger.info('  Timestamps successfully retrieved without segments array', category: LogCategory.audio);
+        // AyahTiming no longer exposes segments, so we just verify we got timings
+        expect(timestamps.first.ayah, greaterThan(0));
       }
     });
 

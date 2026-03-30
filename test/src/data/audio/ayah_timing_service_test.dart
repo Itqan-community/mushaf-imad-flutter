@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:imad_flutter/src/data/audio/ayah_timing_service.dart';
 import 'package:imad_flutter/src/data/audio/mushaf_audio_data_source.dart';
-import 'package:imad_flutter/src/data/audio/quran_com/qurancom_verse_timing.dart';
+import 'package:imad_flutter/src/domain/models/reciter_timing.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockMushafAudioDataSource extends Mock implements MushafAudioDataSource {}
@@ -37,8 +37,8 @@ void main() {
       const reciterId = 888;
       const chapterNumber = 2;
       final mockApiResult = [
-        QuranComVerseTiming(verseKey: '2:1', timestampFrom: 0, timestampTo: 5000, duration: 5000),
-        QuranComVerseTiming(verseKey: '2:2', timestampFrom: 5000, timestampTo: 10000, duration: 5000),
+        AyahTiming(ayah: 1, startTime: 0, endTime: 5000),
+        AyahTiming(ayah: 2, startTime: 5000, endTime: 10000),
       ];
 
       when(() => mockDataSource.fetchChapterTiming(reciterId, chapterNumber))
@@ -80,8 +80,8 @@ void main() {
       const reciterId = 777;
       const chapterNumber = 114;
       final mockApiResult = [
-        QuranComVerseTiming(verseKey: '114:1', timestampFrom: 0, timestampTo: 2000, duration: 2000),
-        QuranComVerseTiming(verseKey: '114:2', timestampFrom: 2000, timestampTo: 4000, duration: 2000),
+        AyahTiming(ayah: 1, startTime: 0, endTime: 2000),
+        AyahTiming(ayah: 2, startTime: 2000, endTime: 4000),
       ];
       when(() => mockDataSource.fetchChapterTiming(reciterId, chapterNumber))
           .thenAnswer((_) async => mockApiResult);
@@ -101,8 +101,8 @@ void main() {
       const reciterId = 666;
       const chapterNumber = 1;
       final mockApiResult = [
-        QuranComVerseTiming(verseKey: '1:1', timestampFrom: 0, timestampTo: 5000, duration: 5000), // ms 0 -> 5000
-        QuranComVerseTiming(verseKey: '1:2', timestampFrom: 5000, timestampTo: 10000, duration: 5000), // ms 5000 -> 10000
+        AyahTiming(ayah: 1, startTime: 0, endTime: 5000), // ms 0 -> 5000
+        AyahTiming(ayah: 2, startTime: 5000, endTime: 10000), // ms 5000 -> 10000
       ];
       when(() => mockDataSource.fetchChapterTiming(reciterId, chapterNumber))
           .thenAnswer((_) async => mockApiResult);
@@ -164,7 +164,7 @@ void main() {
       const reciterId = 444;
       const chapterNumber = 114;
       final mockApiResult = [
-        QuranComVerseTiming(verseKey: '114:1', timestampFrom: 0, timestampTo: 2000, duration: 2000),
+        AyahTiming(ayah: 1, startTime: 0, endTime: 2000),
       ];
       when(() => mockDataSource.fetchChapterTiming(reciterId, chapterNumber))
           .thenAnswer((_) async => mockApiResult);
