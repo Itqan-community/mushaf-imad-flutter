@@ -154,6 +154,12 @@ class HiveReadingHistoryDao implements ReadingHistoryDao {
   }
 
   @override
+  Future<void> clearAllPositions() async {
+    final box = await _openPositionBox;
+    await box.clear();
+  }
+
+  @override
   Future<int> getTotalReadingTime() async {
     final box = await _openHistoryBox;
     int total = 0;

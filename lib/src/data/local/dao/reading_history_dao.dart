@@ -17,6 +17,7 @@ abstract class ReadingHistoryDao {
   Future<List<ReadingHistory>> getHistoryForChapter(int chapterNumber);
   Future<void> deleteOlderThan(int timestamp);
   Future<void> deleteAll();
+  Future<void> clearAllPositions();
   Future<int> getTotalReadingTime();
   Future<List<int>> getReadChapters();
 }
