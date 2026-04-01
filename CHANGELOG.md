@@ -1,3 +1,16 @@
+
+## 0.2.0
+
+* **Feature**: Implemented customizable context menu for verses with bottom sheet.
+* **Feature**: Added Alketab search integration (#71).
+* **Feature**: Added bookmark creation, retrieval, and unit tests (#15).
+* **Feature**: Remember last open page.
+* **Feature**: Implemented native "save us" dialog (#76).
+* **Feature**: Implemented Itqan CMS audio streaming with verse timing and reciter support (#75).
+* **Refactor**: Separated audio highlight state from user highlight state (#25).
+* **Fix**: Resolved audio player start and timing issues in Quran.com integration.
+* **Chore**: Added GitHub Actions workflow for running tests.
+
 ## 0.1.0
 - **Feature**: Integrated **Quran.com** API for cloud audio streaming.
 - **Feature**: Added **Hybrid Timing Engine** (syncing local and remote audio with verse data).

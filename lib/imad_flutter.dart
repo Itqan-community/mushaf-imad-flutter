@@ -109,11 +109,13 @@ export 'src/ui/theme/mushaf_theme_scope.dart';
 export 'src/data/quran/quran_data_provider.dart';
 export 'src/data/quran/quran_metadata.dart';
 export 'src/data/quran/verse_data_provider.dart';
+export 'src/data/audio/quran_com/qurancom_reciter_provider.dart';
 
 // Hive Database Implementations
 export 'src/data/local/hive_database_service.dart';
 export 'src/data/local/dao/hive/hive_bookmark_dao.dart';
 export 'src/data/local/dao/hive/hive_reading_history_dao.dart';
 export 'src/data/local/dao/hive/hive_search_history_dao.dart';
+
 // Remote API
 export 'src/data/remote/alketab_api_service.dart';

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:imad_flutter/imad_flutter.dart';
-import 'package:imad_flutter/src/data/audio/quran_com/qurancom_reciter_provider.dart';
 import 'package:collection/collection.dart';
 
 void main() async {
@@ -1270,13 +1269,13 @@ class _ChapterDropdown extends StatelessWidget {
         child: DropdownButton<int>(
           isExpanded: true,
           value: value,
-          items: List.generate(114, (i) => i + 1).map((num) {
-            final chapter = QuranDataProvider.instance.getChapter(num);
+          items: List.generate(114, (i) => i + 1).map((n) {
+            final chapter = QuranDataProvider.instance.getChapter(n);
             final name = useArabic ? chapter.arabicTitle : chapter.englishTitle;
             return DropdownMenuItem(
-              value: num,
+              value: n,
               child: Text(
-                useArabic ? 'سورة $name' : 'Surah $num: $name',
+                useArabic ? 'سورة $name' : 'Surah $n: $name',
                 textDirection: useArabic
                     ? TextDirection.rtl
                     : TextDirection.ltr,
