@@ -8,6 +8,15 @@ Add mushaf to your Flutter application easily! A fully functional, modular Quran
 
 ---
 
+## 🌍 Ecosystem
+
+This package is part of an ecosystem across all platforms:
+- **iOS:** [MushafImad](https://github.com/ibo2001/MushafImad/)
+- **Android:** [mushaf-imad-android](https://github.com/YahiaRagae/mushaf-imad-android/)
+- **Flutter:** [mushaf-imad-flutter](https://github.com/Itqan-community/mushaf-imad-flutter) (This repository)
+
+---
+
 ## 📸 Screenshots
 
 <p align="center">
