@@ -1,8 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:imad_flutter/imad_flutter.dart';
-import 'package:imad_flutter/src/data/audio/flutter_audio_player.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'dart:io';
 
 // Fake audio player so AudioService.init is never called in tests
@@ -28,24 +26,15 @@ void main() {
   late BookmarkRepository repository;
 
   setUpAll(() async {
-    // 1. Initialize sqflite FFI (must happen before any sqflite usage)
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
-
-    // 2. Mock path_provider (used by Hive.initFlutter)
+    // Mock path_provider (used by Hive.initFlutter)
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
           const MethodChannel('plugins.flutter.io/path_provider'),
           (MethodCall methodCall) async => Directory.systemTemp.path,
         );
-
-    // 3. Initialize the library using the fake audio player (skips AudioService.init)
-    await setupMushafWithHive(audioPlayer: _FakeFlutterAudioPlayer());
+      // Initialize the library using the fake audio player (skips AudioService.init)
     await MushafLibrary.initialize(
-      databaseService: mushafGetIt<DatabaseService>(),
-      bookmarkDao: mushafGetIt<BookmarkDao>(),
-      readingHistoryDao: mushafGetIt<ReadingHistoryDao>(),
-      searchHistoryDao: mushafGetIt<SearchHistoryDao>(),
+      audioPlayer: _FakeFlutterAudioPlayer(),
     );
     repository = MushafLibrary.getBookmarkRepository();
   });

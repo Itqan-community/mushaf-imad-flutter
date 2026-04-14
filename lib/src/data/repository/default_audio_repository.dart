@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import '../audio/ayah_timing_service.dart';
-import '../audio/flutter_audio_player.dart';
 import '../audio/reciter_service.dart';
 import 'package:imad_flutter/imad_flutter.dart';
 

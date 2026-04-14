@@ -26,7 +26,7 @@ export 'src/mushaf_library.dart';
 
 // DI
 export 'src/di/core_module.dart'
-    show setupMushafDependencies, setupMushafWithHive, mushafGetIt;
+    show setupMushafDependencies, mushafGetIt;
 
 // Domain Models
 export 'src/domain/models/audio_player_state.dart';
@@ -76,6 +76,7 @@ export 'src/data/audio/quran_com/qurancom_audio_source_config.dart';
 export 'src/data/audio/quran_com/qurancom_environment.dart';
 export 'src/data/audio/cms_audio_config.dart';
 export 'src/data/audio/cms_audio_repository.dart';
+export 'src/data/audio/flutter_audio_player.dart';
 
 // Logging
 export 'src/logging/mushaf_logger.dart';

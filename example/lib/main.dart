@@ -24,8 +24,7 @@ void main() async {
 
   if (useQuranCom) {
     // Initialize with live Quran.com API in one shot
-    await setupMushafWithHive(
-      logger: DefaultMushafLogger(),
+    await MushafLibrary.initialize(
       audioSource: MushafAudioSource.quranCom,
       quranComConfig: QuranComAudioSourceConfig(
         clientId: qfId,
@@ -35,7 +34,7 @@ void main() async {
     );
   } else {
     // Default: local assets
-    await setupMushafWithHive();
+    await MushafLibrary.initialize();
   }
 
   runApp(const MushafApp());

@@ -1,32 +1,13 @@
-import 'di/core_module.dart';
-import 'domain/repository/audio_repository.dart';
-import 'domain/repository/bookmark_repository.dart';
-import 'domain/repository/chapter_repository.dart';
-import 'domain/repository/data_export_repository.dart';
-import 'domain/repository/page_repository.dart';
-import 'domain/repository/preferences_repository.dart';
-import 'domain/repository/quran_repository.dart';
-import 'domain/repository/reading_history_repository.dart';
-import 'domain/repository/search_history_repository.dart';
-import 'domain/repository/verse_repository.dart';
-import 'logging/mushaf_logger.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:imad_flutter/imad_flutter.dart';
 
 /// Main entry point for MushafImad Flutter library.
 ///
 /// The library must be initialized before use:
 /// ```dart
-/// await MushafLibrary.initialize(
-///   databaseService: myDatabaseService,
-///   bookmarkDao: myBookmarkDao,
-///   readingHistoryDao: myReadingHistoryDao,
-///   searchHistoryDao: mySearchHistoryDao,
-/// );
+/// await MushafLibrary.initialize();
 /// ```
 ///
-/// After initialization, access repositories:
-/// ```dart
-/// final chapters = await MushafLibrary.getChapterRepository().getAllChapters();
-/// ```
 class MushafLibrary {
   MushafLibrary._();
 
@@ -38,27 +19,39 @@ class MushafLibrary {
   /// Initialize the Mushaf library.
   ///
   /// Must be called before accessing any repository.
+  /// Defaults to using Hive-based implementations if no DAOs or services are provided.
   static Future<void> initialize({
-    required dynamic databaseService,
-    required dynamic bookmarkDao,
-    required dynamic readingHistoryDao,
-    required dynamic searchHistoryDao,
+    DatabaseService? databaseService,
+    BookmarkDao? bookmarkDao,
+    ReadingHistoryDao? readingHistoryDao,
+    SearchHistoryDao? searchHistoryDao,
     MushafLogger? logger,
     MushafAnalytics? analytics,
-    dynamic cmsAudioConfig,
+    CmsAudioConfig? cmsAudioConfig,
+    MushafAudioSource audioSource = MushafAudioSource.local,
+    QuranComAudioSourceConfig? quranComConfig,
+    FlutterAudioPlayer? audioPlayer,
   }) async {
     if (_isInitialized) return;
 
-    if (logger != null) _logger = logger;
+    _logger = logger?? DefaultMushafLogger();
     if (analytics != null) _analytics = analytics;
+    if(databaseService == null || bookmarkDao == null || readingHistoryDao == null || searchHistoryDao == null){
+    await Hive.initFlutter();
+    }
+    final dbService = databaseService ?? HiveDatabaseService();
+    await dbService.initialize();
 
-    setupMushafDependencies(
-      databaseService: databaseService,
-      bookmarkDao: bookmarkDao,
-      readingHistoryDao: readingHistoryDao,
-      searchHistoryDao: searchHistoryDao,
+    await setupMushafDependencies(
+      databaseService: dbService,
+      bookmarkDao: bookmarkDao ?? HiveBookmarkDao(),
+      readingHistoryDao: readingHistoryDao ?? HiveReadingHistoryDao(),
+      searchHistoryDao: searchHistoryDao ?? HiveSearchHistoryDao(),
       logger: _logger,
       cmsAudioConfig: cmsAudioConfig,
+      audioSource: audioSource,
+      quranComConfig: quranComConfig,
+      audioPlayer: audioPlayer,
     );
 
     // Initialize database
