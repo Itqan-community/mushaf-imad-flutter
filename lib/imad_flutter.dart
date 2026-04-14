@@ -25,8 +25,7 @@ library;
 export 'src/mushaf_library.dart';
 
 // DI
-export 'src/di/core_module.dart'
-    show setupMushafDependencies, mushafGetIt;
+export 'src/di/core_module.dart' show setupMushafDependencies, mushafGetIt;
 
 // Domain Models
 export 'src/domain/models/audio_player_state.dart';
@@ -42,7 +41,9 @@ export 'src/domain/models/page_header_info.dart';
 export 'src/domain/models/part.dart';
 export 'src/domain/models/quarter.dart';
 export 'src/domain/models/reading_history.dart';
-export 'src/domain/models/reciter_info.dart';
+export 'src/domain/models/recitation.dart';
+export 'src/domain/models/reciter.dart';
+export 'src/domain/models/riwayah.dart';
 export 'src/domain/models/reciter_timing.dart';
 export 'src/domain/models/result.dart';
 export 'src/domain/models/search_history.dart';
@@ -71,11 +72,17 @@ export 'src/data/local/dao/reading_history_dao.dart';
 export 'src/data/local/dao/search_history_dao.dart';
 
 // Data Layer - Audio (public utilities)
-export 'src/data/audio/reciter_data_provider.dart';
+export 'src/data/audio/recitation_data_provider.dart';
+export 'src/data/audio/base/audio_recitation_provider.dart';
+export 'src/data/audio/base/audio_playback_source.dart';
+export 'src/data/audio/mp3quran/mp3quran_recitation_provider.dart';
+export 'src/data/audio/mp3quran/mp3quran_playback_source.dart';
 export 'src/data/audio/quran_com/qurancom_audio_source_config.dart';
 export 'src/data/audio/quran_com/qurancom_environment.dart';
-export 'src/data/audio/cms_audio_config.dart';
-export 'src/data/audio/cms_audio_repository.dart';
+export 'src/data/audio/quran_com/qurancom_playback_source.dart';
+export 'src/data/audio/itqan/itqan_audio_config.dart';
+export 'src/data/audio/itqan/itqan_recitation_provider.dart';
+export 'src/data/audio/itqan/itqan_playback_source.dart';
 export 'src/data/audio/flutter_audio_player.dart';
 
 // Logging
@@ -110,7 +117,8 @@ export 'src/ui/theme/mushaf_theme_scope.dart';
 export 'src/data/quran/quran_data_provider.dart';
 export 'src/data/quran/quran_metadata.dart';
 export 'src/data/quran/verse_data_provider.dart';
-export 'src/data/audio/quran_com/qurancom_reciter_provider.dart';
+export 'src/data/audio/quran_com/qurancom_recitation_provider.dart';
+export 'src/data/repository/composite_audio_repository.dart';
 
 // Hive Database Implementations
 export 'src/data/local/hive_database_service.dart';

@@ -27,17 +27,20 @@ class MushafLibrary {
     SearchHistoryDao? searchHistoryDao,
     MushafLogger? logger,
     MushafAnalytics? analytics,
-    CmsAudioConfig? cmsAudioConfig,
-    MushafAudioSource audioSource = MushafAudioSource.local,
+    ItqanAudioConfig? itqanAudioConfig,
+    Set<MushafAudioSource> audioSources = const {MushafAudioSource.mp3quran},
     QuranComAudioSourceConfig? quranComConfig,
     FlutterAudioPlayer? audioPlayer,
   }) async {
     if (_isInitialized) return;
 
-    _logger = logger?? DefaultMushafLogger();
+    _logger = logger ?? DefaultMushafLogger();
     if (analytics != null) _analytics = analytics;
-    if(databaseService == null || bookmarkDao == null || readingHistoryDao == null || searchHistoryDao == null){
-    await Hive.initFlutter();
+    if (databaseService == null ||
+        bookmarkDao == null ||
+        readingHistoryDao == null ||
+        searchHistoryDao == null) {
+      await Hive.initFlutter();
     }
     final dbService = databaseService ?? HiveDatabaseService();
     await dbService.initialize();
@@ -48,8 +51,8 @@ class MushafLibrary {
       readingHistoryDao: readingHistoryDao ?? HiveReadingHistoryDao(),
       searchHistoryDao: searchHistoryDao ?? HiveSearchHistoryDao(),
       logger: _logger,
-      cmsAudioConfig: cmsAudioConfig,
-      audioSource: audioSource,
+      itqanAudioConfig: itqanAudioConfig,
+      audioSources: audioSources,
       quranComConfig: quranComConfig,
       audioPlayer: audioPlayer,
     );

@@ -24,7 +24,7 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   bool _showTranslation = false;
 
   // Audio preferences
-  int _selectedReciterId = 1;
+  int _selectedRecitationId = 1;
   double _playbackSpeed = 1.0;
   bool _repeatMode = false;
   int? _lastAudioChapter;
@@ -41,7 +41,7 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   final _lastReadVerseController = StreamController<(int, int)?>.broadcast();
   final _fontSizeController = StreamController<double>.broadcast();
   final _showTranslationController = StreamController<bool>.broadcast();
-  final _reciterIdController = StreamController<int>.broadcast();
+  final _recitationIdController = StreamController<int>.broadcast();
   final _playbackSpeedController = StreamController<double>.broadcast();
   final _repeatModeController = StreamController<bool>.broadcast();
   final _lastAudioChapterController = StreamController<int?>.broadcast();
@@ -120,15 +120,15 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   // ========== Audio Preferences ==========
 
   @override
-  Stream<int> getSelectedReciterIdStream() => _reciterIdController.stream;
+  Stream<int> getSelectedRecitationIdStream() => _recitationIdController.stream;
 
   @override
-  Future<int> getSelectedReciterId() async => _selectedReciterId;
+  Future<int> getSelectedRecitationId() async => _selectedRecitationId;
 
   @override
-  Future<void> setSelectedReciterId(int reciterId) async {
-    _selectedReciterId = reciterId;
-    _reciterIdController.add(reciterId);
+  Future<void> setSelectedRecitationId(int recitationId) async {
+    _selectedRecitationId = recitationId;
+    _recitationIdController.add(recitationId);
   }
 
   @override
@@ -247,7 +247,7 @@ class DefaultPreferencesRepository implements PreferencesRepository {
     _lastReadVerse = null;
     _fontSizeMultiplier = 1.0;
     _showTranslation = false;
-    _selectedReciterId = 1;
+    _selectedRecitationId = 1;
     _playbackSpeed = 1.0;
     _repeatMode = false;
     _lastAudioChapter = null;

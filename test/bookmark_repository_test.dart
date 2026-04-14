@@ -11,8 +11,8 @@ class _FakeFlutterAudioPlayer implements FlutterAudioPlayer {
   @override
   Future<void> loadFromUrl(
     String url, {
-    int chapterNumber = 0,
-    ReciterInfo? reciter,
+    required int chapterNumber,
+    required Recitation recitation,
     bool autoPlay = false,
   }) async {}
 
@@ -32,10 +32,8 @@ void main() {
           const MethodChannel('plugins.flutter.io/path_provider'),
           (MethodCall methodCall) async => Directory.systemTemp.path,
         );
-      // Initialize the library using the fake audio player (skips AudioService.init)
-    await MushafLibrary.initialize(
-      audioPlayer: _FakeFlutterAudioPlayer(),
-    );
+    // Initialize the library using the fake audio player (skips AudioService.init)
+    await MushafLibrary.initialize(audioPlayer: _FakeFlutterAudioPlayer());
     repository = MushafLibrary.getBookmarkRepository();
   });
 

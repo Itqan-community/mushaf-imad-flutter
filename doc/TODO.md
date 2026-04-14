@@ -9,7 +9,6 @@
 - [x] Create `HiveReadingHistoryDao` implementing `ReadingHistoryDao`
 - [x] Create `HiveSearchHistoryDao` implementing `SearchHistoryDao`
 - [x] Wire Hive implementations into `core_module.dart`
-- [x] Add `setupMushafWithHive()` convenience function
 
 ## Phase 2: Audio Playback
 - [x] Add `just_audio` and `audio_service` to `pubspec.yaml`

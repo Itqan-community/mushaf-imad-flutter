@@ -19,7 +19,7 @@ void main() {
 
   group('QurancomDataSource', () {
     test(
-      'fetchAllReciters should fetch and map reciters with caching',
+      'fetchAllRecitations should fetch and map reciters with caching',
       () async {
         final mockReciters = [
           QuranComReciter(
@@ -38,17 +38,16 @@ void main() {
         ).thenAnswer((_) async => mockReciters);
 
         // First call - should trigger API
-        final result1 = await dataSource.fetchAllReciters();
+        final result1 = await dataSource.fetchAllRecitations();
 
         expect(result1.length, 1);
         expect(result1.first.id, 1);
-        expect(result1.first.nameEnglish, 'Reciter 1');
-        expect(result1.first.nameArabic, 'test');
-        expect(result1.first.rewaya, 'Murattal');
+        expect(result1.first.reciter.nameEnglish, 'Reciter 1');
+        expect(result1.first.reciter.nameArabic, 'test');
         expect(result1.first.folderUrl, '');
 
         // Second call - should be cached
-        final result2 = await dataSource.fetchAllReciters();
+        final result2 = await dataSource.fetchAllRecitations();
         expect(result2, result1);
         verify(() => mockApiClient.fetchReciters(language: 'ar')).called(1);
       },

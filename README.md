@@ -89,7 +89,7 @@ void main() async {
   
   // One-line setup! Initializes Hive, provisions Quran metadata, 
   // and injects dependencies via get_it.
-  await setupMushafWithHive();
+  await MushafLibrary.initialize();
   
   runApp(const MyApp());
 }
@@ -100,7 +100,7 @@ void main() async {
 The library supports two main audio sources: `local` (bundled assets) and `quranCom` (cloud streaming). To use Quran.com, provide your credentials during initialization:
 
 ```dart
-await setupMushafWithHive(
+await MushafLibrary.initialize(
   audioSource: MushafAudioSource.quranCom,
   quranComConfig: QuranComAudioSourceConfig(
     clientId: 'your_client_id',
@@ -195,9 +195,11 @@ The library is strictly modular:
 All core dependencies are registered centrally via `get_it`. If you wish to use your own database engine, simply implement the abstract repository protocols and pass them manually.
 
 ```dart
-setupMushafDependencies(
+MushafLibrary.initialize(
   databaseService: MyCustomDatabaseService(),
   bookmarkDao: MyCustomBookmarkDao(),
+  readingHistoryDao: MyCustomReadingHistoryDao(),
+  searchHistoryDao: MyCustomSearchHistoryDao(),
   // ...
 );
 ```
@@ -206,7 +208,7 @@ setupMushafDependencies(
 
 The framework allows you to easily plug into the the **Itqan CMS JSON API** (`cms.itqan.dev`) for audio playback and verse-level highlight syncing, removing the need to host MP3s locally.
 
-Pass `CmsAudioConfig` to `setupMushafWithHive` and `MushafLibrary.initialize` natively:
+Pass `ItqanAudioConfig` to `MushafLibrary.initialize` natively:
 
 ```dart
 import 'package:imad_flutter/imad_flutter.dart';
@@ -215,29 +217,20 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Define CMS configuration pointing to the Itqan API
-  const cmsConfig = CmsAudioConfig(
+  const itqanConfig = ItqanAudioConfig(
     baseUrl: 'https://api.cms.itqan.dev',
     defaultReciterId: 1, // e.g., Mishari Al-afasi
   );
 
-  await setupMushafWithHive(cmsAudioConfig: cmsConfig);
-
-  // Initialize library using external DAOs and the CMS audio config
-  await MushafLibrary.initialize(
-    databaseService: mushafGetIt<DatabaseService>(),
-    bookmarkDao: mushafGetIt<BookmarkDao>(),
-    readingHistoryDao: mushafGetIt<ReadingHistoryDao>(),
-    searchHistoryDao: mushafGetIt<SearchHistoryDao>(),
-    cmsAudioConfig: cmsConfig, // Enables the CmsAudioRepository
-  );
-
+  await MushafLibrary.initialize(itqanAudioConfig: itqanConfig);
+  
   runApp(const MyApp());
 }
 ```
 
-This bypasses the `DefaultAudioRepository` and relies exclusively on `CmsAudioRepository` which parses server-provided verse timing boundaries dynamically.
+This bypasses the `DefaultAudioRepository` and relies exclusively on `ItqanAudioRepository` which parses server-provided verse timing boundaries dynamically.
 
-> 📚 **Detailed Guide:** For a comprehensive, step-by-step tutorial on how the audio syncing works under the hood and how to implement it, please see the [CMS Audio Integration Guide](docs/cms_audio.md).
+> 📚 **Detailed Guide:** For a comprehensive, step-by-step tutorial on how the audio syncing works under the hood and how to implement it, please see the [CMS Audio Integration Guide](docs/itqan_audio.md).
 
 ---
 

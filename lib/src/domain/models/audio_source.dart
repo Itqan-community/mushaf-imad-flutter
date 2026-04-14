@@ -1,30 +1,45 @@
-/// Selects the audio source backend the library uses for recitation playback.
+/// Identifies an audio source backend the library can use for recitation playback.
 ///
-/// Pass this value to `setupMushafDependencies` (or the equivalent init call)
-/// so the DI container wires the correct [AudioRepository] implementation.
+/// Pass one or more values to `setupMushafDependencies` via the `audioSources`
+/// parameter. When multiple sources are enabled the library merges their reciter
+/// lists and routes each playback request to the correct source automatically.
 ///
 /// ## Values
-/// - [local] – bundled MP3 assets shipped with the app (original behaviour).
+/// - [mp3quran] – static MP3 files served from mp3quran.net (default, no
+///   credentials required).
 /// - [quranCom] – high-quality MP3 streams from the Quran.Foundation API
-///   with verse-level timing data. Requires [QuranComApiConfig] credentials.
+///   with verse-level timing data. Requires [QuranComAudioSourceConfig].
+/// - [itqan] – audio and timing data from the Itqan CMS API.
+///   Requires [ItqanAudioConfig].
 ///
-/// ## Example
+/// ## Example -- single source
 /// ```dart
-/// await setupMushafDependencies(
-///   audioSource: MushafAudioSource.quranCom,
-///   quranComConfig: QuranComApiConfig(
+/// await MushafLibrary.initialize(
+///   audioSources: {MushafAudioSource.mp3quran},
+/// );
+/// ```
+///
+/// ## Example -- multiple sources
+/// ```dart
+/// await MushafLibrary.initialize(
+///   audioSources: {MushafAudioSource.mp3quran, MushafAudioSource.quranCom},
+///   quranComConfig: QuranComAudioSourceConfig(
 ///     clientId: 'YOUR_CLIENT_ID',
 ///     clientSecret: 'YOUR_CLIENT_SECRET',
 ///   ),
-///   ...
 /// );
 /// ```
 enum MushafAudioSource {
-  /// Use bundled local MP3/timing assets (default, no network required).
-  local,
-
-  /// Use the Quran.Foundation (Quran.com) streaming API.
+  /// Static MP3 files from mp3quran.net bundled with pre-computed timing JSON.
   ///
-  /// Requires a valid [QuranComApiConfig] to be supplied at initialization.
+  /// Requires no credentials. This is the default source.
+  mp3quran,
+
+  /// Streaming MP3 from the Quran.Foundation (Quran.com) API with
+  /// verse-level timing. Requires [QuranComAudioSourceConfig] credentials.
   quranCom,
+
+  /// Audio and verse timing from the Itqan CMS API.
+  /// Requires [ItqanAudioConfig].
+  itqan,
 }

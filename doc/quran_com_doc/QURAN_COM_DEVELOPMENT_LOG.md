@@ -80,8 +80,7 @@ Implementing the Quran.com audio integration required a series of deliberate arc
 | 12 | **Reactive State Enrichment** | Real-time injection of verse metadata via Stream Transformers. |
 | 13 | **Clean Interface Preservation** | Kept `void` return types for public methods to ensure zero breaking changes. |
 | 14 | **Test Synchronization Protocol** | Used `untilCalled` to stabilize verification of asynchronous void flows. |
-| 15 | **Decoupled DI Setup** | Runtime source-switching enabled via `setupMushafWithHive` parameters. |
-| 16 | **Environment-Aware Client** | Strict environment typing (prelive/production) for audit transparency. |
+| 15 | **Environment-Aware Client** | Strict environment typing (prelive/production) for audit transparency. |
 
 ---
 

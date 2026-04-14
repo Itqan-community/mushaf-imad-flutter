@@ -93,5 +93,6 @@ class NoOpMushafAnalytics extends MushafAnalytics {
   void trackScreen(String name) {}
 
   @override
+  @override
   void trackError(String message, {Object? error, StackTrace? stackTrace}) {}
 }

@@ -25,12 +25,17 @@ void main() async {
   if (useQuranCom) {
     // Initialize with live Quran.com API in one shot
     await MushafLibrary.initialize(
-      audioSource: MushafAudioSource.quranCom,
+      audioSources: {
+        MushafAudioSource.quranCom,
+        MushafAudioSource.mp3quran,
+        MushafAudioSource.itqan,
+      },
       quranComConfig: QuranComAudioSourceConfig(
         clientId: qfId,
         clientSecret: qfSecret,
         environment: environment,
       ),
+      itqanAudioConfig: ItqanAudioConfig(),
     );
   } else {
     // Default: local assets
@@ -114,7 +119,7 @@ class LibraryHomePage extends StatelessWidget {
             icon: Icons.mic,
             title: 'Reciters',
             subtitle:
-                'AudioRepository - ${ReciterDataProvider.allReciters.length} available reciters',
+                'AudioRepository - ${RecitationDataProvider.allRecitations.length} available reciters',
             onTap: () => _push(context, const RecitersPage()),
           ),
           _MenuCard(
@@ -311,7 +316,7 @@ class RecitersPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final reciters = ReciterDataProvider.allReciters;
+    final reciters = RecitationDataProvider.allRecitations;
     return Scaffold(
       appBar: AppBar(title: const Text('Reciters')),
       body: ListView.builder(
@@ -323,8 +328,8 @@ class RecitersPage extends StatelessWidget {
               backgroundColor: Theme.of(context).colorScheme.primaryContainer,
               child: Text('${r.id}'),
             ),
-            title: Text(r.nameArabic, textDirection: TextDirection.rtl),
-            subtitle: Text('${r.nameEnglish} · ${r.rewaya}'),
+            title: Text(r.reciter.nameArabic, textDirection: TextDirection.rtl),
+            subtitle: Text(r.reciter.nameEnglish),
           );
         },
       ),
@@ -756,7 +761,7 @@ class DomainModelsPage extends StatelessWidget {
       ('Bookmark', 'User bookmark: verse, chapter, timestamp, note'),
       ('ReadingHistory', 'Reading session: page, duration, timestamp'),
       ('SearchHistory', 'Search query: text, timestamp, results count'),
-      ('ReciterInfo', 'Reciter: name, rewaya, audio folder URL'),
+      ('Recitation', 'Recitation: name, rewaya, audio folder URL'),
       ('AudioPlayerState', 'Player: playing, paused, position, duration'),
       ('ThemeConfig', 'Theme: mode, colorScheme, amoled'),
       ('VerseHighlight', 'Highlight rect: line, left, right (normalized)'),
@@ -847,15 +852,15 @@ class QuranComDemoPage extends StatefulWidget {
 
 class _QuranComDemoPageState extends State<QuranComDemoPage> {
   // Use a nullable reference or a check to prevent DI crash if not in quranCom mode
-  QuranComReciterProvider? get _reciterProvider =>
-      mushafGetIt.isRegistered<QuranComReciterProvider>()
-      ? mushafGetIt<QuranComReciterProvider>()
+  QuranComRecitationProvider? get _reciterProvider =>
+      mushafGetIt.isRegistered<QuranComRecitationProvider>()
+      ? mushafGetIt<QuranComRecitationProvider>()
       : null;
 
   final _audioRepo = mushafGetIt<AudioRepository>();
 
-  List<ReciterInfo> _reciters = [];
-  ReciterInfo? _selectedReciter;
+  List<Recitation> _recitations = [];
+  Recitation? _selectedRecitation;
   int _selectedChapter = 1;
   bool _useArabic = false;
   double _playbackSpeed = 1.0;
@@ -894,7 +899,7 @@ class _QuranComDemoPageState extends State<QuranComDemoPage> {
       if (mounted) {
         setState(() {
           _error =
-              'QuranComReciterProvider not registered in DI.\nMake sure you run with API credentials provided.';
+              'QuranComRecitationProvider not registered in DI.\nMake sure you run with API credentials provided.';
           _isLoading = false;
         });
       }
@@ -902,12 +907,12 @@ class _QuranComDemoPageState extends State<QuranComDemoPage> {
     }
 
     try {
-      final list = await provider.getAllReciters();
+      final list = await provider.getAllRecitations();
       if (list.isEmpty) throw Exception('No reciters found');
       if (mounted) {
         setState(() {
-          _reciters = list;
-          _selectedReciter = list.isNotEmpty ? list.first : null;
+          _recitations = list;
+          _selectedRecitation = list.isNotEmpty ? list.first : null;
           _isLoading = false;
         });
       }
@@ -939,17 +944,17 @@ class _QuranComDemoPageState extends State<QuranComDemoPage> {
     }
   }
 
-  Future<void> _onReciterChanged(ReciterInfo? reciter) async {
+  Future<void> _onRecitationChanged(Recitation? reciter) async {
     _stopAudio();
     if (mounted) {
       setState(() {
-        _selectedReciter = reciter;
+        _selectedRecitation = reciter;
       });
     }
   }
 
   Future<void> _onTogglePlay() async {
-    if (_selectedReciter == null) return;
+    if (_selectedRecitation == null) return;
     setState(() => _playerError = null);
 
     try {
@@ -964,13 +969,13 @@ class _QuranComDemoPageState extends State<QuranComDemoPage> {
         // If it's a different chapter/reciter, or it was completed, load it
         final needsLoad =
             _playerState?.currentChapter != _selectedChapter ||
-            _playerState?.currentReciterId != _selectedReciter?.id ||
+            _playerState?.currentRecitationId != _selectedRecitation?.id ||
             isCompleted;
 
         if (needsLoad) {
           _audioRepo.loadChapter(
             _selectedChapter,
-            _selectedReciter!.id,
+            _selectedRecitation!.id,
             autoPlay: true,
           );
         } else {
@@ -1034,7 +1039,7 @@ class _QuranComDemoPageState extends State<QuranComDemoPage> {
               color: Colors.white,
             ),
             label: Text(
-              _useArabic ? 'EN' : 'AR',
+              _useArabic ? 'ar' : 'AR',
               style: const TextStyle(color: Colors.white),
             ),
             style: TextButton.styleFrom(backgroundColor: Colors.black),
@@ -1052,10 +1057,10 @@ class _QuranComDemoPageState extends State<QuranComDemoPage> {
                   : '1. Choose Reciter (Live from API)',
             ),
             _ReciterDropdown(
-              items: _reciters,
-              value: _selectedReciter,
+              items: _recitations,
+              value: _selectedRecitation,
               useArabic: _useArabic,
-              onChanged: _onReciterChanged,
+              onChanged: _onRecitationChanged,
             ),
             const SizedBox(height: 24),
             _SectionLabel(_useArabic ? '٢. اختر السورة' : '2. Select Chapter'),
@@ -1121,7 +1126,7 @@ class _QuranComDemoPageState extends State<QuranComDemoPage> {
                 children: [
                   ElevatedButton.icon(
                     onPressed:
-                        (_selectedReciter == null ||
+                        (_selectedRecitation == null ||
                             (_playerState?.isBuffering ?? false))
                         ? null
                         : _onTogglePlay,
@@ -1202,10 +1207,10 @@ class _SectionLabel extends StatelessWidget {
 }
 
 class _ReciterDropdown extends StatelessWidget {
-  final List<ReciterInfo> items;
-  final ReciterInfo? value;
+  final List<Recitation> items;
+  final Recitation? value;
   final bool useArabic;
-  final ValueChanged<ReciterInfo?> onChanged;
+  final ValueChanged<Recitation?> onChanged;
 
   const _ReciterDropdown({
     required this.items,
@@ -1223,15 +1228,17 @@ class _ReciterDropdown extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: DropdownButtonHideUnderline(
-        child: DropdownButton<ReciterInfo>(
+        child: DropdownButton<Recitation>(
           isExpanded: true,
           value: value,
           items: items.map((r) {
-            final name = useArabic ? r.nameArabic : r.nameEnglish;
+            final name = useArabic
+                ? r.reciter.nameArabic
+                : r.reciter.nameEnglish;
             return DropdownMenuItem(
               value: r,
               child: Text(
-                '$name (${r.rewaya})',
+                '$name)',
                 textDirection: useArabic
                     ? TextDirection.rtl
                     : TextDirection.ltr,

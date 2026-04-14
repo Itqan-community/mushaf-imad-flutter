@@ -26,7 +26,7 @@ import 'package:imad_flutter/imad_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await setupMushafWithHive();  // One-line setup!
+  await MushafLibrary.initialize();  // One-line setup!
   runApp(MyApp());
 }
 ```
@@ -44,7 +44,7 @@ void main() async {
   final db = HiveDatabaseService();
   await db.initialize();
 
-  setupMushafDependencies(
+  MushafLibrary.initialize(
     databaseService: db,
     bookmarkDao: HiveBookmarkDao(),
     readingHistoryDao: HiveReadingHistoryDao(),

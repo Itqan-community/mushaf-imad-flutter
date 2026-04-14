@@ -15,7 +15,7 @@ class Part {
   });
 
   /// Get the display title based on current locale.
-  String getDisplayTitle({String languageCode = 'en'}) {
+  String getDisplayTitle({String languageCode = 'ar'}) {
     return languageCode == 'ar' ? arabicTitle : englishTitle;
   }
 }
