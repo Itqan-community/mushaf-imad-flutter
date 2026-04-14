@@ -2,115 +2,112 @@ import 'dart:async';
 
 import '../../domain/models/audio_player_state.dart';
 import '../../domain/models/audio_source.dart';
-import '../../domain/models/reciter_info.dart';
+import '../../domain/models/recitation.dart';
 import '../../domain/models/reciter_timing.dart';
 import '../../domain/repository/audio_repository.dart';
 import '../audio/base/audio_playback_source.dart';
-import '../audio/base/audio_reciter_provider.dart';
+import '../audio/base/audio_recitation_provider.dart';
 import '../audio/flutter_audio_player.dart';
 
 /// An [AudioRepository] that aggregates one or more audio source backends
 /// simultaneously.
 ///
-/// ## Reciter list
-/// [getAllReciters] returns the union of all reciters from every registered
-/// [AudioReciterProvider]. Each [ReciterInfo] is tagged with its
-/// [ReciterInfo.audioSource] field so the routing layer knows which backend
-/// to call during playback. When the same reciter appears in multiple sources
-/// both entries are included and can be distinguished by their source tag.
+/// ## Recitation list
+/// [getAllRecitations] returns the union of all recitations from every registered
+/// [AudioRecitationProvider]. Each [Recitation] is tagged with its
+/// [Recitation.audioSource] field so the routing layer knows which backend
+/// to call during playback.
 ///
-/// Default reciter: the first entry alphabetically by English name across the
+/// Default recitation: the first entry alphabetically by English name across the
 /// merged list.
 ///
 /// ## Playback routing
-/// [loadChapter] looks up the reciter's [ReciterInfo.audioSource] and delegates
+/// [loadChapter] looks up the recitation's [Recitation.audioSource] and delegates
 /// to the matching [AudioPlaybackSource]. Timing queries follow the same routing.
 ///
-/// ## Selected reciter
+/// ## Selected recitation
 /// Selection state is held in-memory. The stream emits changes on every
-/// [saveSelectedReciter] call.
+/// [saveSelectedRecitation] call.
 class CompositeAudioRepository implements AudioRepository {
-  final List<AudioReciterProvider> _reciterProviders;
+  final List<AudioRecitationProvider> _recitationProviders;
   final Map<MushafAudioSource, AudioPlaybackSource> _playbackSources;
   final FlutterAudioPlayer _audioPlayer;
 
   /// Tracks which source is currently active, set on [loadChapter].
   MushafAudioSource? _activeSource;
 
-  final StreamController<ReciterInfo?> _selectedReciterController =
-      StreamController<ReciterInfo?>.broadcast();
+  final StreamController<Recitation?> _selectedRecitationController =
+      StreamController<Recitation?>.broadcast();
 
   CompositeAudioRepository({
-    required List<AudioReciterProvider> reciterProviders,
+    required List<AudioRecitationProvider> recitationProviders,
     required Map<MushafAudioSource, AudioPlaybackSource> playbackSources,
     required FlutterAudioPlayer audioPlayer,
-  }) : _reciterProviders = reciterProviders,
+  }) : _recitationProviders = recitationProviders,
        _playbackSources = playbackSources,
        _audioPlayer = audioPlayer;
 
   // ---------------------------------------------------------------------------
-  // Reciter management
+  // Recitation management
   // ---------------------------------------------------------------------------
 
   @override
-  Future<List<ReciterInfo>> getAllReciters() async {
-    final results = <ReciterInfo>[];
-    for (final provider in _reciterProviders) {
-      results.addAll(await provider.getAllReciters());
+  Future<List<Recitation>> getAllRecitations() async {
+    final results = <Recitation>[];
+    for (final provider in _recitationProviders) {
+      results.addAll(await provider.getAllRecitations());
     }
     // Sort alphabetically by English name.
     results.sort(
-      (a, b) => a.nameEnglish.compareTo(b.nameEnglish),
+      (a, b) => a.reciter.nameEnglish.compareTo(b.reciter.nameEnglish),
     );
     return results;
   }
 
   @override
-  Future<ReciterInfo?> getReciterById(int reciterId) async {
-    // The caller must use the full list to distinguish same-id reciters from
+  Future<Recitation?> getRecitationById(int recitationId) async {
+    // The caller must use the full list to distinguish same-id recitations from
     // different sources. This method returns the first match found.
-    for (final provider in _reciterProviders) {
-      final reciter = await provider.getReciterById(reciterId);
-      if (reciter != null) return reciter;
+    for (final provider in _recitationProviders) {
+      final recitation = await provider.getRecitationById(recitationId);
+      if (recitation != null) return recitation;
     }
     return null;
   }
 
   @override
-  Future<List<ReciterInfo>> searchReciters(
+  Future<List<Recitation>> searchRecitations(
     String query, {
-    String languageCode = 'en',
+    String languageCode = 'ar',
   }) async {
-    final results = <ReciterInfo>[];
-    for (final provider in _reciterProviders) {
+    final results = <Recitation>[];
+    for (final provider in _recitationProviders) {
       results.addAll(
-        await provider.searchReciters(query, languageCode: languageCode),
+        await provider.searchRecitations(query, languageCode: languageCode),
       );
     }
-    results.sort((a, b) => a.nameEnglish.compareTo(b.nameEnglish));
+    results.sort((a, b) => a.reciter.nameEnglish.compareTo(b.reciter.nameEnglish));
     return results;
   }
 
-
-
   @override
-  Future<ReciterInfo> getDefaultReciter() async {
-    final all = await getAllReciters();
+  Future<Recitation> getDefaultRecitation() async {
+    final all = await getAllRecitations();
     if (all.isEmpty) {
-      throw StateError('CompositeAudioRepository: no reciters are available.');
+      throw StateError('CompositeAudioRepository: no recitations are available.');
     }
     // Already sorted alphabetically -- return the first entry.
     return all.first;
   }
 
   @override
-  void saveSelectedReciter(ReciterInfo reciter) {
-    _selectedReciterController.add(reciter);
+  void saveSelectedRecitation(Recitation recitation) {
+    _selectedRecitationController.add(recitation);
   }
 
   @override
-  Stream<ReciterInfo?> getSelectedReciterStream() =>
-      _selectedReciterController.stream;
+  Stream<Recitation?> getSelectedRecitationStream() =>
+      _selectedRecitationController.stream;
 
   // ---------------------------------------------------------------------------
   // Playback
@@ -119,19 +116,15 @@ class CompositeAudioRepository implements AudioRepository {
   @override
   Future<void> loadChapter(
     int chapterNumber,
-    int reciterId, {
+    int recitationId, {
     bool autoPlay = false,
     int startVerseNumber = 1,
   }) async {
-    // Determine which source owns the reciter.
-    // We look for a provider that knows this reciterId; if multiple sources
-    // have it the one that was registered first wins (callers should pass
-    // the full ReciterInfo with its audioSource tag when possible).
     MushafAudioSource? targetSource;
-    for (final provider in _reciterProviders) {
-      final reciter = await provider.getReciterById(reciterId);
-      if (reciter != null) {
-        targetSource = reciter.audioSource;
+    for (final provider in _recitationProviders) {
+      final recitation = await provider.getRecitationById(recitationId);
+      if (recitation != null) {
+        targetSource = recitation.audioSource;
         break;
       }
     }
@@ -144,7 +137,7 @@ class CompositeAudioRepository implements AudioRepository {
     _activeSource = targetSource;
     await playbackSource.loadChapter(
       chapterNumber,
-      reciterId,
+      recitationId,
       autoPlay: autoPlay,
       startVerseNumber: startVerseNumber,
     );
@@ -155,10 +148,10 @@ class CompositeAudioRepository implements AudioRepository {
     await for (final state in _audioPlayer.domainStateStream) {
       int? verse;
       if (_activeSource != null &&
-          state.currentReciterId != null &&
+          state.currentRecitationId != null &&
           state.currentChapter != null) {
         verse = await _playbackSources[_activeSource]?.getCurrentVerse(
-          state.currentReciterId!,
+          state.currentRecitationId!,
           state.currentChapter!,
           state.currentPositionMs,
         );
@@ -204,50 +197,49 @@ class CompositeAudioRepository implements AudioRepository {
 
   @override
   Future<AyahTiming?> getAyahTiming(
-    int reciterId,
+    int recitationId,
     int chapterNumber,
     int ayahNumber,
   ) async {
-    final source = await _resolveSourceForReciter(reciterId);
-    return source?.getAyahTiming(reciterId, chapterNumber, ayahNumber);
+    final source = await _resolveSourceForRecitation(recitationId);
+    return source?.getAyahTiming(recitationId, chapterNumber, ayahNumber);
   }
 
   @override
   Future<int?> getCurrentVerse(
-    int reciterId,
+    int recitationId,
     int chapterNumber,
     int currentTimeMs,
   ) async {
-    final source = await _resolveSourceForReciter(reciterId);
-    return source?.getCurrentVerse(reciterId, chapterNumber, currentTimeMs);
+    final source = await _resolveSourceForRecitation(recitationId);
+    return source?.getCurrentVerse(recitationId, chapterNumber, currentTimeMs);
   }
 
   @override
   Future<List<AyahTiming>> getChapterTimings(
-    int reciterId,
+    int recitationId,
     int chapterNumber,
   ) async {
-    final source = await _resolveSourceForReciter(reciterId);
-    return source?.getChapterTimings(reciterId, chapterNumber) ??
+    final source = await _resolveSourceForRecitation(recitationId);
+    return source?.getChapterTimings(recitationId, chapterNumber) ??
         Future.value([]);
   }
 
   @override
-  bool hasTimingForReciter(int reciterId) {
-    // Check the active source first; fall back to scanning all sources.
+  bool hasTimingForRecitation(int recitationId) {
     if (_activeSource != null) {
-      return _playbackSources[_activeSource]?.hasTimingForReciter(reciterId) ??
+      return _playbackSources[_activeSource]?.hasTimingForRecitation(recitationId) ??
           false;
     }
     return _playbackSources.values.any(
-      (s) => s.hasTimingForReciter(reciterId),
+      (s) => s.hasTimingForRecitation(recitationId),
     );
   }
 
   @override
-  Future<void> preloadTiming(int reciterId) async {
-    final source = await _resolveSourceForReciter(reciterId);
-    await source?.preloadTiming(reciterId);
+  Future<void> preloadTiming(int recitationId) async {
+    final source = await _resolveSourceForRecitation(recitationId);
+    await source?.preloadTiming(recitationId);
   }
 
   // ---------------------------------------------------------------------------
@@ -257,18 +249,18 @@ class CompositeAudioRepository implements AudioRepository {
   @override
   void release() {
     _audioPlayer.stop();
-    _selectedReciterController.close();
+    _selectedRecitationController.close();
   }
 
   // ---------------------------------------------------------------------------
   // Internal helpers
   // ---------------------------------------------------------------------------
 
-  Future<AudioPlaybackSource?> _resolveSourceForReciter(int reciterId) async {
-    for (final provider in _reciterProviders) {
-      final reciter = await provider.getReciterById(reciterId);
-      if (reciter != null) {
-        return _playbackSources[reciter.audioSource];
+  Future<AudioPlaybackSource?> _resolveSourceForRecitation(int recitationId) async {
+    for (final provider in _recitationProviders) {
+      final recitation = await provider.getRecitationById(recitationId);
+      if (recitation != null) {
+        return _playbackSources[recitation.audioSource];
       }
     }
     return null;

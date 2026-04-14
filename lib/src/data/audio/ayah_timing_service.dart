@@ -22,19 +22,19 @@ class AyahTimingService {
   AyahTimingService({MushafAudioDataSource? dataSource})
     : _dataSource = dataSource;
 
-  /// Load timing data for a specific reciter from assets.
-  Future<ReciterTiming?> loadTimingData(int reciterId) async {
-    if (_timingCache.containsKey(reciterId)) {
-      return _timingCache[reciterId];
+  /// Load timing data for a specific recitation from assets.
+  Future<ReciterTiming?> loadTimingData(int recitationId) async {
+    if (_timingCache.containsKey(recitationId)) {
+      return _timingCache[recitationId];
     }
 
     try {
       final jsonString = await rootBundle.loadString(
-        'packages/imad_flutter/assets/ayah_timing/read_$reciterId.json',
+        'packages/imad_flutter/assets/ayah_timing/read_$recitationId.json',
       );
       final json = jsonDecode(jsonString) as Map<String, dynamic>;
       final timing = ReciterTiming.fromJson(json);
-      _timingCache[reciterId] = timing;
+      _timingCache[recitationId] = timing;
       return timing;
     } catch (e) {
       return null;
@@ -43,16 +43,16 @@ class AyahTimingService {
 
   /// Get verse timing for a specific ayah.
   Future<AyahTiming?> getAyahTiming(
-    int reciterId,
+    int recitationId,
     int chapterNumber,
     int ayahNumber,
   ) async {
-    final timings = await getChapterTimings(reciterId, chapterNumber);
+    final timings = await getChapterTimings(recitationId, chapterNumber);
     if (timings.isEmpty) return null;
-    final timing = await loadTimingData(reciterId);
+    final timing = await loadTimingData(recitationId);
     if (timing == null) {
       MushafLibrary.logger.debug(
-        '[AyahTimingService] ❌ No timing data for reciter=$reciterId',
+        '[AyahTimingService] ❌ No timing data for recitation=$recitationId',
       );
       return timings.firstWhereOrNull((a) => a.ayah == ayahNumber);
     }
@@ -63,7 +63,7 @@ class AyahTimingService {
       // DEBUG: print what we found
       MushafLibrary.logger.debug(
         '[AyahTimingService] getAyahTiming → '
-        'reciter=$reciterId, chapter=$chapterNumber, ayah=$ayahNumber → '
+        'recitation=$recitationId, chapter=$chapterNumber, ayah=$ayahNumber → '
         'start=${ayah.startTime}ms, end=${ayah.endTime}ms',
       );
       if (kDebugMode) {
@@ -94,11 +94,11 @@ class AyahTimingService {
 
   /// Get the current verse being recited based on playback position.
   Future<int?> getCurrentVerse(
-    int reciterId,
+    int recitationId,
     int chapterNumber,
     int currentTimeMs,
   ) async {
-    final timings = await getChapterTimings(reciterId, chapterNumber);
+    final timings = await getChapterTimings(recitationId, chapterNumber);
     if (timings.isEmpty) return null;
 
     for (final timing in timings) {
@@ -112,13 +112,13 @@ class AyahTimingService {
   /// Get all timing data for a chapter.
   /// This method implements a "Local-First -> API-Fallback" strategy.
   Future<List<AyahTiming>> getChapterTimings(
-    int reciterId,
+    int recitationId,
     int chapterNumber,
   ) async {
-    // 1. Check if the entire reciter profile is already cached (bulk JSON)
-    if (_timingCache.containsKey(reciterId)) {
+    // 1. Check if the entire recitation profile is already cached (bulk JSON)
+    if (_timingCache.containsKey(recitationId)) {
       try {
-        final chapter = _timingCache[reciterId]!.chapters.firstWhere(
+        final chapter = _timingCache[recitationId]!.chapters.firstWhere(
           (c) => c.id == chapterNumber,
         );
         return chapter.ayaTiming;
@@ -128,12 +128,12 @@ class AyahTimingService {
     }
 
     // 2. Check if this specific chapter was dynamically fetched and cached
-    if (_dynamicChapterCache[reciterId]?.containsKey(chapterNumber) ?? false) {
-      return _dynamicChapterCache[reciterId]![chapterNumber]!;
+    if (_dynamicChapterCache[recitationId]?.containsKey(chapterNumber) ?? false) {
+      return _dynamicChapterCache[recitationId]![chapterNumber]!;
     }
 
     // 3. Try loading from local assets (first-time load for bulk JSON)
-    final bulkTiming = await loadTimingData(reciterId);
+    final bulkTiming = await loadTimingData(recitationId);
     if (bulkTiming != null) {
       try {
         final chapter = bulkTiming.chapters.firstWhere(
@@ -150,12 +150,12 @@ class AyahTimingService {
     if (dataSource != null) {
       try {
         final remoteTimings = await dataSource.fetchChapterTiming(
-          reciterId,
+          recitationId,
           chapterNumber,
         );
         if (remoteTimings != null) {
           // Cache the dynamic result
-          _dynamicChapterCache.putIfAbsent(reciterId, () => {})[chapterNumber] =
+          _dynamicChapterCache.putIfAbsent(recitationId, () => {})[chapterNumber] =
               remoteTimings;
           return remoteTimings;
         }
@@ -168,13 +168,13 @@ class AyahTimingService {
     return [];
   }
 
-  /// Check if timing data is available for a reciter.
-  bool hasTimingForReciter(int reciterId) {
-    return _timingCache.containsKey(reciterId);
+  /// Check if timing data is available for a recitation.
+  bool hasTimingForRecitation(int recitationId) {
+    return _timingCache.containsKey(recitationId);
   }
 
   /// Preload timing data for better performance.
-  Future<void> preloadTiming(int reciterId) async {
-    await loadTimingData(reciterId);
+  Future<void> preloadTiming(int recitationId) async {
+    await loadTimingData(recitationId);
   }
 }

@@ -74,14 +74,14 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
     if (mounted) {
       setState(() => _initialized = true);
 
-      if (widget.chapterNumber > 0 && _viewModel.selectedReciter != null) {
+      if (widget.chapterNumber > 0 && _viewModel.selectedRecitation != null) {
         final startVerse = _resolveStartVerse();
         MushafLibrary.logger.debug(
-          '[AudioPlayerBar] _initViewModel → chapter=${widget.chapterNumber}, reciter=${_viewModel.selectedReciter!.id}, startVerse=$startVerse, autoPlay=${widget.autoPlay}',
+          '[AudioPlayerBar] _initViewModel → chapter=${widget.chapterNumber}, reciter=${_viewModel.selectedRecitation!.id}, startVerse=$startVerse, autoPlay=${widget.autoPlay}',
         );
         await mushafGetIt<AudioRepository>().loadChapter(
           widget.chapterNumber,
-          _viewModel.selectedReciter!.id,
+          _viewModel.selectedRecitation!.id,
           autoPlay: widget.autoPlay,
           startVerseNumber: startVerse,
         );
@@ -105,7 +105,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
     // user scrolled to a new page or tapped a different verse.
     if (!chapterChanged && !pageChanged && !verseChanged) return;
 
-    if (_viewModel.selectedReciter == null) return;
+    if (_viewModel.selectedRecitation == null) return;
 
     final startVerse = _resolveStartVerse();
     MushafLibrary.logger.debug(
@@ -114,7 +114,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
 
     mushafGetIt<AudioRepository>().loadChapter(
       widget.chapterNumber,
-      _viewModel.selectedReciter!.id,
+      _viewModel.selectedRecitation!.id,
       autoPlay: widget.autoPlay,
       startVerseNumber: startVerse,
     );
@@ -149,7 +149,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
         }
 
         final state = _viewModel.playerState;
-        final reciter = _viewModel.selectedReciter;
+        final reciter = _viewModel.selectedRecitation;
         final duration = state.durationMs;
         final position = state.currentPositionMs;
         final progress = duration > 0
@@ -179,7 +179,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
                     children: [
                       // Reciter Picker Button
                       InkWell(
-                        onTap: () => _showReciterPicker(context),
+                        onTap: () => _showRecitationPicker(context),
                         borderRadius: BorderRadius.circular(8),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
@@ -381,7 +381,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
     );
   }
 
-  void _showReciterPicker(BuildContext context) {
+  void _showRecitationPicker(BuildContext context) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -403,19 +403,19 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
               Flexible(
                 child: ListView.builder(
                   shrinkWrap: true,
-                  itemCount: _viewModel.reciters.length,
+                  itemCount: _viewModel.recitations.length,
                   itemBuilder: (context, index) {
                     final isSelected =
-                        _viewModel.selectedReciter?.id ==
-                        _viewModel.reciters[index].id;
-                    return ListTile(leading:Text(_viewModel.reciters[index].audioSource.name) ,
-                      title: Text(_viewModel.reciters[index].getDisplayName()),
-                      subtitle: Text("Riwayah PLACEHOLDER"),
-                      trailing: isSelected
+                        _viewModel.selectedRecitation?.id ==
+                        _viewModel.recitations[index].id;
+                    return ListTile(trailing:Text(_viewModel.recitations[index].audioSource.name) ,
+                      title: Text(_viewModel.recitations[index].getDisplayName(languageCode: 'ar')),
+                      subtitle: Text(_viewModel.recitations[index].riwayah.nameArabic),
+                      leading: isSelected
                           ? const Icon(Icons.check, color: Color(0xFF2D7F6E))
                           : null,
                       onTap: () {
-                        _viewModel.selectReciter(_viewModel.reciters[index]);
+                        _viewModel.selectRecitation(_viewModel.recitations[index]);
                         Navigator.pop(context);
                       },
                     );

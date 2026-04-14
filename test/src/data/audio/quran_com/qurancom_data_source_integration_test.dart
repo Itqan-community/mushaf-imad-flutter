@@ -50,22 +50,22 @@ void main() {
           '\n--- TEST: Integration Fetch Reciters ---',
           category: LogCategory.audio,
         );
-        final reciters = await dataSource.fetchAllReciters();
+        final reciters = await dataSource.fetchAllRecitations();
 
         expect(reciters, isNotEmpty);
         final first = reciters.first;
 
         // Basic field checks
         expect(first.id, isPositive);
-        expect(first.nameArabic, isNotEmpty);
-        expect(first.nameEnglish, isNotEmpty);
+        expect(first.reciter.nameArabic, isNotEmpty);
+        expect(first.reciter.nameEnglish, isNotEmpty);
 
         logger.info(
           '✅ Successfully fetched ${reciters.length} reciters.',
           category: LogCategory.audio,
         );
         logger.info(
-          '✅ Mapped Example: English="${first.nameEnglish}", Arabic="${first.nameArabic}"',
+          '✅ Mapped Example: English="${first.reciter.nameEnglish}", Arabic="${first.reciter.nameArabic}"',
           category: LogCategory.audio,
         );
       },

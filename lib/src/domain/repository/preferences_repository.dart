@@ -52,14 +52,14 @@ abstract class PreferencesRepository {
 
   // ========== Audio Preferences ==========
 
-  /// Observe the selected reciter ID.
-  Stream<int> getSelectedReciterIdStream();
+  /// Observe the selected recitation ID.
+  Stream<int> getSelectedRecitationIdStream();
 
-  /// Get the selected reciter ID.
-  Future<int> getSelectedReciterId();
+  /// Get the selected recitation ID.
+  Future<int> getSelectedRecitationId();
 
-  /// Set the selected reciter ID.
-  Future<void> setSelectedReciterId(int reciterId);
+  /// Set the selected recitation ID.
+  Future<void> setSelectedRecitationId(int recitationId);
 
   /// Observe the selected playback speed.
   Stream<double> getPlaybackSpeedStream();

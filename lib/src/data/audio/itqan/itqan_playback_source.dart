@@ -2,14 +2,14 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../../../domain/models/audio_source.dart';
-import '../../../domain/models/reciter_info.dart';
+import '../../../domain/models/recitation.dart';
 import '../../../domain/models/reciter_timing.dart';
 import '../../../mushaf_library.dart';
 import '../base/audio_playback_source.dart';
 import '../flutter_audio_player.dart';
 import 'itqan_audio_config.dart';
 import 'itqan_audio_models.dart';
-import 'itqan_reciter_provider.dart';
+import 'itqan_recitation_provider.dart';
 
 /// [AudioPlaybackSource] implementation for the Itqan CMS API.
 ///
@@ -18,14 +18,11 @@ import 'itqan_reciter_provider.dart';
 /// [FlutterAudioPlayer].
 class ItqanPlaybackSource implements AudioPlaybackSource {
   final ItqanAudioConfig _config;
-  final ItqanReciterProvider _reciterProvider;
+  final ItqanRecitationProvider _recitationProvider;
   final FlutterAudioPlayer _audioPlayer;
   final http.Client? _client;
 
-  // Maps reciter ID -> primary recitation asset ID.
-  final Map<int, int> _reciterToAssetCache = {};
-
-  // Maps asset ID -> list of surah tracks.
+  // Maps recitation ID -> list of surah tracks.
   final Map<int, List<ItqanRecitationSurahTrack>> _tracksCache = {};
 
   // In-memory ayah timings for the currently loaded chapter.
@@ -33,11 +30,11 @@ class ItqanPlaybackSource implements AudioPlaybackSource {
 
   ItqanPlaybackSource({
     required ItqanAudioConfig config,
-    required ItqanReciterProvider reciterProvider,
+    required ItqanRecitationProvider recitationProvider,
     required FlutterAudioPlayer audioPlayer,
     http.Client? client,
   }) : _config = config,
-       _reciterProvider = reciterProvider,
+       _recitationProvider = recitationProvider,
        _audioPlayer = audioPlayer,
        _client = client;
 
@@ -56,23 +53,18 @@ class ItqanPlaybackSource implements AudioPlaybackSource {
   @override
   Future<void> loadChapter(
     int chapterNumber,
-    int reciterId, {
+    int recitationId, {
     bool autoPlay = false,
     int startVerseNumber = 1,
   }) async {
     try {
-      final assetId = await _fetchAssetIdForReciter(reciterId);
-      if (assetId == null) {
-        throw Exception('No recitation asset found for reciter $reciterId');
-      }
-
       List<ItqanRecitationSurahTrack> tracks;
 
-      if (_tracksCache.containsKey(assetId)) {
-        tracks = _tracksCache[assetId]!;
+      if (_tracksCache.containsKey(recitationId)) {
+        tracks = _tracksCache[recitationId]!;
       } else {
         final endpoint =
-            '${_config.baseUrl}/recitations/$assetId/?page_size=114';
+            '${_config.baseUrl}/recitations/$recitationId/?page_size=114';
         final response = await _get(
           Uri.parse(endpoint),
           headers: _config.headers,
@@ -84,7 +76,7 @@ class ItqanPlaybackSource implements AudioPlaybackSource {
           tracks = results
               .map((e) => ItqanRecitationSurahTrack.fromJson(e))
               .toList();
-          _tracksCache[assetId] = tracks;
+          _tracksCache[recitationId] = tracks;
         } else {
           throw Exception(
             'Failed to load recitation tracks: ${response.statusCode}',
@@ -102,14 +94,14 @@ class ItqanPlaybackSource implements AudioPlaybackSource {
           .map((t) => t.toAyahTiming())
           .toList();
 
-      final ReciterInfo reciter =
-          await _reciterProvider.getReciterById(reciterId) ??
-          await _reciterProvider.getDefaultReciter();
+      final Recitation recitation =
+          await _recitationProvider.getRecitationById(recitationId) ??
+          await _recitationProvider.getDefaultRecitation();
 
       await _audioPlayer.loadFromUrl(
         surahTrack.audioUrl,
         chapterNumber: chapterNumber,
-        reciter: reciter,
+        recitation: recitation,
         autoPlay: false,
       );
 
@@ -140,13 +132,13 @@ class ItqanPlaybackSource implements AudioPlaybackSource {
 
   @override
   Future<List<AyahTiming>> getChapterTimings(
-    int reciterId,
+    int recitationId,
     int chapterNumber,
   ) async => _currentChapterTimings;
 
   @override
   Future<AyahTiming?> getAyahTiming(
-    int reciterId,
+    int recitationId,
     int chapterNumber,
     int ayahNumber,
   ) async {
@@ -159,7 +151,7 @@ class ItqanPlaybackSource implements AudioPlaybackSource {
 
   @override
   Future<int?> getCurrentVerse(
-    int reciterId,
+    int recitationId,
     int chapterNumber,
     int currentTimeMs,
   ) async {
@@ -172,46 +164,10 @@ class ItqanPlaybackSource implements AudioPlaybackSource {
   }
 
   @override
-  bool hasTimingForReciter(int reciterId) =>
-      // Itqan always provides timing via the API payload.
-      true;
+  bool hasTimingForRecitation(int recitationId) => true;
 
   @override
-  Future<void> preloadTiming(int reciterId) async {
+  Future<void> preloadTiming(int recitationId) async {
     // Timing is bundled with the audio load request -- no separate preload needed.
-  }
-
-  // ---------------------------------------------------------------------------
-  // Internal helpers
-  // ---------------------------------------------------------------------------
-
-  Future<int?> _fetchAssetIdForReciter(int reciterId) async {
-    if (_reciterToAssetCache.containsKey(reciterId)) {
-      return _reciterToAssetCache[reciterId]!;
-    }
-
-    try {
-      final endpoint =
-          '${_config.baseUrl}/recitations/?reciter_id=$reciterId';
-      final response = await _get(
-        Uri.parse(endpoint),
-        headers: _config.headers,
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final results = data['results'] as List<dynamic>? ?? [];
-        if (results.isNotEmpty) {
-          final assetId = results.first['id'] as int;
-          _reciterToAssetCache[reciterId] = assetId;
-          return assetId;
-        }
-      }
-    } catch (e) {
-      MushafLibrary.logger.error(
-        '[ItqanPlaybackSource] Error fetching asset for reciter $reciterId: $e',
-      );
-    }
-    return null;
   }
 }

@@ -4,7 +4,7 @@ import '../../../mushaf_library.dart';
 import '../ayah_timing_service.dart';
 import '../base/audio_playback_source.dart';
 import '../flutter_audio_player.dart';
-import '../reciter_data_provider.dart';
+import '../recitation_data_provider.dart';
 
 /// [AudioPlaybackSource] implementation for the mp3quran.net static files.
 ///
@@ -16,7 +16,7 @@ class Mp3QuranPlaybackSource implements AudioPlaybackSource {
 
   // Tracks what is currently loaded to avoid redundant reloads.
   int? _loadedChapter;
-  int? _loadedReciterId;
+  int? _loadedRecitationId;
 
   Mp3QuranPlaybackSource({
     required AyahTimingService timingService,
@@ -30,30 +30,35 @@ class Mp3QuranPlaybackSource implements AudioPlaybackSource {
   @override
   Future<void> loadChapter(
     int chapterNumber,
-    int reciterId, {
+    int recitationId, {
     bool autoPlay = false,
     int startVerseNumber = 1,
   }) async {
     MushafLibrary.logger.debug(
       '[Mp3QuranPlaybackSource] loadChapter → chapter=$chapterNumber, '
-      'reciter=$reciterId, startVerse=$startVerseNumber, autoPlay=$autoPlay',
+      'recitation=$recitationId, startVerse=$startVerseNumber, autoPlay=$autoPlay',
     );
 
-    final reciter = ReciterDataProvider.getReciterById(reciterId);
-    if (reciter == null) {
+    final recitation = RecitationDataProvider.getRecitationById(recitationId);
+    if (recitation == null) {
       MushafLibrary.logger.debug(
-        '[Mp3QuranPlaybackSource] reciter NOT FOUND for id=$reciterId',
+        '[Mp3QuranPlaybackSource] recitation NOT FOUND for id=$recitationId',
       );
       return;
     }
 
     final needsLoad =
-        _loadedChapter != chapterNumber || _loadedReciterId != reciterId;
+        _loadedChapter != chapterNumber || _loadedRecitationId != recitationId;
 
     if (needsLoad) {
-      await _audioPlayer.loadChapter(chapterNumber, reciter, autoPlay: false);
+      await _audioPlayer.loadChapter(
+        chapterNumber, 
+        recitation, 
+        autoPlay: false,
+        audioUrl: recitation.getAudioUrl(chapterNumber),
+      );
       _loadedChapter = chapterNumber;
-      _loadedReciterId = reciterId;
+      _loadedRecitationId = recitationId;
       MushafLibrary.logger.debug(
         '[Mp3QuranPlaybackSource] audio loaded for chapter=$chapterNumber',
       );
@@ -65,7 +70,7 @@ class Mp3QuranPlaybackSource implements AudioPlaybackSource {
 
     if (startVerseNumber > 1) {
       final timing = await _timingService.getAyahTiming(
-        reciterId,
+        recitationId,
         chapterNumber,
         startVerseNumber,
       );
@@ -93,29 +98,29 @@ class Mp3QuranPlaybackSource implements AudioPlaybackSource {
 
   @override
   Future<List<AyahTiming>> getChapterTimings(
-    int reciterId,
+    int recitationId,
     int chapterNumber,
-  ) => _timingService.getChapterTimings(reciterId, chapterNumber);
+  ) => _timingService.getChapterTimings(recitationId, chapterNumber);
 
   @override
   Future<AyahTiming?> getAyahTiming(
-    int reciterId,
+    int recitationId,
     int chapterNumber,
     int ayahNumber,
-  ) => _timingService.getAyahTiming(reciterId, chapterNumber, ayahNumber);
+  ) => _timingService.getAyahTiming(recitationId, chapterNumber, ayahNumber);
 
   @override
   Future<int?> getCurrentVerse(
-    int reciterId,
+    int recitationId,
     int chapterNumber,
     int currentTimeMs,
-  ) => _timingService.getCurrentVerse(reciterId, chapterNumber, currentTimeMs);
+  ) => _timingService.getCurrentVerse(recitationId, chapterNumber, currentTimeMs);
 
   @override
-  bool hasTimingForReciter(int reciterId) =>
-      _timingService.hasTimingForReciter(reciterId);
+  bool hasTimingForRecitation(int recitationId) =>
+      _timingService.hasTimingForRecitation(recitationId); 
 
   @override
-  Future<void> preloadTiming(int reciterId) =>
-      _timingService.preloadTiming(reciterId);
+  Future<void> preloadTiming(int recitationId) =>
+      _timingService.preloadTiming(recitationId);
 }

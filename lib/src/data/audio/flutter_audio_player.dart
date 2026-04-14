@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../domain/models/audio_player_state.dart' as domain;
-import '../../domain/models/reciter_info.dart';
+import '../../domain/models/recitation.dart';
 import '../../mushaf_library.dart';
 
 /// App-specific AudioHandler that connects just_audio to audio_service
@@ -11,7 +11,7 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
   final AudioPlayer _player = AudioPlayer();
 
   int? _currentChapter;
-  int? _currentReciterId;
+  int? _currentRecitationId;
 
   /// Expose the underlying just_audio player state as our domain state
   final _domainStateController =
@@ -93,7 +93,7 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
         currentPositionMs: _player.position.inMilliseconds,
         durationMs: _player.duration?.inMilliseconds ?? 0,
         currentChapter: _currentChapter,
-        currentReciterId: _currentReciterId,
+        currentRecitationId: _currentRecitationId,
         isBuffering:
             _player.processingState == ProcessingState.buffering ||
             _player.processingState == ProcessingState.loading,
@@ -103,44 +103,44 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
     );
   }
 
-  /// Custom extension to load a specific chapter from a reciter.
+  /// Custom extension to load a specific chapter from a recitation.
   ///
   /// [audioUrl] An optional direct audio URL. If provided, it overrides the
-  /// URL normally derived from [reciter]. This is needed for reciters whose
+  /// URL normally derived from [recitation]. This is needed for recitations whose
   /// audio is fetched dynamically from an API (e.g., Quran.com) and cannot
   /// be constructed from a static folder URL.
   Future<void> loadChapter(
     int chapterNumber,
-    ReciterInfo reciter, {
+    Recitation recitation, {
     bool autoPlay = false,
     String? audioUrl,
   }) async {
     _currentChapter = chapterNumber;
-    _currentReciterId = reciter.id;
+    _currentRecitationId = recitation.id;
 
-    // Use provided URL, or derive from reciter for local/static sources.
+    // Use provided URL, or derive from recitation for local/static sources.
     // Apply CORS proxy on web for static URLs to bypass restrictive headers.
-    final resolvedUrl = audioUrl ?? reciter.getAudioUrl(chapterNumber);
+    final resolvedUrl = audioUrl ?? recitation.getAudioUrl(chapterNumber);
     final url = (audioUrl == null && kIsWeb)
         ? 'https://corsproxy.io/?${Uri.encodeComponent(resolvedUrl)}'
         : resolvedUrl;
 
     final title = 'Surah ${chapterNumber.toString().padLeft(3, "0")}';
-    await _loadUrlInternal(url, title, reciter.getDisplayName(), autoPlay);
+    await _loadUrlInternal(url, title, recitation.getDisplayName(), autoPlay);
   }
 
   /// Custom extension to load audio directly from a URL (e.g. from CMS)
   Future<void> loadFromUrl(
     String url, {
     required int chapterNumber,
-    required ReciterInfo reciter,
+    required Recitation recitation,
     bool autoPlay = false,
   }) async {
     _currentChapter = chapterNumber;
-    _currentReciterId = reciter.id;
+    _currentRecitationId = recitation.id;
 
     final title = 'Surah ${chapterNumber.toString().padLeft(3, "0")}';
-    await _loadUrlInternal(url, title, reciter.getDisplayName(), autoPlay);
+    await _loadUrlInternal(url, title, recitation.getDisplayName(), autoPlay);
   }
 
   Future<void> _loadUrlInternal(

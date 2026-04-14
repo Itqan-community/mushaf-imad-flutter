@@ -2,18 +2,18 @@ import 'package:get_it/get_it.dart';
 
 import '../data/audio/ayah_timing_service.dart';
 import '../data/audio/base/audio_playback_source.dart';
-import '../data/audio/base/audio_reciter_provider.dart';
+import '../data/audio/base/audio_recitation_provider.dart';
 import '../data/audio/itqan/itqan_audio_config.dart';
 import '../data/audio/itqan/itqan_playback_source.dart';
-import '../data/audio/itqan/itqan_reciter_provider.dart';
+import '../data/audio/itqan/itqan_recitation_provider.dart';
 import '../data/audio/mp3quran/mp3quran_playback_source.dart';
-import '../data/audio/mp3quran/mp3quran_reciter_provider.dart';
+import '../data/audio/mp3quran/mp3quran_recitation_provider.dart';
 import '../data/audio/quran_com/qurancom_api_client.dart';
 import '../data/audio/quran_com/qurancom_audio_source_config.dart';
 import '../data/audio/quran_com/qurancom_data_source.dart';
 import '../data/audio/quran_com/qurancom_playback_source.dart';
-import '../data/audio/quran_com/qurancom_reciter_provider.dart';
-import '../data/audio/reciter_service.dart';
+import '../data/audio/quran_com/qurancom_recitation_provider.dart';
+import '../data/audio/recitation_service.dart';
 import '../data/cache/chapters_data_cache.dart';
 import '../data/cache/quran_data_cache_service.dart';
 import '../data/audio/flutter_audio_player.dart';
@@ -127,7 +127,7 @@ Future<void> setupMushafDependencies({
 
   // Audio services
   mushafGetIt.registerSingleton<AyahTimingService>(AyahTimingService());
-  mushafGetIt.registerSingleton<ReciterService>(ReciterService());
+  mushafGetIt.registerSingleton<RecitationService>(RecitationService());
 
   // Repositories
   mushafGetIt.registerSingleton<QuranRepository>(
@@ -188,14 +188,14 @@ Future<void> setupMushafDependencies({
         ),
       );
 
-  // Build AudioReciterProvider and AudioPlaybackSource lists based on the
+  // Build AudioRecitationProvider and AudioPlaybackSource lists based on the
   // enabled sources, then wire a single CompositeAudioRepository.
-  final reciterProviders = <AudioReciterProvider>[];
+  final recitationProviders = <AudioRecitationProvider>[];
   final playbackSources = <MushafAudioSource, AudioPlaybackSource>{};
 
   if (audioSources.contains(MushafAudioSource.mp3quran)) {
     final timingService = mushafGetIt<AyahTimingService>();
-    reciterProviders.add(const Mp3QuranReciterProvider());
+    recitationProviders.add(Mp3QuranRecitationProvider());
     playbackSources[MushafAudioSource.mp3quran] = Mp3QuranPlaybackSource(
       timingService: timingService,
       audioPlayer: resolvedPlayer,
@@ -212,18 +212,18 @@ Future<void> setupMushafDependencies({
     final timingService = AyahTimingService(dataSource: dataSource);
     mushafGetIt.registerSingleton<AyahTimingService>(timingService);
 
-    final reciterProvider = QuranComReciterProvider(
+    final recitationProvider = QuranComRecitationProvider(
       dataSource: dataSource,
       logger: resolvedLogger,
     );
 
     mushafGetIt.registerSingleton<QuranComApiClient>(apiClient);
     mushafGetIt.registerSingleton<QurancomDataSource>(dataSource);
-    mushafGetIt.registerSingleton<QuranComReciterProvider>(reciterProvider);
+    mushafGetIt.registerSingleton<QuranComRecitationProvider>(recitationProvider);
 
-    reciterProviders.add(reciterProvider);
+    recitationProviders.add(recitationProvider);
     playbackSources[MushafAudioSource.quranCom] = QuranComPlaybackSource(
-      reciterProvider: reciterProvider,
+      recitationProvider: recitationProvider,
       timingService: timingService,
       dataSource: dataSource,
       audioPlayer: resolvedPlayer,
@@ -233,19 +233,19 @@ Future<void> setupMushafDependencies({
 
   if (audioSources.contains(MushafAudioSource.itqan)) {
     final config = itqanAudioConfig!;
-    final reciterProvider = ItqanReciterProvider(config: config);
+    final recitationProvider = ItqanRecitationProvider(config: config);
     final playbackSource = ItqanPlaybackSource(
       config: config,
-      reciterProvider: reciterProvider,
+      recitationProvider: recitationProvider,
       audioPlayer: resolvedPlayer,
     );
-    reciterProviders.add(reciterProvider);
+    recitationProviders.add(recitationProvider);
     playbackSources[MushafAudioSource.itqan] = playbackSource;
   }
 
   mushafGetIt.registerSingleton<AudioRepository>(
     CompositeAudioRepository(
-      reciterProviders: reciterProviders,
+      recitationProviders: recitationProviders,
       playbackSources: playbackSources,
       audioPlayer: resolvedPlayer,
     ),

@@ -1,12 +1,11 @@
 import '../../../domain/models/audio_source.dart';
-import '../../../domain/models/reciter_info.dart';
 import '../../../domain/models/reciter_timing.dart';
 import '../../../logging/mushaf_logger.dart';
 import '../ayah_timing_service.dart';
 import '../base/audio_playback_source.dart';
 import '../flutter_audio_player.dart';
 import 'qurancom_data_source.dart';
-import 'qurancom_reciter_provider.dart';
+import 'qurancom_recitation_provider.dart';
 
 /// [AudioPlaybackSource] implementation for the Quran.com (Quran.Foundation)
 /// streaming API.
@@ -14,7 +13,7 @@ import 'qurancom_reciter_provider.dart';
 /// Fetches chapter audio URLs and verse-level timing segments from
 /// [QurancomDataSource], then drives playback via the shared [FlutterAudioPlayer].
 class QuranComPlaybackSource implements AudioPlaybackSource {
-  final QuranComReciterProvider _reciterProvider;
+  final QuranComRecitationProvider _recitationProvider;
   final AyahTimingService _timingService;
   final QurancomDataSource _dataSource;
   final FlutterAudioPlayer _audioPlayer;
@@ -25,12 +24,12 @@ class QuranComPlaybackSource implements AudioPlaybackSource {
   int? _loadedReciterId;
 
   QuranComPlaybackSource({
-    required QuranComReciterProvider reciterProvider,
+    required QuranComRecitationProvider recitationProvider,
     required AyahTimingService timingService,
     required QurancomDataSource dataSource,
     required FlutterAudioPlayer audioPlayer,
     MushafLogger? logger,
-  }) : _reciterProvider = reciterProvider,
+  }) : _recitationProvider = recitationProvider,
        _timingService = timingService,
        _dataSource = dataSource,
        _audioPlayer = audioPlayer,
@@ -42,36 +41,35 @@ class QuranComPlaybackSource implements AudioPlaybackSource {
   @override
   Future<void> loadChapter(
     int chapterNumber,
-    int reciterId, {
+    int recitationId, {
     bool autoPlay = false,
     int startVerseNumber = 1,
   }) async {
-    final ReciterInfo? reciter =
-        await _reciterProvider.getReciterById(reciterId);
-    if (reciter == null) return;
+    final recitation = await _recitationProvider.getRecitationById(recitationId);
+    if (recitation == null) return;
 
     try {
       final needsLoad =
-          _loadedChapter != chapterNumber || _loadedReciterId != reciterId;
+          _loadedChapter != chapterNumber || _loadedReciterId != recitationId;
 
       if (needsLoad) {
         final audioUrl = await _dataSource.fetchChapterAudioUrl(
-          reciterId,
+          recitationId,
           chapterNumber,
         );
         await _audioPlayer.loadChapter(
           chapterNumber,
-          reciter,
-          autoPlay: false,
+          recitation,
+          autoPlay: autoPlay,
           audioUrl: audioUrl,
         );
         _loadedChapter = chapterNumber;
-        _loadedReciterId = reciterId;
+        _loadedReciterId = recitationId;
       }
 
       if (startVerseNumber > 1) {
         final timing = await _timingService.getAyahTiming(
-          reciterId,
+          recitationId,
           chapterNumber,
           startVerseNumber,
         );
@@ -103,29 +101,60 @@ class QuranComPlaybackSource implements AudioPlaybackSource {
 
   @override
   Future<List<AyahTiming>> getChapterTimings(
-    int reciterId,
+    int recitationId,
     int chapterNumber,
-  ) => _timingService.getChapterTimings(reciterId, chapterNumber);
+  ) async {
+    final timings = await _dataSource.fetchChapterTiming(
+      recitationId,
+      chapterNumber,
+    );
+    return timings ?? const [];
+  }
 
   @override
   Future<AyahTiming?> getAyahTiming(
-    int reciterId,
+    int recitationId,
     int chapterNumber,
     int ayahNumber,
-  ) => _timingService.getAyahTiming(reciterId, chapterNumber, ayahNumber);
+  ) async {
+    final timings = await getChapterTimings(recitationId, chapterNumber);
+    if (timings.isEmpty) return null;
+
+    return timings.where((t) => t.ayah == ayahNumber).firstOrNull;
+  }
 
   @override
   Future<int?> getCurrentVerse(
-    int reciterId,
+    int recitationId,
     int chapterNumber,
     int currentTimeMs,
-  ) => _timingService.getCurrentVerse(reciterId, chapterNumber, currentTimeMs);
+  ) async {
+    final timings = await getChapterTimings(recitationId, chapterNumber);
+    if (timings.isEmpty) return null;
+
+    AyahTiming? currentAyah;
+    for (final timing in timings) {
+      if (currentTimeMs >= timing.startTime) {
+        currentAyah = timing;
+      } else {
+        break;
+      }
+    }
+
+    if (currentAyah == null) return null;
+
+    return currentAyah.ayah;
+  }
 
   @override
-  bool hasTimingForReciter(int reciterId) =>
-      _timingService.hasTimingForReciter(reciterId);
+  bool hasTimingForRecitation(int recitationId) => true;
 
   @override
-  Future<void> preloadTiming(int reciterId) =>
-      _timingService.preloadTiming(reciterId);
+  Future<void> preloadTiming(int recitationId) async {
+    // Timing is fetched alongside the audio URL in loadChapter,
+    // so explicit preloading isn't strictly necessary for Quran.com,
+    // but we could call _dataSource.fetchChapterTiming if we wanted to
+    // be completely proactive. For now, it's a no-op as the design fetches
+    // it on-demand fast enough given the API response.
+  }
 }

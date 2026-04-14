@@ -16,36 +16,40 @@ abstract class AudioPlaybackSource {
   /// The source this playback provider handles.
   MushafAudioSource get source;
 
-  /// Resolves audio and loads it into the shared player, then optionally seeks
-  /// to [startVerseNumber] before beginning playback if [autoPlay] is true.
+  /// Loads (and optionally begins auto-playing) the specified chapter.
+  ///
+  /// [chapterNumber] 1-114
+  /// [recitationId] The internal ID of the recitation in this specific source backend.
+  /// [autoPlay] Immediately start playback after loading.
+  /// [startVerseNumber] Seek to this verse upon loading.
   Future<void> loadChapter(
     int chapterNumber,
-    int reciterId, {
+    int recitationId, {
     bool autoPlay = false,
     int startVerseNumber = 1,
   });
 
   /// Returns all ayah timings for the given chapter from this source.
-  Future<List<AyahTiming>> getChapterTimings(int reciterId, int chapterNumber);
+  Future<List<AyahTiming>> getChapterTimings(int recitationId, int chapterNumber);
 
   /// Returns the timing for a single ayah, or `null` if unavailable.
   Future<AyahTiming?> getAyahTiming(
-    int reciterId,
+    int recitationId,
     int chapterNumber,
     int ayahNumber,
   );
 
   /// Returns the ayah number currently playing at [currentTimeMs], or `null`.
   Future<int?> getCurrentVerse(
-    int reciterId,
+    int recitationId,
     int chapterNumber,
     int currentTimeMs,
   );
 
-  /// Returns `true` if timing data is available for [reciterId].
-  bool hasTimingForReciter(int reciterId);
+  /// Returns `true` if timing data is available for [recitationId].
+  bool hasTimingForRecitation(int recitationId);
 
-  /// Optionally pre-fetches timing data for [reciterId] to avoid latency
+  /// Optionally pre-fetches timing data for [recitationId] to avoid latency
   /// at playback time.
-  Future<void> preloadTiming(int reciterId);
+  Future<void> preloadTiming(int recitationId);
 }

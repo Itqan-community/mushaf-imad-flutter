@@ -11,8 +11,8 @@ class _FakeFlutterAudioPlayer implements FlutterAudioPlayer {
   @override
   Future<void> loadFromUrl(
     String url, {
-    int chapterNumber = 0,
-    ReciterInfo? reciter,
+    required int chapterNumber,
+    required Recitation recitation,
     bool autoPlay = false,
   }) async {}
 
