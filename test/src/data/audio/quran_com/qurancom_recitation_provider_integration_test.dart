@@ -62,7 +62,9 @@ void main() {
         expect(reciters, isNotEmpty);
 
         // Check for a famous reciter (e.g., Al-Husary)
-        final husary = reciters.any((r) => r.reciter.nameEnglish.contains('Husary'));
+        final husary = reciters.any(
+          (r) => r.reciter.nameEnglish.contains('Husary'),
+        );
         expect(
           husary,
           isTrue,
@@ -77,7 +79,10 @@ void main() {
     );
 
     test('getRecitationById works with real data', () async {
-      logger.info('--- TEST: getRecitationById ---', category: LogCategory.audio);
+      logger.info(
+        '--- TEST: getRecitationById ---',
+        category: LogCategory.audio,
+      );
       final reciters = await provider.getAllRecitations();
       final first = reciters.first;
 
@@ -95,10 +100,16 @@ void main() {
         '--- TEST: searchRecitations (Mishari) ---',
         category: LogCategory.audio,
       );
-      final results = await provider.searchRecitations('Mishari', languageCode: 'en');
+      final results = await provider.searchRecitations(
+        'Mishari',
+        languageCode: 'en',
+      );
 
       expect(results, isNotEmpty);
-      expect(results.any((r) => r.reciter.nameEnglish.contains('Mishari')), isTrue);
+      expect(
+        results.any((r) => r.reciter.nameEnglish.contains('Mishari')),
+        isTrue,
+      );
       logger.info(
         '✅ Found ${results.length} results matching "Mishari".',
         category: LogCategory.audio,

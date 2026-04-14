@@ -34,10 +34,13 @@ class MushafLibrary {
   }) async {
     if (_isInitialized) return;
 
-    _logger = logger?? DefaultMushafLogger();
+    _logger = logger ?? DefaultMushafLogger();
     if (analytics != null) _analytics = analytics;
-    if(databaseService == null || bookmarkDao == null || readingHistoryDao == null || searchHistoryDao == null){
-    await Hive.initFlutter();
+    if (databaseService == null ||
+        bookmarkDao == null ||
+        readingHistoryDao == null ||
+        searchHistoryDao == null) {
+      await Hive.initFlutter();
     }
     final dbService = databaseService ?? HiveDatabaseService();
     await dbService.initialize();

@@ -246,10 +246,14 @@ class RecitationDataProvider {
     return allRecitations.where((recitation) {
       if (languageCode == 'ar') {
         return recitation.reciter.nameArabic.contains(normalizedQuery) ||
-               recitation.riwayah.nameArabic.contains(normalizedQuery);
+            recitation.riwayah.nameArabic.contains(normalizedQuery);
       }
-      return recitation.reciter.nameEnglish.toLowerCase().contains(normalizedQuery) ||
-             (recitation.riwayah.nameEnglish.toLowerCase().contains(normalizedQuery));
+      return recitation.reciter.nameEnglish.toLowerCase().contains(
+            normalizedQuery,
+          ) ||
+          (recitation.riwayah.nameEnglish.toLowerCase().contains(
+            normalizedQuery,
+          ));
     }).toList();
   }
 

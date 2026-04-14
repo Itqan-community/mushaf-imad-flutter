@@ -128,7 +128,8 @@ class AyahTimingService {
     }
 
     // 2. Check if this specific chapter was dynamically fetched and cached
-    if (_dynamicChapterCache[recitationId]?.containsKey(chapterNumber) ?? false) {
+    if (_dynamicChapterCache[recitationId]?.containsKey(chapterNumber) ??
+        false) {
       return _dynamicChapterCache[recitationId]![chapterNumber]!;
     }
 
@@ -155,8 +156,10 @@ class AyahTimingService {
         );
         if (remoteTimings != null) {
           // Cache the dynamic result
-          _dynamicChapterCache.putIfAbsent(recitationId, () => {})[chapterNumber] =
-              remoteTimings;
+          _dynamicChapterCache.putIfAbsent(
+            recitationId,
+            () => {},
+          )[chapterNumber] = remoteTimings;
           return remoteTimings;
         }
       } catch (e) {

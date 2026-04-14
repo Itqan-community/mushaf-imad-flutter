@@ -23,10 +23,14 @@ class RecitationService {
   List<Recitation> searchRecitations(
     String query, {
     String languageCode = 'ar',
-  }) => RecitationDataProvider.searchRecitations(query, languageCode: languageCode);
+  }) => RecitationDataProvider.searchRecitations(
+    query,
+    languageCode: languageCode,
+  );
 
   /// Get default recitation.
-  Recitation getDefaultRecitation() => RecitationDataProvider.getDefaultRecitation();
+  Recitation getDefaultRecitation() =>
+      RecitationDataProvider.getDefaultRecitation();
 
   /// Get selected recitation.
   Recitation? get selectedRecitation => _selectedRecitation;

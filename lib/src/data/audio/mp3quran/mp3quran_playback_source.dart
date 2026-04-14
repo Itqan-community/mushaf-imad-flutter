@@ -52,8 +52,8 @@ class Mp3QuranPlaybackSource implements AudioPlaybackSource {
 
     if (needsLoad) {
       await _audioPlayer.loadChapter(
-        chapterNumber, 
-        recitation, 
+        chapterNumber,
+        recitation,
         autoPlay: false,
         audioUrl: recitation.getAudioUrl(chapterNumber),
       );
@@ -114,11 +114,15 @@ class Mp3QuranPlaybackSource implements AudioPlaybackSource {
     int recitationId,
     int chapterNumber,
     int currentTimeMs,
-  ) => _timingService.getCurrentVerse(recitationId, chapterNumber, currentTimeMs);
+  ) => _timingService.getCurrentVerse(
+    recitationId,
+    chapterNumber,
+    currentTimeMs,
+  );
 
   @override
   bool hasTimingForRecitation(int recitationId) =>
-      _timingService.hasTimingForRecitation(recitationId); 
+      _timingService.hasTimingForRecitation(recitationId);
 
   @override
   Future<void> preloadTiming(int recitationId) =>

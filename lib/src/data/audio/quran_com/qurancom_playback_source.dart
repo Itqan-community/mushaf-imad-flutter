@@ -45,7 +45,9 @@ class QuranComPlaybackSource implements AudioPlaybackSource {
     bool autoPlay = false,
     int startVerseNumber = 1,
   }) async {
-    final recitation = await _recitationProvider.getRecitationById(recitationId);
+    final recitation = await _recitationProvider.getRecitationById(
+      recitationId,
+    );
     if (recitation == null) return;
 
     try {

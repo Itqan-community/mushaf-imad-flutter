@@ -46,7 +46,8 @@ class SettingsViewModel extends ChangeNotifier {
   Future<void> _loadPreferences() async {
     _mushafType = await _preferencesRepository.getMushafTypeStream().first;
     _currentPage = await _preferencesRepository.getCurrentPageStream().first;
-    _selectedRecitationId = await _preferencesRepository.getSelectedRecitationId();
+    _selectedRecitationId = await _preferencesRepository
+        .getSelectedRecitationId();
     _playbackSpeed = await _preferencesRepository.getPlaybackSpeed();
     _repeatMode = await _preferencesRepository.getRepeatMode();
     _themeConfig = await _preferencesRepository.getThemeConfig();

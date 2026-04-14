@@ -82,7 +82,10 @@ abstract class AudioRepository {
   );
 
   /// Get all timing data for a chapter.
-  Future<List<AyahTiming>> getChapterTimings(int recitationId, int chapterNumber);
+  Future<List<AyahTiming>> getChapterTimings(
+    int recitationId,
+    int chapterNumber,
+  );
 
   /// Check if timing data is available for a recitation.
   bool hasTimingForRecitation(int recitationId);

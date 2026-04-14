@@ -28,7 +28,8 @@ class DefaultAudioRepository implements AudioRepository {
   Future<List<Recitation>> searchRecitations(
     String query, {
     String languageCode = 'ar',
-  }) async => _recitationService.searchRecitations(query, languageCode: languageCode);
+  }) async =>
+      _recitationService.searchRecitations(query, languageCode: languageCode);
 
   @override
   Future<Recitation> getDefaultRecitation() async =>
@@ -85,7 +86,11 @@ class DefaultAudioRepository implements AudioRepository {
         _loadedChapter != chapterNumber || _loadedRecitationId != recitationId;
 
     if (needsLoad) {
-      await _audioPlayer.loadChapter(chapterNumber, recitation, autoPlay: false);
+      await _audioPlayer.loadChapter(
+        chapterNumber,
+        recitation,
+        autoPlay: false,
+      );
       _loadedChapter = chapterNumber;
       _loadedRecitationId = recitationId;
       MushafLibrary.logger.debug(
@@ -168,7 +173,8 @@ class DefaultAudioRepository implements AudioRepository {
     int recitationId,
     int chapterNumber,
     int ayahNumber,
-  ) => _ayahTimingService.getAyahTiming(recitationId, chapterNumber, ayahNumber);
+  ) =>
+      _ayahTimingService.getAyahTiming(recitationId, chapterNumber, ayahNumber);
 
   @override
   Future<int?> getCurrentVerse(

@@ -39,8 +39,11 @@ class QuranPlayerViewModel extends ChangeNotifier {
     notifyListeners();
     try {
       _recitations = await _audioRepository.getAllRecitations();
-      final recitationId = await _preferencesRepository.getSelectedRecitationId();
-      _selectedRecitation = await _audioRepository.getRecitationById(recitationId);
+      final recitationId = await _preferencesRepository
+          .getSelectedRecitationId();
+      _selectedRecitation = await _audioRepository.getRecitationById(
+        recitationId,
+      );
       _selectedRecitation ??= await _audioRepository.getDefaultRecitation();
       _playbackSpeed = await _preferencesRepository.getPlaybackSpeed();
 

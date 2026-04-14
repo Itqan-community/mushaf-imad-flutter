@@ -86,7 +86,9 @@ class CompositeAudioRepository implements AudioRepository {
         await provider.searchRecitations(query, languageCode: languageCode),
       );
     }
-    results.sort((a, b) => a.reciter.nameEnglish.compareTo(b.reciter.nameEnglish));
+    results.sort(
+      (a, b) => a.reciter.nameEnglish.compareTo(b.reciter.nameEnglish),
+    );
     return results;
   }
 
@@ -94,7 +96,9 @@ class CompositeAudioRepository implements AudioRepository {
   Future<Recitation> getDefaultRecitation() async {
     final all = await getAllRecitations();
     if (all.isEmpty) {
-      throw StateError('CompositeAudioRepository: no recitations are available.');
+      throw StateError(
+        'CompositeAudioRepository: no recitations are available.',
+      );
     }
     // Already sorted alphabetically -- return the first entry.
     return all.first;
@@ -228,7 +232,9 @@ class CompositeAudioRepository implements AudioRepository {
   @override
   bool hasTimingForRecitation(int recitationId) {
     if (_activeSource != null) {
-      return _playbackSources[_activeSource]?.hasTimingForRecitation(recitationId) ??
+      return _playbackSources[_activeSource]?.hasTimingForRecitation(
+            recitationId,
+          ) ??
           false;
     }
     return _playbackSources.values.any(
@@ -256,7 +262,9 @@ class CompositeAudioRepository implements AudioRepository {
   // Internal helpers
   // ---------------------------------------------------------------------------
 
-  Future<AudioPlaybackSource?> _resolveSourceForRecitation(int recitationId) async {
+  Future<AudioPlaybackSource?> _resolveSourceForRecitation(
+    int recitationId,
+  ) async {
     for (final provider in _recitationProviders) {
       final recitation = await provider.getRecitationById(recitationId);
       if (recitation != null) {

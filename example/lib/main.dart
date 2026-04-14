@@ -26,8 +26,10 @@ void main() async {
     // Initialize with live Quran.com API in one shot
     await MushafLibrary.initialize(
       audioSources: {
-        MushafAudioSource.quranCom, MushafAudioSource.mp3quran,
-        MushafAudioSource.itqan},
+        MushafAudioSource.quranCom,
+        MushafAudioSource.mp3quran,
+        MushafAudioSource.itqan,
+      },
       quranComConfig: QuranComAudioSourceConfig(
         clientId: qfId,
         clientSecret: qfSecret,
@@ -1230,7 +1232,9 @@ class _ReciterDropdown extends StatelessWidget {
           isExpanded: true,
           value: value,
           items: items.map((r) {
-            final name = useArabic ? r.reciter.nameArabic : r.reciter.nameEnglish;
+            final name = useArabic
+                ? r.reciter.nameArabic
+                : r.reciter.nameEnglish;
             return DropdownMenuItem(
               value: r,
               child: Text(

@@ -59,7 +59,10 @@ class QurancomDataSource implements MushafAudioDataSource {
   ///
   /// Returns a [String] object containing the audio URL.
   @override
-  Future<String> fetchChapterAudioUrl(int recitationId, int chapterNumber) async {
+  Future<String> fetchChapterAudioUrl(
+    int recitationId,
+    int chapterNumber,
+  ) async {
     final audioFile = await _apiClient.fetchChapterAudio(
       reciterId: recitationId,
       chapterNumber: chapterNumber,

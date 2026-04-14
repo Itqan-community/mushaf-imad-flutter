@@ -74,13 +74,12 @@ class QuranComRecitationProvider implements AudioRecitationProvider {
     return recitations.where((r) {
       if (languageCode == 'ar') {
         return r.reciter.nameArabic.contains(normalised) ||
-               r.riwayah.nameArabic.contains(normalised);
+            r.riwayah.nameArabic.contains(normalised);
       }
       return r.reciter.nameEnglish.toLowerCase().contains(normalised) ||
-             r.riwayah.nameEnglish.toLowerCase().contains(normalised);
+          r.riwayah.nameEnglish.toLowerCase().contains(normalised);
     }).toList();
   }
-
 
   /// Returns a sensible default recitation.
   ///

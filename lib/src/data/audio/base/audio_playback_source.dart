@@ -30,7 +30,10 @@ abstract class AudioPlaybackSource {
   });
 
   /// Returns all ayah timings for the given chapter from this source.
-  Future<List<AyahTiming>> getChapterTimings(int recitationId, int chapterNumber);
+  Future<List<AyahTiming>> getChapterTimings(
+    int recitationId,
+    int chapterNumber,
+  );
 
   /// Returns the timing for a single ayah, or `null` if unavailable.
   Future<AyahTiming?> getAyahTiming(

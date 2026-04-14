@@ -19,9 +19,11 @@ class ItqanRecitationProvider implements AudioRecitationProvider {
 
   List<Recitation>? _cache;
 
-  ItqanRecitationProvider({required ItqanAudioConfig config, http.Client? client})
-    : _config = config,
-      _client = client;
+  ItqanRecitationProvider({
+    required ItqanAudioConfig config,
+    http.Client? client,
+  }) : _config = config,
+       _client = client;
 
   Future<http.Response> _get(Uri url, {Map<String, String>? headers}) {
     if (_client != null) {
@@ -49,7 +51,7 @@ class ItqanRecitationProvider implements AudioRecitationProvider {
 
         _cache = results.map((json) {
           final id = json['id'] as int;
-          
+
           final reciterObj = json['reciter'] as Map<String, dynamic>?;
           final reciterName = reciterObj?['name'] as String? ?? 'Unknown';
           final reciterId = reciterObj?['id'] as int? ?? id;
@@ -123,10 +125,10 @@ class ItqanRecitationProvider implements AudioRecitationProvider {
     return recitations.where((r) {
       if (languageCode == 'ar') {
         return r.reciter.nameArabic.contains(normalizedQuery) ||
-               r.riwayah.nameArabic.contains(normalizedQuery);
+            r.riwayah.nameArabic.contains(normalizedQuery);
       }
       return r.reciter.nameEnglish.toLowerCase().contains(normalizedQuery) ||
-             r.riwayah.nameEnglish.toLowerCase().contains(normalizedQuery);
+          r.riwayah.nameEnglish.toLowerCase().contains(normalizedQuery);
     }).toList();
   }
 

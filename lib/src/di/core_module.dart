@@ -100,9 +100,9 @@ Future<void> setupMushafDependencies({
   /// Useful in tests where native platform channels are unavailable.
   FlutterAudioPlayer? audioPlayer,
 }) async {
-
   assert(
-    !audioSources.contains(MushafAudioSource.quranCom) || quranComConfig != null,
+    !audioSources.contains(MushafAudioSource.quranCom) ||
+        quranComConfig != null,
     'quranComConfig must be provided when MushafAudioSource.quranCom is enabled',
   );
   assert(
@@ -219,7 +219,9 @@ Future<void> setupMushafDependencies({
 
     mushafGetIt.registerSingleton<QuranComApiClient>(apiClient);
     mushafGetIt.registerSingleton<QurancomDataSource>(dataSource);
-    mushafGetIt.registerSingleton<QuranComRecitationProvider>(recitationProvider);
+    mushafGetIt.registerSingleton<QuranComRecitationProvider>(
+      recitationProvider,
+    );
 
     recitationProviders.add(recitationProvider);
     playbackSources[MushafAudioSource.quranCom] = QuranComPlaybackSource(

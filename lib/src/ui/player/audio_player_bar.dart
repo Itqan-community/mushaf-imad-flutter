@@ -408,14 +408,25 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
                     final isSelected =
                         _viewModel.selectedRecitation?.id ==
                         _viewModel.recitations[index].id;
-                    return ListTile(trailing:Text(_viewModel.recitations[index].audioSource.name) ,
-                      title: Text(_viewModel.recitations[index].getDisplayName(languageCode: 'ar')),
-                      subtitle: Text(_viewModel.recitations[index].riwayah.nameArabic),
+                    return ListTile(
+                      trailing: Text(
+                        _viewModel.recitations[index].audioSource.name,
+                      ),
+                      title: Text(
+                        _viewModel.recitations[index].getDisplayName(
+                          languageCode: 'ar',
+                        ),
+                      ),
+                      subtitle: Text(
+                        _viewModel.recitations[index].riwayah.nameArabic,
+                      ),
                       leading: isSelected
                           ? const Icon(Icons.check, color: Color(0xFF2D7F6E))
                           : null,
                       onTap: () {
-                        _viewModel.selectRecitation(_viewModel.recitations[index]);
+                        _viewModel.selectRecitation(
+                          _viewModel.recitations[index],
+                        );
                         Navigator.pop(context);
                       },
                     );

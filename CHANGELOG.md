@@ -1,4 +1,10 @@
 
+## 1.0.0
+
+* **Major Re-architecture**: Standardized the audio data models by migrating from a `ReciterInfo`-centric hierarchy to a strict, universal `Recitation` entity. This ensures a uniform data contract across all underlying providers (Quran.com, Mp3Quran, and Itqan).
+* **Feature**: Finalized support to query multiple audio recitation sources dynamically, displaying the correct `Riwayah` and `Reciter` information globally across the application.
+* **Refactor**: Cleaned up test mock configurations, removed stale DTO testing variables, and unified repository methods to exclusively use the `Recitation` identifier.
+
 ## 0.2.0
 
 * **Feature**: Implemented customizable context menu for verses with bottom sheet.
