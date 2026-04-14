@@ -55,7 +55,6 @@ class ItqanAudioRepository implements AudioRepository {
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
         final results = data['results'] as List<dynamic>? ?? [];
-
         final reciters = results.map((json) {
           return ReciterInfo(
             id: json['id'] as int,

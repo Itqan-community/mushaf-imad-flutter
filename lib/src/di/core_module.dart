@@ -1,19 +1,24 @@
 import 'package:get_it/get_it.dart';
 
 import '../data/audio/ayah_timing_service.dart';
+import '../data/audio/base/audio_playback_source.dart';
+import '../data/audio/base/audio_reciter_provider.dart';
 import '../data/audio/itqan/itqan_audio_config.dart';
-import '../data/audio/itqan/itqan_audio_repository.dart';
-import '../data/audio/reciter_service.dart';
+import '../data/audio/itqan/itqan_playback_source.dart';
+import '../data/audio/itqan/itqan_reciter_provider.dart';
+import '../data/audio/mp3quran/mp3quran_playback_source.dart';
+import '../data/audio/mp3quran/mp3quran_reciter_provider.dart';
 import '../data/audio/quran_com/qurancom_api_client.dart';
 import '../data/audio/quran_com/qurancom_audio_source_config.dart';
 import '../data/audio/quran_com/qurancom_data_source.dart';
+import '../data/audio/quran_com/qurancom_playback_source.dart';
 import '../data/audio/quran_com/qurancom_reciter_provider.dart';
+import '../data/audio/reciter_service.dart';
 import '../data/cache/chapters_data_cache.dart';
 import '../data/cache/quran_data_cache_service.dart';
 import '../data/audio/flutter_audio_player.dart';
+import '../data/repository/composite_audio_repository.dart';
 import '../data/repository/database_service.dart';
-import '../data/repository/default_audio_repository.dart';
-import '../data/repository/qurancom_audio_repository.dart';
 import 'package:audio_service/audio_service.dart';
 import '../data/repository/default_bookmark_repository.dart';
 import '../data/repository/default_chapter_repository.dart';
@@ -52,19 +57,29 @@ final GetIt mushafGetIt = GetIt.instance;
 /// [bookmarkDao], [readingHistoryDao], [searchHistoryDao] must be
 /// provided for the full feature set, or the library will use stubs.
 ///
-/// Pass [audioSource] to select the audio backend:
-/// - [MushafAudioSource.local] (default): bundled MP3 assets.
-/// - [MushafAudioSource.quranCom]: streams from Quran.Foundation API;
-///   requires [quranComConfig] to be supplied.
+/// Pass [audioSources] to select one or more audio backends. Reciters and
+/// recitations from every enabled source are merged into a single unified
+/// list. Each selected source requires its own config object:
+/// - [MushafAudioSource.mp3quran] (default) -- no extra config needed.
+/// - [MushafAudioSource.quranCom] -- requires [quranComConfig].
+/// - [MushafAudioSource.itqan]    -- requires [itqanAudioConfig].
 ///
-/// Example – Quran.com source:
+/// Example -- single source (default):
 /// ```dart
 /// await setupMushafDependencies(
 ///   databaseService: HiveDatabaseService(),
 ///   bookmarkDao: HiveBookmarkDao(),
 ///   readingHistoryDao: HiveReadingHistoryDao(),
 ///   searchHistoryDao: HiveSearchHistoryDao(),
-///   audioSource: MushafAudioSource.quranCom,
+///   audioSources: {MushafAudioSource.mp3quran},
+/// );
+/// ```
+///
+/// Example -- multiple sources:
+/// ```dart
+/// await setupMushafDependencies(
+///   ...
+///   audioSources: {MushafAudioSource.mp3quran, MushafAudioSource.quranCom},
 ///   quranComConfig: QuranComAudioSourceConfig(
 ///     clientId: const String.fromEnvironment('QF_ID'),
 ///     clientSecret: const String.fromEnvironment('QF_SECRET'),
@@ -77,7 +92,7 @@ Future<void> setupMushafDependencies({
   required ReadingHistoryDao readingHistoryDao,
   required SearchHistoryDao searchHistoryDao,
   required MushafLogger logger,
-  MushafAudioSource audioSource = MushafAudioSource.local,
+  Set<MushafAudioSource> audioSources = const {MushafAudioSource.mp3quran},
   QuranComAudioSourceConfig? quranComConfig,
   ItqanAudioConfig? itqanAudioConfig,
 
@@ -87,8 +102,12 @@ Future<void> setupMushafDependencies({
 }) async {
 
   assert(
-    audioSource != MushafAudioSource.quranCom || quranComConfig != null,
-    'quranComConfig must be provided when audioSource is MushafAudioSource.quranCom',
+    !audioSources.contains(MushafAudioSource.quranCom) || quranComConfig != null,
+    'quranComConfig must be provided when MushafAudioSource.quranCom is enabled',
+  );
+  assert(
+    !audioSources.contains(MushafAudioSource.itqan) || itqanAudioConfig != null,
+    'itqanAudioConfig must be provided when MushafAudioSource.itqan is enabled',
   );
 
   // Logger
@@ -169,47 +188,68 @@ Future<void> setupMushafDependencies({
         ),
       );
 
-  // Wire AudioRepository based on the selected source
-  if (audioSource == MushafAudioSource.quranCom) {
+  // Build AudioReciterProvider and AudioPlaybackSource lists based on the
+  // enabled sources, then wire a single CompositeAudioRepository.
+  final reciterProviders = <AudioReciterProvider>[];
+  final playbackSources = <MushafAudioSource, AudioPlaybackSource>{};
+
+  if (audioSources.contains(MushafAudioSource.mp3quran)) {
+    final timingService = mushafGetIt<AyahTimingService>();
+    reciterProviders.add(const Mp3QuranReciterProvider());
+    playbackSources[MushafAudioSource.mp3quran] = Mp3QuranPlaybackSource(
+      timingService: timingService,
+      audioPlayer: resolvedPlayer,
+    );
+  }
+
+  if (audioSources.contains(MushafAudioSource.quranCom)) {
     final apiClient = QuranComApiClient(config: quranComConfig!.toApiConfig());
     final dataSource = QurancomDataSource(apiClient: apiClient);
     final resolvedLogger = mushafGetIt<MushafLogger>();
 
+    // Re-wire AyahTimingService with the Quran.com data source as fallback.
+    mushafGetIt.unregister<AyahTimingService>();
+    final timingService = AyahTimingService(dataSource: dataSource);
+    mushafGetIt.registerSingleton<AyahTimingService>(timingService);
+
+    final reciterProvider = QuranComReciterProvider(
+      dataSource: dataSource,
+      logger: resolvedLogger,
+    );
+
     mushafGetIt.registerSingleton<QuranComApiClient>(apiClient);
     mushafGetIt.registerSingleton<QurancomDataSource>(dataSource);
-    mushafGetIt.registerSingleton<QuranComReciterProvider>(
-      QuranComReciterProvider(dataSource: dataSource, logger: resolvedLogger),
-    );
+    mushafGetIt.registerSingleton<QuranComReciterProvider>(reciterProvider);
 
-    // AyahTimingService is already registered above; re-use the same instance
-    // but supply the Quran.com dataSource so the API fallback is wired up.
-    mushafGetIt.unregister<AyahTimingService>();
-    mushafGetIt.registerSingleton<AyahTimingService>(
-      AyahTimingService(dataSource: dataSource),
-    );
-
-    mushafGetIt.registerSingleton<AudioRepository>(
-      QuranComAudioRepository(
-        reciterProvider: mushafGetIt<QuranComReciterProvider>(),
-        timingService: mushafGetIt<AyahTimingService>(),
-        dataSource: dataSource,
-        audioPlayer: resolvedPlayer,
-        logger: resolvedLogger,
-      ),
-    );
-  } else if (itqanAudioConfig != null) {
-    mushafGetIt.registerSingleton<AudioRepository>(
-      ItqanAudioRepository(itqanAudioConfig, resolvedPlayer),
-    );
-  } else {
-    mushafGetIt.registerSingleton<AudioRepository>(
-      DefaultAudioRepository(
-        mushafGetIt<ReciterService>(),
-        mushafGetIt<AyahTimingService>(),
-        resolvedPlayer,
-      ),
+    reciterProviders.add(reciterProvider);
+    playbackSources[MushafAudioSource.quranCom] = QuranComPlaybackSource(
+      reciterProvider: reciterProvider,
+      timingService: timingService,
+      dataSource: dataSource,
+      audioPlayer: resolvedPlayer,
+      logger: resolvedLogger,
     );
   }
+
+  if (audioSources.contains(MushafAudioSource.itqan)) {
+    final config = itqanAudioConfig!;
+    final reciterProvider = ItqanReciterProvider(config: config);
+    final playbackSource = ItqanPlaybackSource(
+      config: config,
+      reciterProvider: reciterProvider,
+      audioPlayer: resolvedPlayer,
+    );
+    reciterProviders.add(reciterProvider);
+    playbackSources[MushafAudioSource.itqan] = playbackSource;
+  }
+
+  mushafGetIt.registerSingleton<AudioRepository>(
+    CompositeAudioRepository(
+      reciterProviders: reciterProviders,
+      playbackSources: playbackSources,
+      audioPlayer: resolvedPlayer,
+    ),
+  );
 
   mushafGetIt.registerSingleton<DataExportRepository>(
     DefaultDataExportRepository(

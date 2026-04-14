@@ -1,3 +1,5 @@
+import 'audio_source.dart';
+
 /// Information about a Quran reciter.
 /// Public API - exposed to library consumers.
 class ReciterInfo {
@@ -7,12 +9,19 @@ class ReciterInfo {
   final String rewaya; // Recitation style (e.g., "حفص عن عاصم")
   final String folderUrl; // Base URL for audio files
 
+  /// The audio backend that provides this reciter's data and audio files.
+  ///
+  /// Used by the composite repository to route playback requests to the
+  /// correct [AudioPlaybackSource] implementation.
+  final MushafAudioSource audioSource;
+
   const ReciterInfo({
     required this.id,
     required this.nameArabic,
     required this.nameEnglish,
     required this.rewaya,
     required this.folderUrl,
+    this.audioSource = MushafAudioSource.mp3quran,
   });
 
   /// Get reciter display name based on language.

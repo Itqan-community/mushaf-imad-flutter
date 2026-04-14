@@ -28,7 +28,7 @@ class MushafLibrary {
     MushafLogger? logger,
     MushafAnalytics? analytics,
     ItqanAudioConfig? itqanAudioConfig,
-    MushafAudioSource audioSource = MushafAudioSource.local,
+    Set<MushafAudioSource> audioSources = const {MushafAudioSource.mp3quran},
     QuranComAudioSourceConfig? quranComConfig,
     FlutterAudioPlayer? audioPlayer,
   }) async {
@@ -49,7 +49,7 @@ class MushafLibrary {
       searchHistoryDao: searchHistoryDao ?? HiveSearchHistoryDao(),
       logger: _logger,
       itqanAudioConfig: itqanAudioConfig,
-      audioSource: audioSource,
+      audioSources: audioSources,
       quranComConfig: quranComConfig,
       audioPlayer: audioPlayer,
     );

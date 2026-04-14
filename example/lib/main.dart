@@ -25,12 +25,15 @@ void main() async {
   if (useQuranCom) {
     // Initialize with live Quran.com API in one shot
     await MushafLibrary.initialize(
-      audioSource: MushafAudioSource.quranCom,
+      audioSources: {
+        // MushafAudioSource.quranCom, MushafAudioSource.mp3quran,
+        MushafAudioSource.itqan},
       quranComConfig: QuranComAudioSourceConfig(
         clientId: qfId,
         clientSecret: qfSecret,
         environment: environment,
       ),
+      itqanAudioConfig: ItqanAudioConfig(),
     );
   } else {
     // Default: local assets

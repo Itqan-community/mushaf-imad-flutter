@@ -1,40 +1,35 @@
-# CMS Audio Integration
+# Itqan Audio Integration
 
 The `imad_flutter` library allows you to stream recitation audio and precise word/ayah timestamp data directly from the [Itqan CMS](https://cms.itqan.dev/) API.
 
-Using the CMS integration removes the need to bundle gigabytes of audio files and JSON timings directly into your application payload, allowing for a much smaller app size and dynamic updates.
+Using the Itqan integration removes the need to bundle gigabytes of audio files and JSON timings directly into your application payload, allowing for a much smaller app size and dynamic updates.
+
+For a full overview of all available audio sources and multi-source support see
+[audio_sources.md](audio_sources.md).
 
 ## Step-by-Step Integration Guide
 
-Follow these steps to integrate the Itqan CMS audio backend into your Flutter application.
-
-### Step 1: Define the CMS Audio Configuration
-
-You need to create a `ItqanAudioConfig` object that points to the ITQAN CMS API. You can specify a default reciter (e.g., `1` for Mishari Al-afasi).
+### Step 1: Define the Itqan Audio Configuration
 
 ```dart
 import 'package:imad_flutter/imad_flutter.dart';
 
-// Create configuration pointing to the CMS API endpoint.
 const itqanConfig = ItqanAudioConfig(
   baseUrl: 'https://api.cms.itqan.dev',
-  defaultReciterId: 1, 
+  defaultReciterId: 1,
 );
 ```
 
-### Step 2: Initialize Hive with the CMS Config
-
-The library uses Hive for local caching (bookmarks, search history). When setting up Hive, pass in your `itqanConfig`.
+### Step 2: Initialize with the Itqan Source
 
 ```dart
-// Passing this config ensures Hive and Core dependencies use the CMS Audio Repository
-await MushafLibrary.initialize(itqanAudioConfig: itqanConfig);
+await MushafLibrary.initialize(
+  audioSources: {MushafAudioSource.itqan},
+  itqanAudioConfig: itqanConfig,
+);
 ```
 
-
 ### Full Example (`main.dart`)
-
-Here is a complete, working example of how a new user should set up `main.dart`:
 
 ```dart
 import 'package:flutter/material.dart';
@@ -42,17 +37,17 @@ import 'package:imad_flutter/imad_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // 1. Define CMS configuration
+
   const itqanConfig = ItqanAudioConfig(
     baseUrl: 'https://api.cms.itqan.dev',
-    defaultReciterId: 1, // Optional: The default reciter ID
+    defaultReciterId: 1,
   );
-  
-  // 2. Initialize the core Mushaf Library
-  await MushafLibrary.initialize(itqanAudioConfig: itqanConfig);
-  
-  // 3. Run the App
+
+  await MushafLibrary.initialize(
+    audioSources: {MushafAudioSource.itqan},
+    itqanAudioConfig: itqanConfig,
+  );
+
   runApp(const MyApp());
 }
 
@@ -62,8 +57,6 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      // The default Mushaf implementation will automatically hook into 
-      // the CMS audio stream when the user hits 'Play'.
       home: Scaffold(
         body: MushafPageView(),
       ),
@@ -71,6 +64,7 @@ class MyApp extends StatelessWidget {
   }
 }
 ```
+
 
 ## How It Works Under The Hood
 

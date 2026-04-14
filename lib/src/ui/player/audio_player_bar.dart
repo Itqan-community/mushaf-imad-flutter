@@ -408,7 +408,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
                     final isSelected =
                         _viewModel.selectedReciter?.id ==
                         _viewModel.reciters[index].id;
-                    return ListTile(
+                    return ListTile(leading:Text(_viewModel.reciters[index].audioSource.name) ,
                       title: Text(_viewModel.reciters[index].getDisplayName()),
                       subtitle: Text(_viewModel.reciters[index].rewaya),
                       trailing: isSelected
