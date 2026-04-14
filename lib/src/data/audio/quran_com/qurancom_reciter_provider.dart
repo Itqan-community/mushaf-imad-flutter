@@ -46,7 +46,6 @@ class QuranComReciterProvider implements AudioReciterProvider {
               id: r.id,
               nameArabic: r.nameArabic,
               nameEnglish: r.nameEnglish,
-              rewaya: r.rewaya,
               folderUrl: r.folderUrl,
               audioSource: MushafAudioSource.quranCom,
             ),
@@ -92,12 +91,6 @@ class QuranComReciterProvider implements AudioReciterProvider {
     }).toList();
   }
 
-  /// Returns all reciters that use the Hafs recitation style.
-  @override
-  Future<List<ReciterInfo>> getHafsReciters() async {
-    final reciters = await getAllReciters();
-    return reciters.where((r) => r.isHafs).toList();
-  }
 
   /// Returns a sensible default reciter.
   ///
@@ -113,9 +106,7 @@ class QuranComReciterProvider implements AudioReciterProvider {
         'QuranComReciterProvider: No reciters available from Quran.com API.',
       );
     }
-
-    final hafsReciters = reciters.where((r) => r.isHafs).toList();
-    return hafsReciters.isNotEmpty ? hafsReciters.first : reciters.first;
+return reciters.first;
   }
 
   /// Clears the in-memory reciter cache, forcing a fresh fetch on the next call.

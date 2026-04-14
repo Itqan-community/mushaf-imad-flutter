@@ -31,8 +31,6 @@ abstract class AudioReciterProvider {
     String languageCode = 'en',
   });
 
-  /// Returns all reciters that use the Hafs recitation style.
-  Future<List<ReciterInfo>> getHafsReciters();
 
   /// Returns a sensible default reciter for this source.
   Future<ReciterInfo> getDefaultReciter();

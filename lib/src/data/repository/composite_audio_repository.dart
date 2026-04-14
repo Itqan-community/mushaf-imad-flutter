@@ -91,15 +91,7 @@ class CompositeAudioRepository implements AudioRepository {
     return results;
   }
 
-  @override
-  Future<List<ReciterInfo>> getHafsReciters() async {
-    final results = <ReciterInfo>[];
-    for (final provider in _reciterProviders) {
-      results.addAll(await provider.getHafsReciters());
-    }
-    results.sort((a, b) => a.nameEnglish.compareTo(b.nameEnglish));
-    return results;
-  }
+
 
   @override
   Future<ReciterInfo> getDefaultReciter() async {

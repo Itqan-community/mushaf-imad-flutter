@@ -26,7 +26,6 @@ ReciterInfo _makeReciter({
   id: id,
   nameEnglish: nameEn,
   nameArabic: nameAr,
-  rewaya: rewaya,
   folderUrl: '',
 );
 
@@ -190,12 +189,6 @@ void main() {
         ).thenAnswer((_) async => _sampleReciters);
       });
 
-      test('returns only Hafs reciters', () async {
-        final result = await provider.getHafsReciters();
-
-        expect(result.length, 2);
-        expect(result.every((r) => r.isHafs), isTrue);
-      });
     });
 
     // -----------------------------------------------------------------------

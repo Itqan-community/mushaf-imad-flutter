@@ -92,7 +92,7 @@ void main() {
 
         // Act: Get a valid reciter
         final reciters = await provider.getAllReciters();
-        final reciter = reciters.firstWhere((r) => r.isHafs);
+        final reciter = reciters.first;
         logger.info(
           'Using reciter: ${reciter.nameEnglish} (ID: ${reciter.id})',
           category: LogCategory.audio,
@@ -136,7 +136,7 @@ void main() {
       );
 
       final reciters = await provider.getAllReciters();
-      final reciter = reciters.firstWhere((r) => r.isHafs);
+      final reciter = reciters.first;
 
       logger.info(
         'Fetching timings for ${reciter.nameEnglish}, Chapter 1...',

@@ -44,7 +44,6 @@ void main() {
         expect(result1.first.id, 1);
         expect(result1.first.nameEnglish, 'Reciter 1');
         expect(result1.first.nameArabic, 'test');
-        expect(result1.first.rewaya, 'Murattal');
         expect(result1.first.folderUrl, '');
 
         // Second call - should be cached

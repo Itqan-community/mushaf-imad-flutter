@@ -51,7 +51,6 @@ class ItqanReciterProvider implements AudioReciterProvider {
             id: json['id'] as int,
             nameArabic: name,
             nameEnglish: name,
-            rewaya: 'Various',
             folderUrl: '',
             audioSource: MushafAudioSource.itqan,
           );
@@ -70,7 +69,6 @@ class ItqanReciterProvider implements AudioReciterProvider {
         id: _config.defaultReciterId,
         nameArabic: 'مقرئ إتقان',
         nameEnglish: 'Itqan Reciter',
-        rewaya: 'Hafs',
         folderUrl: '',
         audioSource: MushafAudioSource.itqan,
       ),
@@ -101,11 +99,7 @@ class ItqanReciterProvider implements AudioReciterProvider {
     }).toList();
   }
 
-  @override
-  Future<List<ReciterInfo>> getHafsReciters() async {
-    final reciters = await getAllReciters();
-    return reciters.where((r) => r.isHafs).toList();
-  }
+
 
   @override
   Future<ReciterInfo> getDefaultReciter() async {
@@ -115,7 +109,6 @@ class ItqanReciterProvider implements AudioReciterProvider {
       id: _config.defaultReciterId,
       nameArabic: 'مقرئ إتقان',
       nameEnglish: 'Itqan Reciter',
-      rewaya: 'Hafs',
       folderUrl: '',
       audioSource: MushafAudioSource.itqan,
     );

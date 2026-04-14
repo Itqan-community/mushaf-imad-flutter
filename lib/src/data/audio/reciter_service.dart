@@ -26,7 +26,6 @@ class ReciterService {
   }) => ReciterDataProvider.searchReciters(query, languageCode: languageCode);
 
   /// Get all Hafs reciters.
-  List<ReciterInfo> getHafsReciters() => ReciterDataProvider.getHafsReciters();
 
   /// Get default reciter.
   ReciterInfo getDefaultReciter() => ReciterDataProvider.getDefaultReciter();

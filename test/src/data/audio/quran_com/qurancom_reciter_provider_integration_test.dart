@@ -105,18 +105,6 @@ void main() {
       );
     });
 
-    test('getHafsReciters works with real data', () async {
-      logger.info('--- TEST: getHafsReciters ---', category: LogCategory.audio);
-      final reciters = await provider.getHafsReciters();
-
-      expect(reciters, isNotEmpty);
-      expect(reciters.every((r) => r.isHafs), isTrue);
-      logger.info(
-        '✅ Found ${reciters.length} Hafs reciters.',
-        category: LogCategory.audio,
-      );
-    });
-
     test('getDefaultReciter returns a real reciter', () async {
       logger.info(
         '--- TEST: getDefaultReciter ---',
@@ -124,7 +112,6 @@ void main() {
       );
       final reciter = await provider.getDefaultReciter();
       expect(reciter, isNotNull);
-      expect(reciter.isHafs, isTrue);
       logger.info(
         '✅ Default reciter is: ${reciter.nameEnglish}',
         category: LogCategory.audio,

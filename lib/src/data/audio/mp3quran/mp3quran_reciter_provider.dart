@@ -28,9 +28,6 @@ class Mp3QuranReciterProvider implements AudioReciterProvider {
   }) async =>
       ReciterDataProvider.searchReciters(query, languageCode: languageCode);
 
-  @override
-  Future<List<ReciterInfo>> getHafsReciters() async =>
-      ReciterDataProvider.getHafsReciters();
 
   @override
   Future<ReciterInfo> getDefaultReciter() async =>

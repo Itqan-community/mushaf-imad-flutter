@@ -327,7 +327,7 @@ class RecitersPage extends StatelessWidget {
               child: Text('${r.id}'),
             ),
             title: Text(r.nameArabic, textDirection: TextDirection.rtl),
-            subtitle: Text('${r.nameEnglish} · ${r.rewaya}'),
+            subtitle: Text(r.nameEnglish),
           );
         },
       ),
@@ -1234,7 +1234,7 @@ class _ReciterDropdown extends StatelessWidget {
             return DropdownMenuItem(
               value: r,
               child: Text(
-                '$name (${r.rewaya})',
+                '$name)',
                 textDirection: useArabic
                     ? TextDirection.rtl
                     : TextDirection.ltr,

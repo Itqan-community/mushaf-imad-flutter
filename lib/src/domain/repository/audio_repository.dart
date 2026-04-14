@@ -17,9 +17,6 @@ abstract class AudioRepository {
     String languageCode = 'en',
   });
 
-  /// Get all Hafs reciters.
-  Future<List<ReciterInfo>> getHafsReciters();
-
   /// Get default reciter.
   Future<ReciterInfo> getDefaultReciter();
 

@@ -54,9 +54,6 @@ class QuranComAudioRepository implements AudioRepository {
     String languageCode = 'en',
   }) => _reciterProvider.searchReciters(query, languageCode: languageCode);
 
-  @override
-  Future<List<ReciterInfo>> getHafsReciters() =>
-      _reciterProvider.getHafsReciters();
 
   @override
   Future<ReciterInfo> getDefaultReciter() =>

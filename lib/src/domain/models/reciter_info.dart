@@ -6,7 +6,6 @@ class ReciterInfo {
   final int id;
   final String nameArabic;
   final String nameEnglish;
-  final String rewaya; // Recitation style (e.g., "حفص عن عاصم")
   final String folderUrl; // Base URL for audio files
 
   /// The audio backend that provides this reciter's data and audio files.
@@ -19,7 +18,6 @@ class ReciterInfo {
     required this.id,
     required this.nameArabic,
     required this.nameEnglish,
-    required this.rewaya,
     required this.folderUrl,
     this.audioSource = MushafAudioSource.mp3quran,
   });
@@ -35,13 +33,4 @@ class ReciterInfo {
     return '$folderUrl$paddedChapter.mp3';
   }
 
-  /// Check if this reciter uses Hafs recitation.
-  bool get isHafs =>
-      rewaya.toLowerCase().contains('حفص') ||
-      rewaya.toLowerCase().contains('hafs');
-
-  /// Check if this reciter uses Warsh recitation.
-  bool get isWarsh =>
-      rewaya.toLowerCase().contains('ورش') ||
-      rewaya.toLowerCase().contains('warsh');
 }

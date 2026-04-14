@@ -59,14 +59,13 @@ void main() {
         expect(first.id, isPositive);
         expect(first.nameArabic, isNotEmpty);
         expect(first.nameEnglish, isNotEmpty);
-        expect(first.rewaya, isNotEmpty);
 
         logger.info(
           '✅ Successfully fetched ${reciters.length} reciters.',
           category: LogCategory.audio,
         );
         logger.info(
-          '✅ Mapped Example: English="${first.nameEnglish}", Arabic="${first.nameArabic}", Style="${first.rewaya}"',
+          '✅ Mapped Example: English="${first.nameEnglish}", Arabic="${first.nameArabic}"',
           category: LogCategory.audio,
         );
       },

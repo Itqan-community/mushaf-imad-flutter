@@ -30,9 +30,6 @@ class DefaultAudioRepository implements AudioRepository {
     String languageCode = 'en',
   }) async => _reciterService.searchReciters(query, languageCode: languageCode);
 
-  @override
-  Future<List<ReciterInfo>> getHafsReciters() async =>
-      _reciterService.getHafsReciters();
 
   @override
   Future<ReciterInfo> getDefaultReciter() async =>

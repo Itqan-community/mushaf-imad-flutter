@@ -34,7 +34,6 @@ class QurancomDataSource implements MushafAudioDataSource {
         nameEnglish: dto.reciterName,
         nameArabic:
             dto.translatedName?.name ?? dto.reciterName, // From 'ar' request
-        rewaya: dto.style ?? 'Hafs',
         folderUrl: '', // API source builds URLs dynamically
       );
     }).toList();

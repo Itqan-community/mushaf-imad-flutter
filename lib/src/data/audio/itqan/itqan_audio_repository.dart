@@ -60,7 +60,6 @@ class ItqanAudioRepository implements AudioRepository {
             id: json['id'] as int,
             nameArabic: json['name'] as String? ?? 'غير معروف',
             nameEnglish: json['name'] as String? ?? 'Unknown',
-            rewaya: 'Various', // Riwayah info now lives in asset, use generic
             folderUrl: '', // URL is fetched per recitation in CMS
           );
         }).toList();
@@ -80,7 +79,6 @@ class ItqanAudioRepository implements AudioRepository {
         id: _config.defaultReciterId,
         nameArabic: 'مقرئ CMS',
         nameEnglish: 'CMS Reciter',
-        rewaya: 'Hafs',
         folderUrl: '',
       ),
     ];
@@ -112,11 +110,6 @@ class ItqanAudioRepository implements AudioRepository {
     }).toList();
   }
 
-  @override
-  Future<List<ReciterInfo>> getHafsReciters() async {
-    final reciters = await getAllReciters();
-    return reciters.where((r) => r.isHafs).toList();
-  }
 
   @override
   Future<ReciterInfo> getDefaultReciter() async {
@@ -127,7 +120,6 @@ class ItqanAudioRepository implements AudioRepository {
       id: _config.defaultReciterId,
       nameArabic: 'مقرئ الافتراضي',
       nameEnglish: 'Default Reciter',
-      rewaya: 'Hafs',
       folderUrl: '',
     );
   }

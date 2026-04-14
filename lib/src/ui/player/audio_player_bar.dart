@@ -410,7 +410,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
                         _viewModel.reciters[index].id;
                     return ListTile(leading:Text(_viewModel.reciters[index].audioSource.name) ,
                       title: Text(_viewModel.reciters[index].getDisplayName()),
-                      subtitle: Text(_viewModel.reciters[index].rewaya),
+                      subtitle: Text("Riwayah PLACEHOLDER"),
                       trailing: isSelected
                           ? const Icon(Icons.check, color: Color(0xFF2D7F6E))
                           : null,
