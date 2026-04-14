@@ -14,6 +14,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install native SQLite (required by sqflite_common_ffi)
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -22,5 +25,8 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Verify Formatting
+        run: dart format --output=none --set-exit-if-changed .
+
       - name: Run tests
-        run: flutter test
+        run: flutter test --dart-define=QF_ID=${{ secrets.QF_ID }} --dart-define=QF_SECRET=${{ secrets.QF_SECRET }} --dart-define=QF_ENV=prelive

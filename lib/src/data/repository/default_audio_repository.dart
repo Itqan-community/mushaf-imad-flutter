@@ -1,62 +1,55 @@
 import 'dart:async';
 
-import '../../domain/models/audio_player_state.dart';
-import '../../domain/models/reciter_info.dart';
-import '../../domain/models/reciter_timing.dart';
-import '../../domain/repository/audio_repository.dart';
 import '../audio/ayah_timing_service.dart';
-import '../audio/flutter_audio_player.dart';
-import '../audio/reciter_service.dart';
+import '../audio/recitation_service.dart';
+import 'package:imad_flutter/imad_flutter.dart';
 
 /// Default implementation of AudioRepository.
 class DefaultAudioRepository implements AudioRepository {
-  final ReciterService _reciterService;
+  final RecitationService _recitationService;
   final AyahTimingService _ayahTimingService;
   final FlutterAudioPlayer _audioPlayer;
 
   DefaultAudioRepository(
-    this._reciterService,
+    this._recitationService,
     this._ayahTimingService,
     this._audioPlayer,
   );
 
   @override
-  Future<List<ReciterInfo>> getAllReciters() async =>
-      _reciterService.getAllReciters();
+  Future<List<Recitation>> getAllRecitations() async =>
+      _recitationService.getAllRecitations();
 
   @override
-  Future<ReciterInfo?> getReciterById(int reciterId) async =>
-      _reciterService.getReciterById(reciterId);
+  Future<Recitation?> getRecitationById(int recitationId) async =>
+      _recitationService.getRecitationById(recitationId);
 
   @override
-  Future<List<ReciterInfo>> searchReciters(
+  Future<List<Recitation>> searchRecitations(
     String query, {
-    String languageCode = 'en',
-  }) async => _reciterService.searchReciters(query, languageCode: languageCode);
+    String languageCode = 'ar',
+  }) async =>
+      _recitationService.searchRecitations(query, languageCode: languageCode);
 
   @override
-  Future<List<ReciterInfo>> getHafsReciters() async =>
-      _reciterService.getHafsReciters();
+  Future<Recitation> getDefaultRecitation() async =>
+      _recitationService.getDefaultRecitation();
 
   @override
-  Future<ReciterInfo> getDefaultReciter() async =>
-      _reciterService.getDefaultReciter();
+  void saveSelectedRecitation(Recitation recitation) =>
+      _recitationService.selectRecitation(recitation);
 
   @override
-  void saveSelectedReciter(ReciterInfo reciter) =>
-      _reciterService.selectReciter(reciter);
-
-  @override
-  Stream<ReciterInfo?> getSelectedReciterStream() =>
-      _reciterService.selectedReciterStream;
+  Stream<Recitation?> getSelectedRecitationStream() =>
+      _recitationService.selectedRecitationStream;
 
   @override
   Stream<AudioPlayerState> getPlayerStateStream() async* {
     await for (final state in _audioPlayer.domainStateStream) {
       int? verse;
-      if (state.currentReciterId != null && state.currentChapter != null) {
+      if (state.currentRecitationId != null && state.currentChapter != null) {
         verse = await _ayahTimingService.getCurrentVerse(
-          state.currentReciterId!,
+          state.currentRecitationId!,
           state.currentChapter!,
           state.currentPositionMs,
         );
@@ -65,18 +58,81 @@ class DefaultAudioRepository implements AudioRepository {
     }
   }
 
+  // Tracks what is currently loaded to avoid race conditions from double loads
+  int? _loadedChapter;
+  int? _loadedRecitationId;
+
   @override
-  void loadChapter(
+  Future<void> loadChapter(
     int chapterNumber,
-    int reciterId, {
+    int recitationId, {
     bool autoPlay = false,
+    int startVerseNumber = 1,
   }) async {
-    final reciter = await _reciterService.getReciterById(reciterId);
-    if (reciter != null) {
+    MushafLibrary.logger.debug(
+      '[DefaultAudioRepository] loadChapter → chapter=$chapterNumber, recitation=$recitationId, startVerse=$startVerseNumber, autoPlay=$autoPlay',
+    );
+
+    final recitation = _recitationService.getRecitationById(recitationId);
+    if (recitation == null) {
+      MushafLibrary.logger.debug(
+        '[DefaultAudioRepository] loadChapter → recitation NOT FOUND for id=$recitationId',
+      );
+      return;
+    }
+
+    // Only reload audio if chapter or recitation changed.
+    final needsLoad =
+        _loadedChapter != chapterNumber || _loadedRecitationId != recitationId;
+
+    if (needsLoad) {
       await _audioPlayer.loadChapter(
         chapterNumber,
-        reciter,
-        autoPlay: autoPlay,
+        recitation,
+        autoPlay: false,
+      );
+      _loadedChapter = chapterNumber;
+      _loadedRecitationId = recitationId;
+      MushafLibrary.logger.debug(
+        '[DefaultAudioRepository] loadChapter → audio loaded for chapter=$chapterNumber',
+      );
+    } else {
+      MushafLibrary.logger.debug(
+        '[DefaultAudioRepository] loadChapter → chapter already loaded, skipping reload',
+      );
+    }
+
+    // Always seek — even for verse 1 (seek to zero) so position is deterministic
+    if (startVerseNumber > 1) {
+      final timing = await _ayahTimingService.getAyahTiming(
+        recitationId,
+        chapterNumber,
+        startVerseNumber,
+      );
+
+      if (timing != null) {
+        MushafLibrary.logger.debug(
+          '[DefaultAudioRepository] loadChapter → seeking to verse=$startVerseNumber at ${timing.startTime}ms',
+        );
+        await _audioPlayer.seek(Duration(milliseconds: timing.startTime));
+      } else {
+        MushafLibrary.logger.debug(
+          '[DefaultAudioRepository] loadChapter → ⚠️ NO timing found for verse=$startVerseNumber — seeking to start',
+        );
+        await _audioPlayer.seek(Duration.zero);
+      }
+    } else {
+      MushafLibrary.logger.debug(
+        '[DefaultAudioRepository] loadChapter → startVerse=1, seeking to beginning',
+      );
+      await _audioPlayer.seek(Duration.zero);
+    }
+
+    // Start playback if required
+    if (autoPlay) {
+      await _audioPlayer.play();
+      MushafLibrary.logger.debug(
+        '[DefaultAudioRepository] loadChapter → playback started',
       );
     }
   }
@@ -103,11 +159,6 @@ class DefaultAudioRepository implements AudioRepository {
   @override
   bool isRepeatEnabled() => _audioPlayer.isRepeatMode();
 
-  // These synchronous getters might need an async await if audio_service is isolated,
-  // but just_audio within BaseAudioHandler holds synchronous state if in same isolate.
-  // For now, these are not strictly available synchronously from base handler, so we can stub
-  // or return default if we don't store them locally anymore. We'll return 0 for now since
-  // UI mostly relies on the Stream<AudioPlayerState>.
   @override
   int getCurrentPosition() => 0;
 
@@ -119,39 +170,40 @@ class DefaultAudioRepository implements AudioRepository {
 
   @override
   Future<AyahTiming?> getAyahTiming(
-    int reciterId,
+    int recitationId,
     int chapterNumber,
     int ayahNumber,
-  ) => _ayahTimingService.getAyahTiming(reciterId, chapterNumber, ayahNumber);
+  ) =>
+      _ayahTimingService.getAyahTiming(recitationId, chapterNumber, ayahNumber);
 
   @override
   Future<int?> getCurrentVerse(
-    int reciterId,
+    int recitationId,
     int chapterNumber,
     int currentTimeMs,
   ) => _ayahTimingService.getCurrentVerse(
-    reciterId,
+    recitationId,
     chapterNumber,
     currentTimeMs,
   );
 
   @override
   Future<List<AyahTiming>> getChapterTimings(
-    int reciterId,
+    int recitationId,
     int chapterNumber,
-  ) => _ayahTimingService.getChapterTimings(reciterId, chapterNumber);
+  ) => _ayahTimingService.getChapterTimings(recitationId, chapterNumber);
 
   @override
-  bool hasTimingForReciter(int reciterId) =>
-      _ayahTimingService.hasTimingForReciter(reciterId);
+  bool hasTimingForRecitation(int recitationId) =>
+      _ayahTimingService.hasTimingForRecitation(recitationId);
 
   @override
-  Future<void> preloadTiming(int reciterId) =>
-      _ayahTimingService.preloadTiming(reciterId);
+  Future<void> preloadTiming(int recitationId) =>
+      _ayahTimingService.preloadTiming(recitationId);
 
   @override
   void release() {
     _audioPlayer.stop();
-    _reciterService.dispose();
+    _recitationService.dispose();
   }
 }

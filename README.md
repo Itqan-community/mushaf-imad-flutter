@@ -4,7 +4,16 @@ Add mushaf to your Flutter application easily! A fully functional, modular Quran
 
 [![Flutter](https://img.shields.io/badge/Platform-Flutter-02569B?logo=flutter)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.11.0-0175C2?logo=dart)](https://dart.dev)
-[![Version](https://img.shields.io/badge/version-0.0.3-blue.svg)]()
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)]()
+
+---
+
+## 🌍 Ecosystem
+
+This package is part of an ecosystem across all platforms:
+- **iOS:** [MushafImad](https://github.com/ibo2001/MushafImad/)
+- **Android:** [mushaf-imad-android](https://github.com/YahiaRagae/mushaf-imad-android/)
+- **Flutter:** [mushaf-imad-flutter](https://github.com/Itqan-community/mushaf-imad-flutter) (This repository)
 
 ---
 
@@ -28,7 +37,7 @@ Add mushaf to your Flutter application easily! A fully functional, modular Quran
 - 🔖 **Bookmarks and Reading History** system mapping natively to UI components.
 - 🏗️ **Clean Modular Architecture** with a strict separation of domain, data, and UI layers.
 - 🧩 **Ready-to-use UI Components:** (`MushafPageView`, `QuranPageWidget`, `SearchPage`, `SettingsPage`, `ChapterIndexDrawer`, etc.)
-- 🎵 **Audio Playback** (Under development). 
+- 🎵 **Audio Playback:** Includes support for offline device assets, streaming from **Quran.com**, and external streams like **Itqan CMS**.
 
 ---
 
@@ -47,7 +56,7 @@ Add the package to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  imad_flutter: ^0.0.1
+  imad_flutter: ^0.1.0
 ```
 
 ### 2. Download Quran Images
@@ -80,13 +89,32 @@ void main() async {
   
   // One-line setup! Initializes Hive, provisions Quran metadata, 
   // and injects dependencies via get_it.
-  await setupMushafWithHive();
+  await MushafLibrary.initialize();
   
   runApp(const MyApp());
 }
 ```
 
-### 4. Basic Usage (Displaying the Mushaf)
+### 4. Audio Configuration (Quran.com)
+
+The library supports two main audio sources: `local` (bundled assets) and `quranCom` (cloud streaming). To use Quran.com, provide your credentials during initialization:
+
+```dart
+await MushafLibrary.initialize(
+  audioSource: MushafAudioSource.quranCom,
+  quranComConfig: QuranComAudioSourceConfig(
+    clientId: 'your_client_id',
+    clientSecret: 'your_client_secret',
+    env: QuranComEnv.production, 
+  ),
+);
+```
+
+> **Note:** You can obtain credentials from the [Quran.com Request Access Page](https://api-docs.quran.foundation/request-access/) _(valid for 1 hour)_.
+
+> **Security Warning:** Do not commit your credentials to version control. Use environment variables instead.
+
+### 5. Basic Usage (Displaying the Mushaf)
 
 Once initialized, simply instantiate the `MushafPageView`.
 
@@ -167,12 +195,42 @@ The library is strictly modular:
 All core dependencies are registered centrally via `get_it`. If you wish to use your own database engine, simply implement the abstract repository protocols and pass them manually.
 
 ```dart
-setupMushafDependencies(
+MushafLibrary.initialize(
   databaseService: MyCustomDatabaseService(),
   bookmarkDao: MyCustomBookmarkDao(),
+  readingHistoryDao: MyCustomReadingHistoryDao(),
+  searchHistoryDao: MyCustomSearchHistoryDao(),
   // ...
 );
 ```
+
+### 🎧 Streaming Audio via Itqan CMS
+
+The framework allows you to easily plug into the the **Itqan CMS JSON API** (`cms.itqan.dev`) for audio playback and verse-level highlight syncing, removing the need to host MP3s locally.
+
+Pass `ItqanAudioConfig` to `MushafLibrary.initialize` natively:
+
+```dart
+import 'package:imad_flutter/imad_flutter.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Define CMS configuration pointing to the Itqan API
+  const itqanConfig = ItqanAudioConfig(
+    baseUrl: 'https://api.cms.itqan.dev',
+    defaultReciterId: 1, // e.g., Mishari Al-afasi
+  );
+
+  await MushafLibrary.initialize(itqanAudioConfig: itqanConfig);
+  
+  runApp(const MyApp());
+}
+```
+
+This bypasses the `DefaultAudioRepository` and relies exclusively on `ItqanAudioRepository` which parses server-provided verse timing boundaries dynamically.
+
+> 📚 **Detailed Guide:** For a comprehensive, step-by-step tutorial on how the audio syncing works under the hood and how to implement it, please see the [CMS Audio Integration Guide](docs/itqan_audio.md).
 
 ---
 

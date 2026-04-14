@@ -1,0 +1,27 @@
+{
+  "version": "1.0.0",
+  "configurations": [
+    {
+      "name": "QuranCom Demo (Production)",
+      "request": "launch",
+      "type": "dart",
+      "program": "example/lib/main.dart",
+      "args": [
+        "--dart-define=QF_ID=YOUR_CLIENT_ID_HERE",
+        "--dart-define=QF_SECRET=YOUR_CLIENT_SECRET_HERE",
+        "--dart-define=QF_ENV=production"
+      ]
+    },
+    {
+      "name": "QuranCom Demo (Prelive)",
+      "request": "launch",
+      "type": "dart",
+      "program": "example/lib/main.dart",
+      "args": [
+        "--dart-define=QF_ID=YOUR_CLIENT_ID_HERE",
+        "--dart-define=QF_SECRET=YOUR_CLIENT_SECRET_HERE",
+        "--dart-define=QF_ENV=prelive"
+      ]
+    }
+  ]
+}

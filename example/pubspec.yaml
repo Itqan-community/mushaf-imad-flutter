@@ -12,6 +12,7 @@ dependencies:
   imad_flutter:
     path: ../
   get_it: ^8.0.3
+  collection: ^1.19.1
 
 dev_dependencies:
   flutter_test:

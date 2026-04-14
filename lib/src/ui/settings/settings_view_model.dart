@@ -30,14 +30,14 @@ class SettingsViewModel extends ChangeNotifier {
   // ─── Preferences state ───
   MushafType _mushafType = MushafType.hafs1441;
   int _currentPage = 1;
-  int _selectedReciterId = 1;
+  int _selectedRecitationId = 1;
   double _playbackSpeed = 1.0;
   bool _repeatMode = false;
   ThemeConfig _themeConfig = const ThemeConfig();
 
   MushafType get mushafType => _mushafType;
   int get currentPage => _currentPage;
-  int get selectedReciterId => _selectedReciterId;
+  int get selectedRecitationId => _selectedRecitationId;
   double get playbackSpeed => _playbackSpeed;
   bool get repeatMode => _repeatMode;
   ThemeConfig get themeConfig => _themeConfig;
@@ -46,7 +46,8 @@ class SettingsViewModel extends ChangeNotifier {
   Future<void> _loadPreferences() async {
     _mushafType = await _preferencesRepository.getMushafTypeStream().first;
     _currentPage = await _preferencesRepository.getCurrentPageStream().first;
-    _selectedReciterId = await _preferencesRepository.getSelectedReciterId();
+    _selectedRecitationId = await _preferencesRepository
+        .getSelectedRecitationId();
     _playbackSpeed = await _preferencesRepository.getPlaybackSpeed();
     _repeatMode = await _preferencesRepository.getRepeatMode();
     _themeConfig = await _preferencesRepository.getThemeConfig();

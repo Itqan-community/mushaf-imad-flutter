@@ -3,14 +3,15 @@ import 'package:flutter/foundation.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../domain/models/audio_player_state.dart' as domain;
-import '../../domain/models/reciter_info.dart';
+import '../../domain/models/recitation.dart';
+import '../../mushaf_library.dart';
 
 /// App-specific AudioHandler that connects just_audio to audio_service
 class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
   final AudioPlayer _player = AudioPlayer();
 
   int? _currentChapter;
-  int? _currentReciterId;
+  int? _currentRecitationId;
 
   /// Expose the underlying just_audio player state as our domain state
   final _domainStateController =
@@ -92,7 +93,7 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
         currentPositionMs: _player.position.inMilliseconds,
         durationMs: _player.duration?.inMilliseconds ?? 0,
         currentChapter: _currentChapter,
-        currentReciterId: _currentReciterId,
+        currentRecitationId: _currentRecitationId,
         isBuffering:
             _player.processingState == ProcessingState.buffering ||
             _player.processingState == ProcessingState.loading,
@@ -102,39 +103,74 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
     );
   }
 
-  /// Custom extension to load a specific chapter from a reciter
+  /// Custom extension to load a specific chapter from a recitation.
+  ///
+  /// [audioUrl] An optional direct audio URL. If provided, it overrides the
+  /// URL normally derived from [recitation]. This is needed for recitations whose
+  /// audio is fetched dynamically from an API (e.g., Quran.com) and cannot
+  /// be constructed from a static folder URL.
   Future<void> loadChapter(
     int chapterNumber,
-    ReciterInfo reciter, {
+    Recitation recitation, {
+    bool autoPlay = false,
+    String? audioUrl,
+  }) async {
+    _currentChapter = chapterNumber;
+    _currentRecitationId = recitation.id;
+
+    // Use provided URL, or derive from recitation for local/static sources.
+    // Apply CORS proxy on web for static URLs to bypass restrictive headers.
+    final resolvedUrl = audioUrl ?? recitation.getAudioUrl(chapterNumber);
+    final url = (audioUrl == null && kIsWeb)
+        ? 'https://corsproxy.io/?${Uri.encodeComponent(resolvedUrl)}'
+        : resolvedUrl;
+
+    final title = 'Surah ${chapterNumber.toString().padLeft(3, "0")}';
+    await _loadUrlInternal(url, title, recitation.getDisplayName(), autoPlay);
+  }
+
+  /// Custom extension to load audio directly from a URL (e.g. from CMS)
+  Future<void> loadFromUrl(
+    String url, {
+    required int chapterNumber,
+    required Recitation recitation,
     bool autoPlay = false,
   }) async {
     _currentChapter = chapterNumber;
-    _currentReciterId = reciter.id;
-
-    // Use CORS proxy for web to bypass restrictive mp3quran headers
-    final url = kIsWeb
-        ? 'https://corsproxy.io/?${Uri.encodeComponent(reciter.getAudioUrl(chapterNumber))}'
-        : reciter.getAudioUrl(chapterNumber);
+    _currentRecitationId = recitation.id;
 
     final title = 'Surah ${chapterNumber.toString().padLeft(3, "0")}';
-    print('[FlutterAudioPlayer] Loading chapter: $title from URL: $url');
+    await _loadUrlInternal(url, title, recitation.getDisplayName(), autoPlay);
+  }
 
-    mediaItem.add(
-      MediaItem(id: url, album: reciter.getDisplayName(), title: title),
+  Future<void> _loadUrlInternal(
+    String url,
+    String title,
+    String album,
+    bool autoPlay,
+  ) async {
+    MushafLibrary.logger.info(
+      '[FlutterAudioPlayer] Loading title: $title from URL: $url',
     );
 
+    mediaItem.add(MediaItem(id: url, album: album, title: title));
+
     try {
-      print('[FlutterAudioPlayer] Calling setAudioSource...');
+      MushafLibrary.logger.info(
+        '[FlutterAudioPlayer] Calling setAudioSource...',
+      );
       await _player.setAudioSource(AudioSource.uri(Uri.parse(url)));
-      print(
+      MushafLibrary.logger.info(
         '[FlutterAudioPlayer] setAudioSource completed successfully. autoPlay=$autoPlay',
       );
       if (autoPlay) {
         play();
       }
     } catch (e, stack) {
-      print('[FlutterAudioPlayer] ERROR loading audio source: $e');
-      print(stack);
+      MushafLibrary.logger.error(
+        '[FlutterAudioPlayer] ERROR loading audio source: $e',
+      );
+      MushafLibrary.logger.error(stack.toString());
       _domainStateController.add(
         domain.AudioPlayerState(
           playbackState: domain.PlaybackState.error,
@@ -146,27 +182,29 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> play() async {
-    print(
+    MushafLibrary.logger.info(
       '[FlutterAudioPlayer] Play requested. Current state: ${_player.processingState}, playing: ${_player.playing}',
     );
     try {
       await _player.play();
-      print('[FlutterAudioPlayer] Play completed.');
+      MushafLibrary.logger.info('[FlutterAudioPlayer] Play completed.');
     } catch (e, stack) {
-      print('[FlutterAudioPlayer] ERROR during play(): $e');
-      print(stack);
+      MushafLibrary.logger.error(
+        '[FlutterAudioPlayer] ERROR during play(): $e',
+      );
+      MushafLibrary.logger.error(stack.toString());
     }
   }
 
   @override
   Future<void> pause() async {
-    print('[FlutterAudioPlayer] Pause requested.');
+    MushafLibrary.logger.info('[FlutterAudioPlayer] Pause requested.');
     await _player.pause();
   }
 
   @override
   Future<void> stop() async {
-    print('[FlutterAudioPlayer] Stop requested.');
+    MushafLibrary.logger.info('[FlutterAudioPlayer] Stop requested.');
     await _player.stop();
     await super.stop();
   }

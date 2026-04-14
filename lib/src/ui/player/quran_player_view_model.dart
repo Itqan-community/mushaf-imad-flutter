@@ -1,9 +1,7 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-
 import '../../domain/models/audio_player_state.dart';
-import '../../domain/models/reciter_info.dart';
+import '../../domain/models/recitation.dart';
 import '../../domain/repository/audio_repository.dart';
 import '../../domain/repository/preferences_repository.dart';
 
@@ -11,9 +9,8 @@ import '../../domain/repository/preferences_repository.dart';
 class QuranPlayerViewModel extends ChangeNotifier {
   final AudioRepository _audioRepository;
   final PreferencesRepository _preferencesRepository;
-
   StreamSubscription<AudioPlayerState>? _playerStateSub;
-  StreamSubscription<ReciterInfo?>? _reciterSub;
+  StreamSubscription<Recitation?>? _recitationSub;
 
   QuranPlayerViewModel({
     required AudioRepository audioRepository,
@@ -23,15 +20,15 @@ class QuranPlayerViewModel extends ChangeNotifier {
 
   // State
   AudioPlayerState _playerState = const AudioPlayerState();
-  List<ReciterInfo> _reciters = [];
-  ReciterInfo? _selectedReciter;
+  List<Recitation> _recitations = [];
+  Recitation? _selectedRecitation;
   double _playbackSpeed = 1.0;
   bool _isLoading = false;
 
   // Getters
   AudioPlayerState get playerState => _playerState;
-  List<ReciterInfo> get reciters => _reciters;
-  ReciterInfo? get selectedReciter => _selectedReciter;
+  List<Recitation> get recitations => _recitations;
+  Recitation? get selectedRecitation => _selectedRecitation;
   double get playbackSpeed => _playbackSpeed;
   bool get isLoading => _isLoading;
   bool get isPlaying => _playerState.isPlaying;
@@ -40,14 +37,14 @@ class QuranPlayerViewModel extends ChangeNotifier {
   Future<void> initialize() async {
     _isLoading = true;
     notifyListeners();
-
     try {
-      _reciters = await _audioRepository.getAllReciters();
-
-      final reciterId = await _preferencesRepository.getSelectedReciterId();
-      _selectedReciter = await _audioRepository.getReciterById(reciterId);
-      _selectedReciter ??= await _audioRepository.getDefaultReciter();
-
+      _recitations = await _audioRepository.getAllRecitations();
+      final recitationId = await _preferencesRepository
+          .getSelectedRecitationId();
+      _selectedRecitation = await _audioRepository.getRecitationById(
+        recitationId,
+      );
+      _selectedRecitation ??= await _audioRepository.getDefaultRecitation();
       _playbackSpeed = await _preferencesRepository.getPlaybackSpeed();
 
       // Observe player state
@@ -56,11 +53,11 @@ class QuranPlayerViewModel extends ChangeNotifier {
         notifyListeners();
       });
 
-      // Observe selected reciter
-      _reciterSub = _audioRepository.getSelectedReciterStream().listen((
-        reciter,
+      // Observe selected recitation
+      _recitationSub = _audioRepository.getSelectedRecitationStream().listen((
+        recitation,
       ) {
-        _selectedReciter = reciter;
+        _selectedRecitation = recitation;
         notifyListeners();
       });
     } finally {
@@ -69,13 +66,17 @@ class QuranPlayerViewModel extends ChangeNotifier {
     }
   }
 
-  /// Play a chapter with the selected reciter.
-  void playChapter(int chapterNumber) {
-    if (_selectedReciter == null) return;
+  /// Play a chapter with the selected recitation.
+  ///
+  /// [startVerseNumber] controls where playback begins within the chapter.
+  /// Defaults to 1 (start of chapter) when not specified.
+  void playChapter(int chapterNumber, {int startVerseNumber = 1}) {
+    if (_selectedRecitation == null) return;
     _audioRepository.loadChapter(
       chapterNumber,
-      _selectedReciter!.id,
+      _selectedRecitation!.id,
       autoPlay: true,
+      startVerseNumber: startVerseNumber,
     );
   }
 
@@ -94,11 +95,11 @@ class QuranPlayerViewModel extends ChangeNotifier {
   /// Seek to position.
   void seekTo(int positionMs) => _audioRepository.seekTo(positionMs);
 
-  /// Select a reciter.
-  Future<void> selectReciter(ReciterInfo reciter) async {
-    _selectedReciter = reciter;
-    _audioRepository.saveSelectedReciter(reciter);
-    await _preferencesRepository.setSelectedReciterId(reciter.id);
+  /// Select a recitation.
+  Future<void> selectRecitation(Recitation recitation) async {
+    _selectedRecitation = recitation;
+    _audioRepository.saveSelectedRecitation(recitation);
+    await _preferencesRepository.setSelectedRecitationId(recitation.id);
     notifyListeners();
   }
 
@@ -119,7 +120,7 @@ class QuranPlayerViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _playerStateSub?.cancel();
-    _reciterSub?.cancel();
+    _recitationSub?.cancel();
     super.dispose();
   }
 }

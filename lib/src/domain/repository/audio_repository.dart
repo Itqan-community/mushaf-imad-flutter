@@ -1,39 +1,41 @@
 import '../models/audio_player_state.dart';
-import '../models/reciter_info.dart';
+import '../models/recitation.dart';
 import '../models/reciter_timing.dart';
 
-/// Repository for Quran audio playback and reciter management.
+/// Repository for Quran audio playback and recitation management.
 /// Public API - exposed to library consumers.
 abstract class AudioRepository {
-  /// Get all available reciters.
-  Future<List<ReciterInfo>> getAllReciters();
+  /// Get all available recitations across combined sources.
+  Future<List<Recitation>> getAllRecitations();
 
-  /// Get reciter by ID.
-  Future<ReciterInfo?> getReciterById(int reciterId);
+  /// Get recitation by combined ID.
+  Future<Recitation?> getRecitationById(int recitationId);
 
-  /// Search reciters by name.
-  Future<List<ReciterInfo>> searchReciters(
+  /// Search recitations by name.
+  Future<List<Recitation>> searchRecitations(
     String query, {
-    String languageCode = 'en',
+    String languageCode = 'ar',
   });
 
-  /// Get all Hafs reciters.
-  Future<List<ReciterInfo>> getHafsReciters();
+  /// Get default recitation.
+  Future<Recitation> getDefaultRecitation();
 
-  /// Get default reciter.
-  Future<ReciterInfo> getDefaultReciter();
+  /// Select a recitation and save the preference.
+  void saveSelectedRecitation(Recitation recitation);
 
-  /// Select a reciter and save the preference.
-  void saveSelectedReciter(ReciterInfo reciter);
-
-  /// Observe the selected reciter.
-  Stream<ReciterInfo?> getSelectedReciterStream();
+  /// Observe the selected recitation.
+  Stream<Recitation?> getSelectedRecitationStream();
 
   /// Observe audio player state.
   Stream<AudioPlayerState> getPlayerStateStream();
 
   /// Load and optionally play a chapter.
-  void loadChapter(int chapterNumber, int reciterId, {bool autoPlay = false});
+  Future<void> loadChapter(
+    int chapterNumber,
+    int recitationId, {
+    bool autoPlay = false,
+    int startVerseNumber = 1,
+  });
 
   /// Start or resume playback.
   void play();
@@ -67,26 +69,29 @@ abstract class AudioRepository {
 
   /// Get timing for a specific ayah.
   Future<AyahTiming?> getAyahTiming(
-    int reciterId,
+    int recitationId,
     int chapterNumber,
     int ayahNumber,
   );
 
   /// Get the current verse being recited based on playback position.
   Future<int?> getCurrentVerse(
-    int reciterId,
+    int recitationId,
     int chapterNumber,
     int currentTimeMs,
   );
 
   /// Get all timing data for a chapter.
-  Future<List<AyahTiming>> getChapterTimings(int reciterId, int chapterNumber);
+  Future<List<AyahTiming>> getChapterTimings(
+    int recitationId,
+    int chapterNumber,
+  );
 
-  /// Check if timing data is available for a reciter.
-  bool hasTimingForReciter(int reciterId);
+  /// Check if timing data is available for a recitation.
+  bool hasTimingForRecitation(int recitationId);
 
   /// Preload timing data for better performance.
-  Future<void> preloadTiming(int reciterId);
+  Future<void> preloadTiming(int recitationId);
 
   /// Release player resources.
   void release();

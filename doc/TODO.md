@@ -9,7 +9,6 @@
 - [x] Create `HiveReadingHistoryDao` implementing `ReadingHistoryDao`
 - [x] Create `HiveSearchHistoryDao` implementing `SearchHistoryDao`
 - [x] Wire Hive implementations into `core_module.dart`
-- [x] Add `setupMushafWithHive()` convenience function
 
 ## Phase 2: Audio Playback
 - [x] Add `just_audio` and `audio_service` to `pubspec.yaml`
@@ -58,6 +57,13 @@
   - [ ] Export all bookmarks, reading history, search history, preferences
   - [ ] Import with merge or replace strategies
 - [ ] Add file picker integration for import/export
+
+## Phase 7: Verses Page (New Feature)
+- [ ] Implement a standalone "Verses Page" providing access to all 6,236 verses
+  - [ ] Display full text with and without tashkil
+  - [ ] Display Uthmanic Hafs text
+  - [ ] Implement searchable text functionality
+  - [ ] Include page, chapter, part, and hizb mappings for each verse
 
 ## Phase 7: Testing
 - [ ] Unit tests for domain models

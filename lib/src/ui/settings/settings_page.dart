@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../data/audio/reciter_data_provider.dart';
 import '../../di/core_module.dart';
 import '../../domain/repository/data_export_repository.dart';
 import '../../domain/repository/preferences_repository.dart';
@@ -76,8 +75,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     const Divider(height: 1, indent: 56),
                     _PreferenceTile(
                       icon: Icons.mic_rounded,
-                      label: 'Selected Reciter',
-                      value: _reciterName(_viewModel.selectedReciterId),
+                      label: 'Selected Recitation',
+                      value: 'Recitation #${_viewModel.selectedRecitationId}',
                     ),
                     const Divider(height: 1, indent: 56),
                     _PreferenceTile(
@@ -206,29 +205,18 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  String _reciterName(int reciterId) {
-    try {
-      final reciter = ReciterDataProvider.allReciters.firstWhere(
-        (r) => r.id == reciterId,
-      );
-      return reciter.nameEnglish;
-    } catch (_) {
-      return 'Reciter #$reciterId';
-    }
-  }
-
   Future<void> _handleExport(BuildContext context) async {
     try {
-      final json = await _viewModel.exportData();
-      if (!mounted) return;
+      if (!mounted || !context.mounted) return;
+      final outputPath = await _viewModel.exportData();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Data exported (${json.length} characters)'),
+          content: Text('Data exported to: $outputPath'),
           action: SnackBarAction(label: 'OK', onPressed: () {}),
         ),
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || !context.mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Export failed: $e')));
@@ -266,7 +254,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     try {
       final importResult = await _viewModel.importData(result);
-      if (!mounted) return;
+      if (!mounted || !context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -276,7 +264,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || !context.mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Import failed: $e')));

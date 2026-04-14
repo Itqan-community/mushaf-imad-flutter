@@ -3,25 +3,37 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:imad_flutter/imad_flutter.dart';
 import 'dart:io';
 
+// Fake audio player so AudioService.init is never called in tests
+class _FakeFlutterAudioPlayer implements FlutterAudioPlayer {
+  @override
+  Stream<AudioPlayerState> get domainStateStream => const Stream.empty();
+
+  @override
+  Future<void> loadFromUrl(
+    String url, {
+    required int chapterNumber,
+    required Recitation recitation,
+    bool autoPlay = false,
+  }) async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(
-        const MethodChannel('plugins.flutter.io/path_provider'),
-        (MethodCall methodCall) async => Directory.systemTemp.path,
-      );
 
   late BookmarkRepository repository;
 
   setUpAll(() async {
-    await setupMushafWithHive();
-    await MushafLibrary.initialize(
-      databaseService: mushafGetIt<DatabaseService>(),
-      bookmarkDao: mushafGetIt<BookmarkDao>(),
-      readingHistoryDao: mushafGetIt<ReadingHistoryDao>(),
-      searchHistoryDao: mushafGetIt<SearchHistoryDao>(),
-    );
+    // Mock path_provider (used by Hive.initFlutter)
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          (MethodCall methodCall) async => Directory.systemTemp.path,
+        );
+    // Initialize the library using the fake audio player (skips AudioService.init)
+    await MushafLibrary.initialize(audioPlayer: _FakeFlutterAudioPlayer());
     repository = MushafLibrary.getBookmarkRepository();
   });
 
