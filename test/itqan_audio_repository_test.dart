@@ -23,14 +23,14 @@ class FakeFlutterAudioPlayer implements FlutterAudioPlayer {
 }
 
 void main() {
-  group('CmsAudioRepository', () {
-    late CmsAudioConfig config;
+  group('ItqanAudioRepository', () {
+    late ItqanAudioConfig config;
     late FakeFlutterAudioPlayer audioPlayer;
     late MockClient mockClient;
-    late CmsAudioRepository repository;
+    late ItqanAudioRepository repository;
 
     setUp(() {
-      config = const CmsAudioConfig(
+      config = const ItqanAudioConfig(
         baseUrl: 'https://api.cms.itqan.dev',
         defaultReciterId: 1,
       );
@@ -86,7 +86,7 @@ void main() {
         return http.Response('Not Found', 404);
       });
 
-      repository = CmsAudioRepository(config, audioPlayer, client: mockClient);
+      repository = ItqanAudioRepository(config, audioPlayer, client: mockClient);
     });
 
     test('getAllReciters parses CMS response correctly', () async {

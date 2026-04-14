@@ -10,13 +10,13 @@ Follow these steps to integrate the Itqan CMS audio backend into your Flutter ap
 
 ### Step 1: Define the CMS Audio Configuration
 
-You need to create a `CmsAudioConfig` object that points to the ITQAN CMS API. You can specify a default reciter (e.g., `1` for Mishari Al-afasi).
+You need to create a `ItqanAudioConfig` object that points to the ITQAN CMS API. You can specify a default reciter (e.g., `1` for Mishari Al-afasi).
 
 ```dart
 import 'package:imad_flutter/imad_flutter.dart';
 
 // Create configuration pointing to the CMS API endpoint.
-const cmsConfig = CmsAudioConfig(
+const itqanConfig = ItqanAudioConfig(
   baseUrl: 'https://api.cms.itqan.dev',
   defaultReciterId: 1, 
 );
@@ -24,26 +24,13 @@ const cmsConfig = CmsAudioConfig(
 
 ### Step 2: Initialize Hive with the CMS Config
 
-The library uses Hive for local caching (bookmarks, search history). When setting up Hive, pass in your `cmsConfig`.
+The library uses Hive for local caching (bookmarks, search history). When setting up Hive, pass in your `itqanConfig`.
 
 ```dart
 // Passing this config ensures Hive and Core dependencies use the CMS Audio Repository
-await setupMushafWithHive(cmsAudioConfig: cmsConfig);
+await MushafLibrary.initialize(itqanAudioConfig: itqanConfig);
 ```
 
-### Step 3: Initialize the Mushaf Library
-
-Provide the Data Access Objects (DAOs) returned by the dependency injector (`mushafGetIt`), and pass your `cmsConfig` again to finalize the initialization.
-
-```dart
-await MushafLibrary.initialize(
-  databaseService: mushafGetIt<DatabaseService>(),
-  bookmarkDao: mushafGetIt<BookmarkDao>(),
-  readingHistoryDao: mushafGetIt<ReadingHistoryDao>(),
-  searchHistoryDao: mushafGetIt<SearchHistoryDao>(),
-  cmsAudioConfig: cmsConfig, // Enables the CmsAudioRepository natively
-);
-```
 
 ### Full Example (`main.dart`)
 
@@ -57,24 +44,15 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // 1. Define CMS configuration
-  const cmsConfig = CmsAudioConfig(
+  const itqanConfig = ItqanAudioConfig(
     baseUrl: 'https://api.cms.itqan.dev',
     defaultReciterId: 1, // Optional: The default reciter ID
   );
   
-  // 2. Setup Hive databases
-  await setupMushafWithHive(cmsAudioConfig: cmsConfig);
-
-  // 3. Initialize the core Mushaf Library
-  await MushafLibrary.initialize(
-    databaseService: mushafGetIt<DatabaseService>(),
-    bookmarkDao: mushafGetIt<BookmarkDao>(),
-    readingHistoryDao: mushafGetIt<ReadingHistoryDao>(),
-    searchHistoryDao: mushafGetIt<SearchHistoryDao>(),
-    cmsAudioConfig: cmsConfig, 
-  );
+  // 2. Initialize the core Mushaf Library
+  await MushafLibrary.initialize(itqanAudioConfig: itqanConfig);
   
-  // 4. Run the App
+  // 3. Run the App
   runApp(const MyApp());
 }
 

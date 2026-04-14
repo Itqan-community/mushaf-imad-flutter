@@ -1,8 +1,8 @@
 import 'package:get_it/get_it.dart';
 
 import '../data/audio/ayah_timing_service.dart';
-import '../data/audio/cms_audio_config.dart';
-import '../data/audio/cms_audio_repository.dart';
+import '../data/audio/itqan/itqan_audio_config.dart';
+import '../data/audio/itqan/itqan_audio_repository.dart';
 import '../data/audio/reciter_service.dart';
 import '../data/audio/quran_com/qurancom_api_client.dart';
 import '../data/audio/quran_com/qurancom_audio_source_config.dart';
@@ -79,7 +79,7 @@ Future<void> setupMushafDependencies({
   required MushafLogger logger,
   MushafAudioSource audioSource = MushafAudioSource.local,
   QuranComAudioSourceConfig? quranComConfig,
-  CmsAudioConfig? cmsAudioConfig,
+  ItqanAudioConfig? itqanAudioConfig,
 
   /// Provide a pre-built [FlutterAudioPlayer] to skip [AudioService.init].
   /// Useful in tests where native platform channels are unavailable.
@@ -197,9 +197,9 @@ Future<void> setupMushafDependencies({
         logger: resolvedLogger,
       ),
     );
-  } else if (cmsAudioConfig != null) {
+  } else if (itqanAudioConfig != null) {
     mushafGetIt.registerSingleton<AudioRepository>(
-      CmsAudioRepository(cmsAudioConfig, resolvedPlayer),
+      ItqanAudioRepository(itqanAudioConfig, resolvedPlayer),
     );
   } else {
     mushafGetIt.registerSingleton<AudioRepository>(

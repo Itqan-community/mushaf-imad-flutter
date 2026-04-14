@@ -18,8 +18,8 @@
 - **Docs**: Comprehensive technical guide and setup documentation added.
 
 ## 0.0.4
-- Added CMS Audio Data Source Integration `CmsAudioRepository`.
-- Added `CmsAudioConfig` parameter to `MushafLibrary.initialize()`.
+- Added CMS Audio Data Source Integration `ItqanAudioRepository`.
+- Added `ItqanAudioConfig` parameter to `MushafLibrary.initialize()`.
 
 ## 0.0.3
 - Added app screenshots to `README.md` to demonstrate the UI (Mushaf view and Settings view).

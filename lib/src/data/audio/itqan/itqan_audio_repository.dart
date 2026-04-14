@@ -2,18 +2,18 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-import '../../domain/models/audio_player_state.dart';
-import '../../domain/models/reciter_info.dart';
-import '../../domain/models/reciter_timing.dart';
-import '../../domain/repository/audio_repository.dart';
-import '../../mushaf_library.dart';
-import '../audio/flutter_audio_player.dart';
-import 'cms_audio_config.dart';
-import 'cms_audio_models.dart';
+import '../../../domain/models/audio_player_state.dart';
+import '../../../domain/models/reciter_info.dart';
+import '../../../domain/models/reciter_timing.dart';
+import '../../../domain/repository/audio_repository.dart';
+import '../../../mushaf_library.dart';
+import '../flutter_audio_player.dart';
+import 'itqan_audio_config.dart';
+import 'itqan_audio_models.dart';
 
 /// CMS-based implementation of AudioRepository.
-class CmsAudioRepository implements AudioRepository {
-  final CmsAudioConfig _config;
+class ItqanAudioRepository implements AudioRepository {
+  final ItqanAudioConfig _config;
   final FlutterAudioPlayer _audioPlayer;
   final http.Client? client;
 
@@ -24,7 +24,7 @@ class CmsAudioRepository implements AudioRepository {
   final Map<int, int> _reciterToAssetCache = {};
 
   // Maps asset ID to a list of surah tracks
-  final Map<int, List<CmsRecitationSurahTrack>> _tracksCache = {};
+  final Map<int, List<ItqanRecitationSurahTrack>> _tracksCache = {};
 
   // Track selected reciter
   final _selectedReciterStream = StreamController<ReciterInfo?>.broadcast();
@@ -32,7 +32,7 @@ class CmsAudioRepository implements AudioRepository {
   // Track the current chapter timing for highlighting
   List<AyahTiming> _currentChapterTimings = [];
 
-  CmsAudioRepository(this._config, this._audioPlayer, {this.client});
+  ItqanAudioRepository(this._config, this._audioPlayer, {this.client});
 
   Future<http.Response> _get(Uri url, {Map<String, String>? headers}) {
     if (client != null) {
@@ -71,7 +71,7 @@ class CmsAudioRepository implements AudioRepository {
       }
     } catch (e) {
       MushafLibrary.logger.error(
-        '[CmsAudioRepository] Error fetching reciters: $e',
+        '[ItqanAudioRepository] Error fetching reciters: $e',
       );
     }
 
@@ -187,7 +187,7 @@ class CmsAudioRepository implements AudioRepository {
       }
     } catch (e) {
       MushafLibrary.logger.error(
-        '[CmsAudioRepository] Error fetching asset for reciter $reciterId: $e',
+        '[ItqanAudioRepository] Error fetching asset for reciter $reciterId: $e',
       );
     }
     return null;
@@ -206,7 +206,7 @@ class CmsAudioRepository implements AudioRepository {
         throw Exception('No recitation asset found for reciter $reciterId');
       }
 
-      List<CmsRecitationSurahTrack> tracks;
+      List<ItqanRecitationSurahTrack> tracks;
 
       if (_tracksCache.containsKey(assetId)) {
         tracks = _tracksCache[assetId]!;
@@ -223,7 +223,7 @@ class CmsAudioRepository implements AudioRepository {
           final json = jsonDecode(response.body);
           final results = json['results'] as List<dynamic>? ?? [];
           tracks = results
-              .map((e) => CmsRecitationSurahTrack.fromJson(e))
+              .map((e) => ItqanRecitationSurahTrack.fromJson(e))
               .toList();
           _tracksCache[assetId] = tracks;
         } else {
@@ -264,7 +264,7 @@ class CmsAudioRepository implements AudioRepository {
             (a) => a.ayah == startVerseNumber,
           );
           MushafLibrary.logger.debug(
-            '[CmsAudioRepository] Seeking to verse=$startVerseNumber at ${timing.startTime}ms',
+            '[ItqanAudioRepository] Seeking to verse=$startVerseNumber at ${timing.startTime}ms',
           );
           await _audioPlayer.seek(Duration(milliseconds: timing.startTime));
         } catch (_) {
@@ -280,7 +280,7 @@ class CmsAudioRepository implements AudioRepository {
       }
     } catch (e) {
       MushafLibrary.logger.error(
-        '[CmsAudioRepository] Error loading chapter from CMS: $e',
+        '[ItqanAudioRepository] Error loading chapter from CMS: $e',
       );
     }
   }

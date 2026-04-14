@@ -2,43 +2,43 @@ import 'package:imad_flutter/src/domain/models/reciter_timing.dart';
 
 /// Data models specifically for the Itqan CMS API payload.
 
-class CmsRecitationSurahTrack {
+class ItqanRecitationSurahTrack {
   final int surahNumber;
   final String audioUrl;
-  final List<CmsAyahTiming> ayahsTimings;
+  final List<ItqanAyahTiming> ayahsTimings;
 
-  CmsRecitationSurahTrack({
+  ItqanRecitationSurahTrack({
     required this.surahNumber,
     required this.audioUrl,
     required this.ayahsTimings,
   });
 
-  factory CmsRecitationSurahTrack.fromJson(Map<String, dynamic> json) {
-    return CmsRecitationSurahTrack(
+  factory ItqanRecitationSurahTrack.fromJson(Map<String, dynamic> json) {
+    return ItqanRecitationSurahTrack(
       surahNumber: json['surah_number'] as int,
       audioUrl: json['audio_url'] as String,
       ayahsTimings:
           (json['ayahs_timings'] as List<dynamic>?)
-              ?.map((e) => CmsAyahTiming.fromJson(e as Map<String, dynamic>))
+              ?.map((e) => ItqanAyahTiming.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
     );
   }
 }
 
-class CmsAyahTiming {
+class ItqanAyahTiming {
   final String ayahKey;
   final int startMs;
   final int endMs;
 
-  CmsAyahTiming({
+  ItqanAyahTiming({
     required this.ayahKey,
     required this.startMs,
     required this.endMs,
   });
 
-  factory CmsAyahTiming.fromJson(Map<String, dynamic> json) {
-    return CmsAyahTiming(
+  factory ItqanAyahTiming.fromJson(Map<String, dynamic> json) {
+    return ItqanAyahTiming(
       ayahKey: json['ayah_key'] as String,
       startMs: json['start_ms'] as int,
       endMs: json['end_ms'] as int,

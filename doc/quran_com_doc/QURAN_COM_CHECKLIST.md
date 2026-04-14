@@ -310,8 +310,6 @@ Each checkbox is a small, focused step that can usually be its own commit.
   - [x] Re-register `AyahTimingService` with the live `dataSource` injected (replaces the no-dataSource default).
   - [x] Register `QuranComAudioRepository` as the `AudioRepository` singleton.
   - [x] `DefaultAudioRepository` (local) remains the default path in the `else` branch.
-- [x] **Commit**
-  - [x] Commit message: `feat(di): wire QuranComAudioRepository into setupMushafDependencies`.
 
 ---
 

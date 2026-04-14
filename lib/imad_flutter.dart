@@ -74,8 +74,8 @@ export 'src/data/local/dao/search_history_dao.dart';
 export 'src/data/audio/reciter_data_provider.dart';
 export 'src/data/audio/quran_com/qurancom_audio_source_config.dart';
 export 'src/data/audio/quran_com/qurancom_environment.dart';
-export 'src/data/audio/cms_audio_config.dart';
-export 'src/data/audio/cms_audio_repository.dart';
+export 'src/data/audio/itqan/itqan_audio_config.dart';
+export 'src/data/audio/itqan/itqan_audio_repository.dart';
 export 'src/data/audio/flutter_audio_player.dart';
 
 // Logging
