@@ -1,3 +1,5 @@
+## 1.0.1
+* **Chore**: Remove sqflite_common_ffi from dev_dependencies as it is no longer required
 
 ## 1.0.0
 

@@ -1,6 +1,6 @@
 name: imad_flutter
 description: "Add mushaf to your flutter application easily. A Quran reader library with audio playback, bookmarks, search, and more."
-version: 1.0.0
+version: 1.0.1
 homepage: https://github.com/Itqan-community/mushaf-imad-flutter
 repository: https://github.com/Itqan-community/mushaf-imad-flutter
 
@@ -26,7 +26,6 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   mocktail: ^1.0.4
-  sqflite_common_ffi: ^2.4.0+2
   async: ^2.13.0
 
 flutter:
