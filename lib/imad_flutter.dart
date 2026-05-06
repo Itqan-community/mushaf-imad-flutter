@@ -33,6 +33,7 @@ export 'src/domain/models/audio_source.dart';
 export 'src/domain/models/bookmark.dart';
 export 'src/domain/models/cache_stats.dart';
 export 'src/domain/models/chapter.dart';
+export 'src/domain/models/chapter_filter.dart';
 export 'src/domain/models/chapter_group.dart';
 export 'src/domain/models/last_read_position.dart';
 export 'src/domain/models/mushaf_type.dart';
