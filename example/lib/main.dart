@@ -228,7 +228,7 @@ class _ChapterfilteringmekkanmedinanState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('chapter filtering mekkan medinan'),
+        title: const Text('Chapter Filtering'),
         bottom: TabBar(
           controller: _tabController,
           onTap: (value) {
@@ -252,9 +252,9 @@ class _ChapterfilteringmekkanmedinanState
             setState(() {});
           },
           tabs: [
-            Tab(text: "All"),
-            Tab(text: "meccan"),
-            Tab(text: "medinan"),
+            Tab(text: 'All'),
+            Tab(text: 'Meccan'),
+            Tab(text: 'Medinan'),
           ],
         ),
       ),
@@ -300,7 +300,6 @@ class _ChapterfilteringmekkanmedinanState
     super.dispose();
   }
 }
-
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Section Header
