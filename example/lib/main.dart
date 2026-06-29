@@ -165,6 +165,13 @@ class LibraryHomePage extends StatelessWidget {
             subtitle: 'Switch between Hafs layouts',
             onTap: () => _push(context, const MushafTypePage()),
           ),
+          // ─── Quran Data provider chapter_filtering_mekkan_medinan───
+          _MenuCard(
+            icon: Icons.filter_list,
+            title: 'Chapter Filtering',
+            subtitle: 'Filter surahs by revelation type: Meccan / Medinan',
+            onTap: () => _push(context, const Chapterfilteringmekkanmedinan()),
+          ),
           _MenuCard(
             icon: Icons.code,
             title: 'Domain Models',
@@ -191,6 +198,106 @@ class LibraryHomePage extends StatelessWidget {
 
   void _push(BuildContext context, Widget page) {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+  }
+}
+
+class Chapterfilteringmekkanmedinan extends StatefulWidget {
+  const Chapterfilteringmekkanmedinan({super.key});
+
+  @override
+  State<Chapterfilteringmekkanmedinan> createState() =>
+      _ChapterfilteringmekkanmedinanState();
+}
+
+class _ChapterfilteringmekkanmedinanState
+    extends State<Chapterfilteringmekkanmedinan>
+    with TickerProviderStateMixin {
+  late TabController _tabController;
+  late List<ChapterData> chapters;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    chapters = QuranDataProvider.instance.getFilteredChapters(
+      ChapterFilter(revelationType: RevelationType.all),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Chapter Filtering'),
+        bottom: TabBar(
+          controller: _tabController,
+          onTap: (value) {
+            switch (value) {
+              case 0:
+                chapters = QuranDataProvider.instance.getFilteredChapters(
+                  ChapterFilter(revelationType: RevelationType.all),
+                );
+                break;
+              case 1:
+                chapters = QuranDataProvider.instance.getFilteredChapters(
+                  ChapterFilter(revelationType: RevelationType.meccan),
+                );
+                break;
+              case 2:
+                chapters = QuranDataProvider.instance.getFilteredChapters(
+                  ChapterFilter(revelationType: RevelationType.medinan),
+                );
+                break;
+            }
+            setState(() {});
+          },
+          tabs: [
+            Tab(text: 'All'),
+            Tab(text: 'Meccan'),
+            Tab(text: 'Medinan'),
+          ],
+        ),
+      ),
+      body: ListView.builder(
+        itemCount: chapters.length,
+        itemBuilder: (context, index) {
+          final chapter = chapters[index];
+          return ListTile(
+            leading: CircleAvatar(
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              child: Text(
+                '${chapter.number}',
+                style: const TextStyle(fontSize: 12),
+              ),
+            ),
+            title: Text(chapter.englishTitle),
+            trailing: Column(
+              children: [
+                Text(
+                  "${chapter.versesCount} ayat",
+                  style: const TextStyle(fontSize: 12),
+                ),
+                Text(
+                  chapter.isMeccan ? "Meccan" : "Madinan",
+                  style: const TextStyle(fontSize: 12),
+                ),
+                Text(
+                  "page ${chapter.startPage}",
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
+            subtitle: Text(chapter.arabicTitle),
+          );
+        },
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 }
 

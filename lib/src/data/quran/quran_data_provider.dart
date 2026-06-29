@@ -1,3 +1,4 @@
+import '../../domain/models/chapter_filter.dart';
 import 'quran_metadata.dart';
 
 /// Provides Quran page data — chapters, juz, and page metadata.
@@ -47,6 +48,25 @@ class QuranDataProvider {
     // Deduplicate
     final seen = <int>{};
     return chapters.where((c) => seen.add(c.number)).toList();
+  }
+
+  /// Get chapters filtered by the given [filter] criteria.
+  ///
+  /// Returns all 114 chapters when no filter is applied.
+  /// Example:
+  /// ```dart
+  /// final meccanChapters = QuranDataProvider.instance.getFilteredChapters(
+  ///   const ChapterFilter(revelationType: RevelationType.meccan),
+  /// );
+  /// ```
+  List<ChapterData> getFilteredChapters(ChapterFilter filter) {
+    return switch (filter.revelationType) {
+      RevelationType.all => [...getAllChapters()],
+      RevelationType.meccan =>
+        getAllChapters().where((c) => c.isMeccan).toList(growable: false),
+      RevelationType.medinan =>
+        getAllChapters().where((c) => !c.isMeccan).toList(growable: false),
+    };
   }
 
   /// Get juz number for a given page.
