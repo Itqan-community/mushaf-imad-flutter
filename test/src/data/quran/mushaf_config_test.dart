@@ -158,6 +158,9 @@ void main() {
         mushafType: MushafType.hafs1405,
       );
       expect(provider, isA<AssetImage>());
+      final asset = provider as AssetImage;
+      expect(asset.assetName, 'assets/quran-images-1405/1/1.png');
+      expect(asset.package, 'test');
     });
 
     test('totalPages is 604 (unchanged)', () {

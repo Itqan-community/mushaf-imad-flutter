@@ -52,7 +52,12 @@ class QuranLineImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider =
-        imageProvider ?? QuranDataProvider.getLineImageProvider(page, line);
+        imageProvider ??
+        QuranDataProvider.getLineImageProvider(
+          page,
+          line,
+          mushafType: mushafType,
+        );
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
