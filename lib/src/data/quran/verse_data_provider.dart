@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
 
+import '../../domain/models/mushaf_config.dart';
+import '../../domain/models/mushaf_type.dart';
+
 /// Lightweight model for verse marker position on a page line.
 class VerseMarkerData {
   final int line;
@@ -56,6 +59,8 @@ class PageVerseData {
   final String searchableText;
   final VerseMarkerData? marker1441;
   final List<VerseHighlightData> highlights1441;
+  final VerseMarkerData? marker1405;
+  final List<VerseHighlightData> highlights1405;
 
   const PageVerseData({
     required this.verseID,
@@ -66,9 +71,23 @@ class PageVerseData {
     this.searchableText = '',
     this.marker1441,
     this.highlights1441 = const [],
+    this.marker1405,
+    this.highlights1405 = const [],
   });
 
   factory PageVerseData.fromJson(Map<String, dynamic> json) {
+    List<VerseHighlightData> parseHighlights(String key) =>
+        (json[key] as List?)
+            ?.map((h) => VerseHighlightData.fromJson(h as Map<String, dynamic>))
+            .toList() ??
+        [];
+
+    VerseMarkerData? parseMarker(String key) {
+      final raw = json[key];
+      if (raw == null) return null;
+      return VerseMarkerData.fromJson(raw as Map<String, dynamic>);
+    }
+
     return PageVerseData(
       verseID: json['id'] as int,
       number: json['number'] as int,
@@ -76,22 +95,46 @@ class PageVerseData {
       text: (json['text'] as String?) ?? '',
       textWithoutTashkil: (json['textWithoutTashkil'] as String?) ?? '',
       searchableText: (json['searchableText'] as String?) ?? '',
-      marker1441: json['marker1441'] != null
-          ? VerseMarkerData.fromJson(json['marker1441'] as Map<String, dynamic>)
-          : null,
-      highlights1441:
-          (json['highlights1441'] as List?)
-              ?.map(
-                (h) => VerseHighlightData.fromJson(h as Map<String, dynamic>),
-              )
-              .toList() ??
-          [],
+      marker1441: parseMarker('marker1441'),
+      highlights1441: parseHighlights('highlights1441'),
+      marker1405: parseMarker('marker1405'),
+      highlights1405: parseHighlights('highlights1405'),
     );
   }
 
-  /// Check if this verse occupies the given line.
-  bool occupiesLine(int lineNumber) {
-    return highlights1441.any((h) => h.line == lineNumber);
+  // ---------------------------------------------------------------------------
+  // Mushaf-aware accessors
+  // ---------------------------------------------------------------------------
+
+  /// Get the verse marker for the given [MushafType].
+  /// Returns null if the verse has no marker for that Mushaf.
+  VerseMarkerData? getMarker(MushafType mushafType) {
+    final config = MushafConfigRegistry.configFor(mushafType);
+    return switch (config.markerField) {
+      'marker1441' => marker1441,
+      'marker1405' => marker1405,
+      _ => null,
+    };
+  }
+
+  /// Get the highlight regions for the given [MushafType].
+  List<VerseHighlightData> getHighlights(MushafType mushafType) {
+    final config = MushafConfigRegistry.configFor(mushafType);
+    return switch (config.highlightsField) {
+      'highlights1441' => highlights1441,
+      'highlights1405' => highlights1405,
+      _ => const [],
+    };
+  }
+
+  /// Check if this verse occupies the given line for the active Mushaf.
+  ///
+  /// Defaults to [MushafType.hafs1441] for backward compatibility.
+  bool occupiesLine(
+    int lineNumber, {
+    MushafType mushafType = MushafType.hafs1441,
+  }) {
+    return getHighlights(mushafType).any((h) => h.line == lineNumber);
   }
 }
 
@@ -142,16 +185,29 @@ class VerseDataProvider {
   }
 
   /// Get verses whose marker appears on the given line of a page.
-  List<PageVerseData> getMarkersForLine(int pageNumber, int lineNumber) {
-    return getVersesForPage(pageNumber)
-        .where((v) => v.marker1441 != null && v.marker1441!.line == lineNumber)
-        .toList();
+  ///
+  /// Defaults to [MushafType.hafs1441] for backward compatibility.
+  List<PageVerseData> getMarkersForLine(
+    int pageNumber,
+    int lineNumber, {
+    MushafType mushafType = MushafType.hafs1441,
+  }) {
+    return getVersesForPage(pageNumber).where((v) {
+      final marker = v.getMarker(mushafType);
+      return marker != null && marker.line == lineNumber;
+    }).toList();
   }
 
   /// Get verses that occupy the given line (for highlighting).
-  List<PageVerseData> getVersesOnLine(int pageNumber, int lineNumber) {
+  ///
+  /// Defaults to [MushafType.hafs1441] for backward compatibility.
+  List<PageVerseData> getVersesOnLine(
+    int pageNumber,
+    int lineNumber, {
+    MushafType mushafType = MushafType.hafs1441,
+  }) {
     return getVersesForPage(
       pageNumber,
-    ).where((v) => v.occupiesLine(lineNumber)).toList();
+    ).where((v) => v.occupiesLine(lineNumber, mushafType: mushafType)).toList();
   }
 }

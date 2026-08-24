@@ -2,37 +2,33 @@ import 'package:flutter/material.dart';
 
 import '../../data/quran/quran_data_provider.dart';
 import '../../data/quran/verse_data_provider.dart';
+import '../../domain/models/mushaf_type.dart';
 import 'verse_fasel.dart';
 
-/// Displays a single Quran line image loaded from assets.
+/// Displays a single Quran line image loaded from the active Mushaf's
+/// configured [ImageProvider].
 ///
-/// Images are stored in assets/quran-images/{page}/{line}.png
-/// Original dimensions: 1440 x 232 pixels
-/// Each page has 15 lines (1-15).
-///
-/// Supports verse-level highlighting and renders VerseFasel markers
+/// Supports verse-level highlighting and renders [VerseFasel] markers
 /// at positions where verse separators appear.
 class QuranLineImage extends StatelessWidget {
   final int page;
   final int line;
   final List<VerseHighlightData> audioHighlights;
-
   final Color? audioHighlightsColor;
-
   final List<VerseHighlightData> selectionHighlights;
-
   final VoidCallback? onTap;
-
-  /// Optional highlight color — defaults to gold if not provided.
   final Color? highlightColor;
-
-  /// Optional text color — when provided, tints the line image so text
-  /// contrasts against dark backgrounds (uses BlendMode.srcIn).
   final Color? textColor;
   final void Function(double tapRatio)? onTapUpExact;
-
-  /// Verse markers that end on this line (for rendering VerseFasel).
   final List<PageVerseData> markers;
+
+  /// The image provider that supplies this line. Defaults to the built-in
+  /// Hafs 1441 bundled asset provider.
+  final ImageProvider? imageProvider;
+
+  /// The active Mushaf type — used to resolve which marker field to read
+  /// from [PageVerseData] when rendering verse separators.
+  final MushafType mushafType;
 
   // Original image aspect ratio: 1440 x 232
   static const double _aspectRatio = 1440.0 / 232.0;
@@ -49,11 +45,14 @@ class QuranLineImage extends StatelessWidget {
     this.markers = const [],
     this.highlightColor,
     this.textColor,
+    this.imageProvider,
+    this.mushafType = MushafType.hafs1441,
   });
 
   @override
   Widget build(BuildContext context) {
-    final assetPath = QuranDataProvider.getLineImagePath(page, line);
+    final provider =
+        imageProvider ?? QuranDataProvider.getLineImageProvider(page, line);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -61,9 +60,6 @@ class QuranLineImage extends StatelessWidget {
         if (onTapUpExact != null) {
           final box = context.findRenderObject() as RenderBox;
           final localPosition = box.globalToLocal(details.globalPosition);
-          // `localPosition.dx` is 0 at the physical left edge and `width` at the right edge.
-          // Since we render highlights purely left-to-right based on `h.left` and `h.right`,
-          // our tap ratio matches exactly.
           final tapRatio = localPosition.dx / box.size.width;
           onTapUpExact!(tapRatio);
         } else if (onTap != null) {
@@ -72,7 +68,6 @@ class QuranLineImage extends StatelessWidget {
       },
       onTap: () {
         // Need to define onTap so this GestureDetector wins the gesture arena
-        // against the parent MushafPageView's onTap (which toggles controls).
       },
       child: AspectRatio(
         aspectRatio: _aspectRatio,
@@ -84,13 +79,8 @@ class QuranLineImage extends StatelessWidget {
             return Stack(
               fit: StackFit.expand,
               children: [
-                // 👆 Selection Highlight background (precise bounding boxes)
                 ..._buildSelectionHighlights(lineWidth),
-
-                // 🎧 Audio Highlight (animated fill)
-                ..._buildAudioHighlights(assetPath),
-
-                // Verse separators (VerseFasel markers)
+                ..._buildAudioHighlights(provider),
                 if (markers.isNotEmpty) _buildMarkers(lineWidth, lineHeight),
               ],
             );
@@ -100,13 +90,12 @@ class QuranLineImage extends StatelessWidget {
     );
   }
 
-  Widget baseImage({
-    required final String assetPath,
-    final Color? color,
-    final BlendMode? colorBlendMode,
-  }) => Image.asset(
-    assetPath,
-    package: 'imad_flutter',
+  Widget _image({
+    required ImageProvider provider,
+    Color? color,
+    BlendMode? colorBlendMode,
+  }) => Image(
+    image: provider,
     fit: BoxFit.contain,
     color: color ?? textColor,
     colorBlendMode:
@@ -129,9 +118,9 @@ class QuranLineImage extends StatelessWidget {
     },
   );
 
-  List<Widget> _buildAudioHighlights(String assetPath) {
+  List<Widget> _buildAudioHighlights(ImageProvider provider) {
     if (audioHighlights.isEmpty) {
-      return [baseImage(assetPath: assetPath)];
+      return [_image(provider: provider)];
     }
 
     return audioHighlights.map((h) {
@@ -139,19 +128,19 @@ class QuranLineImage extends StatelessWidget {
         children: [
           ClipRect(
             clipper: _VerseClipper(0, h.left),
-            child: baseImage(assetPath: assetPath),
+            child: _image(provider: provider),
           ),
           ClipRect(
             clipper: _VerseClipper(h.left, h.right),
-            child: baseImage(
-              assetPath: assetPath,
+            child: _image(
+              provider: provider,
               color: audioHighlightsColor ?? Colors.blue,
               colorBlendMode: BlendMode.srcIn,
             ),
           ),
           ClipRect(
             clipper: _VerseClipper(h.right, 1),
-            child: baseImage(assetPath: assetPath),
+            child: _image(provider: provider),
           ),
         ],
       );
@@ -162,7 +151,6 @@ class QuranLineImage extends StatelessWidget {
     if (selectionHighlights.isEmpty) return [];
 
     return selectionHighlights.map((h) {
-      // `h.left` and `h.right` are physical coordinates (0.0 = left edge, 1.0 = right edge)
       final leftPos = lineWidth * h.left;
       final width = lineWidth * (h.right - h.left);
 
@@ -183,23 +171,17 @@ class QuranLineImage extends StatelessWidget {
     }).toList();
   }
 
-  /// Build verse separator markers positioned on this line.
   Widget _buildMarkers(double lineWidth, double lineHeight) {
     return Stack(
       children: markers.asMap().entries.map((entry) {
         final verse = entry.value;
-        final markerNode = verse.marker1441;
+        final markerNode = verse.getMarker(mushafType);
 
         if (markerNode == null) return const SizedBox.shrink();
 
         final markerX = lineWidth * (markerNode.centerX);
         final markerY = lineHeight * markerNode.centerY;
-
-        // Size the marker (Android uses 3.5% of total width * 2)
-        // 0.035 * 2 = 0.07 of container width. That's approx the right size.
         final markerSize = lineWidth * 0.07;
-
-        // Center the marker at (markerX, markerY)
         final adjustedX = markerX - (markerSize / 2);
         final adjustedY = markerY - (markerSize / 2);
 
@@ -223,13 +205,10 @@ class _VerseClipper extends CustomClipper<Rect> {
   Rect getClip(Size size) {
     final left = size.width * leftRatio;
     final right = size.width * rightRatio;
-
     return Rect.fromLTRB(left, 0, right, size.height);
   }
 
   @override
-  bool shouldReclip(_VerseClipper oldClipper) {
-    return oldClipper.leftRatio != leftRatio ||
-        oldClipper.rightRatio != rightRatio;
-  }
+  bool shouldReclip(_VerseClipper oldClipper) =>
+      oldClipper.leftRatio != leftRatio || oldClipper.rightRatio != rightRatio;
 }

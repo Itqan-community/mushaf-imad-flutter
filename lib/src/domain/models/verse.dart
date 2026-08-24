@@ -1,3 +1,5 @@
+import 'mushaf_type.dart';
+import 'mushaf_config.dart';
 import 'verse_marker.dart';
 import 'verse_highlight.dart';
 
@@ -39,4 +41,28 @@ class Verse {
     this.highlights1441 = const [],
     this.highlights1405 = const [],
   });
+
+  // ---------------------------------------------------------------------------
+  // Mushaf-aware accessors
+  // ---------------------------------------------------------------------------
+
+  /// Get the verse marker for the given [MushafType].
+  VerseMarker? getMarker(MushafType mushafType) {
+    final config = MushafConfigRegistry.configFor(mushafType);
+    return switch (config.markerField) {
+      'marker1441' => marker1441,
+      'marker1405' => marker1405,
+      _ => null,
+    };
+  }
+
+  /// Get the highlight regions for the given [MushafType].
+  List<VerseHighlight> getHighlights(MushafType mushafType) {
+    final config = MushafConfigRegistry.configFor(mushafType);
+    return switch (config.highlightsField) {
+      'highlights1441' => highlights1441,
+      'highlights1405' => highlights1405,
+      _ => const [],
+    };
+  }
 }

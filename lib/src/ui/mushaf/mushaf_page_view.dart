@@ -13,6 +13,7 @@ class MushafPageView extends StatefulWidget {
   final VoidCallback? onOpenChapterIndex;
   final ReadingTheme readingTheme;
   final Color? audioHighlightsColor;
+  final MushafType mushafType;
 
   final void Function(PageVerseData verse)? onSelectVerse;
 
@@ -26,6 +27,7 @@ class MushafPageView extends StatefulWidget {
     this.onOpenChapterIndex,
     this.readingTheme = ReadingTheme.light,
     this.audioHighlightsColor,
+    this.mushafType = MushafType.hafs1441,
     this.onSelectVerse,
   });
 
@@ -227,15 +229,11 @@ class MushafPageViewState extends State<MushafPageView> {
                       final pageNumber = QuranDataProvider.totalPages - index;
                       return QuranPageWidget(
                         pageNumber: pageNumber,
+                        mushafType: widget.mushafType,
                         themeData: effectiveThemeData,
                         selectedVerseKey: pageNumber == _currentPage
                             ? _selectedVerseKey
                             : null,
-                        // Pass audioVerseKey to every rendered page.
-                        // QuranPageWidget will only highlight it if the verse
-                        // actually lives on that page — so pages that don't
-                        // own the verse simply show nothing. This fixes the
-                        // case where a verse starts on the previous page.
                         audioVerseKey: _currentAudioVerseKey,
                         audioHighlightsColor: widget.audioHighlightsColor,
                         onVerseTap: (verse) {
