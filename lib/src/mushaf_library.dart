@@ -16,6 +16,27 @@ class MushafLibrary {
   static MushafLogger _logger = DefaultMushafLogger();
   static MushafAnalytics _analytics = NoOpMushafAnalytics();
 
+  /// Register an external [MushafAssetProvider] for a non-default Mushaf.
+  ///
+  /// Must be called before the Mushaf is used for display. Example:
+  /// ```dart
+  /// MushafLibrary.registerMushafAssetProvider(
+  ///   MushafType.hafs1405,
+  ///   FileAssetProvider(rootDirectory: '/storage/quran-images-1405'),
+  /// );
+  /// ```
+  static void registerMushafAssetProvider(
+    MushafType type,
+    MushafAssetProvider provider,
+  ) {
+    MushafConfigRegistry.registerAssetProvider(type, provider);
+  }
+
+  /// Check whether a Mushaf variant is available (has its asset provider).
+  static bool isMushafAvailable(MushafType type) {
+    return MushafConfigRegistry.isAvailable(type);
+  }
+
   /// Initialize the Mushaf library.
   ///
   /// Must be called before accessing any repository.

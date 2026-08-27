@@ -1,4 +1,7 @@
 import '../../domain/models/chapter_filter.dart';
+import '../../domain/models/mushaf_config.dart';
+import '../../domain/models/mushaf_type.dart';
+import 'package:flutter/widgets.dart' show ImageProvider;
 import 'quran_metadata.dart';
 
 /// Provides Quran page data — chapters, juz, and page metadata.
@@ -11,8 +14,12 @@ class QuranDataProvider {
   static final QuranDataProvider _instance = QuranDataProvider._();
   static QuranDataProvider get instance => _instance;
 
-  /// Total pages in the Mushaf.
-  static const int totalPages = 604;
+  /// Total pages in the active (default) Mushaf.
+  static int get totalPages => MushafConfigRegistry.defaultConfig.totalPages;
+
+  /// Total pages for a specific Mushaf variant.
+  static int pagesFor(MushafType type) =>
+      MushafConfigRegistry.configFor(type).totalPages;
 
   /// Total chapters in the Quran.
   static const int totalChapters = 114;
@@ -89,9 +96,26 @@ class QuranDataProvider {
     return juzStartPages[juzNumber - 1];
   }
 
-  /// Get the asset path for a line image.
+  /// Get the asset path for a line image (backward-compatible).
+  ///
+  /// Always resolves for the default hafs1441 Mushaf.
+  /// Prefer [getLineImageProvider] for multi-Mushaf support.
   static String getLineImagePath(int page, int line) {
     return 'assets/quran-images/$page/$line.png';
+  }
+
+  /// Get the [ImageProvider] for a line image for a specific Mushaf.
+  ///
+  /// Defaults to the active Mushaf config.
+  static ImageProvider getLineImageProvider(
+    int page,
+    int line, {
+    MushafType? mushafType,
+  }) {
+    final config = mushafType != null
+        ? MushafConfigRegistry.configFor(mushafType)
+        : MushafConfigRegistry.defaultConfig;
+    return config.lineImageProvider(page, line);
   }
 
   /// Convert a number to Arabic-Indic numerals.

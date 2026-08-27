@@ -4,27 +4,23 @@ import 'package:flutter/material.dart';
 import '../../data/quran/quran_data_provider.dart';
 import '../../data/quran/quran_metadata.dart';
 import '../../data/quran/verse_data_provider.dart';
+import '../../domain/models/mushaf_config.dart';
+import '../../domain/models/mushaf_type.dart';
 import '../theme/reading_theme.dart';
 import 'quran_line_image.dart';
 
 /// Renders a single Quran page — 15 line images with a page header.
-///
-/// Port of the Android QuranPageView composable.
-/// Supports verse-level selection and highlighting.
 class QuranPageWidget extends StatefulWidget {
   final int pageNumber;
-
-  /// Currently selected verse (chapterNumber * 1000 + verseNumber).
-  /// null means no selection.
   final int? selectedVerseKey;
   final int? audioVerseKey;
   final Color? audioHighlightsColor;
-
-  /// Called when a verse is tapped. Provides (PageVerseData verse).
   final void Function(PageVerseData verse)? onVerseTap;
-
-  /// Reading theme data for colors. Defaults to light theme.
   final ReadingThemeData? themeData;
+
+  /// The active Mushaf type — determines marker/highlight field selection
+  /// and image provider resolution. Defaults to hafs1441.
+  final MushafType mushafType;
 
   const QuranPageWidget({
     super.key,
@@ -34,6 +30,7 @@ class QuranPageWidget extends StatefulWidget {
     this.audioHighlightsColor,
     this.onVerseTap,
     this.themeData,
+    this.mushafType = MushafType.hafs1441,
   });
 
   @override
@@ -44,11 +41,13 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
   late final QuranDataProvider _dataProvider;
   late List<ChapterData> _chapters;
   late int _juz;
+  late MushafConfig _mushafConfig;
 
   @override
   void initState() {
     super.initState();
     _dataProvider = QuranDataProvider.instance;
+    _refreshConfig();
     _updatePageData();
   }
 
@@ -58,6 +57,13 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
     if (oldWidget.pageNumber != widget.pageNumber) {
       _updatePageData();
     }
+    if (oldWidget.mushafType != widget.mushafType) {
+      _refreshConfig();
+    }
+  }
+
+  void _refreshConfig() {
+    _mushafConfig = MushafConfigRegistry.configFor(widget.mushafType);
   }
 
   void _updatePageData() {
@@ -71,12 +77,12 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
     final pageVerses = verseProvider.getVersesForPage(widget.pageNumber);
     final theme =
         widget.themeData ?? ReadingThemeData.fromTheme(ReadingTheme.light);
+    final mushafType = widget.mushafType;
 
     return Container(
       color: theme.backgroundColor,
       child: Column(
         children: [
-          // Page header
           _PageHeader(
             chapters: _chapters,
             pageNumber: widget.pageNumber,
@@ -84,13 +90,11 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
             themeData: theme,
           ),
 
-          // Divider
           Container(
             height: 1,
             color: theme.secondaryTextColor.withValues(alpha: 0.3),
           ),
 
-          // 15 line images
           Expanded(
             child: Directionality(
               textDirection: TextDirection.rtl,
@@ -100,21 +104,17 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
                   children: List.generate(15, (index) {
                     final line = index + 1;
 
-                    // Find markers ending on this line
-                    final markers = pageVerses
+                    final markers = pageVerses.where((v) {
+                      final m = v.getMarker(mushafType);
+                      return m != null && m.line == line;
+                    }).toList();
+
+                    final versesOnLine = pageVerses
                         .where(
-                          (v) =>
-                              v.marker1441 != null &&
-                              v.marker1441!.line == line,
+                          (v) => v.occupiesLine(line, mushafType: mushafType),
                         )
                         .toList();
 
-                    // Find verses that occupy this line
-                    final versesOnLine = pageVerses
-                        .where((v) => v.occupiesLine(line))
-                        .toList();
-
-                    // Selection highlights
                     final selectionHighlights = <VerseHighlightData>[];
 
                     if (widget.selectedVerseKey != null) {
@@ -128,14 +128,13 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
 
                       if (selectedVerse != null) {
                         selectionHighlights.addAll(
-                          selectedVerse.highlights1441.where(
-                            (h) => h.line == line,
-                          ),
+                          selectedVerse
+                              .getHighlights(mushafType)
+                              .where((h) => h.line == line),
                         );
                       }
                     }
 
-                    // Audio highlights
                     final audioHighlights = <VerseHighlightData>[];
 
                     if (widget.audioVerseKey != null) {
@@ -149,9 +148,9 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
 
                       if (audioVerse != null) {
                         audioHighlights.addAll(
-                          audioVerse.highlights1441.where(
-                            (h) => h.line == line,
-                          ),
+                          audioVerse
+                              .getHighlights(mushafType)
+                              .where((h) => h.line == line),
                         );
                       }
                     }
@@ -160,12 +159,16 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
                       child: QuranLineImage(
                         page: widget.pageNumber,
                         line: line,
+                        mushafType: mushafType,
+                        imageProvider: _mushafConfig.lineImageProvider(
+                          widget.pageNumber,
+                          line,
+                        ),
                         audioHighlights: audioHighlights,
                         audioHighlightsColor: widget.audioHighlightsColor,
                         selectionHighlights: selectionHighlights,
                         markers: markers,
                         highlightColor: theme.highlightColor,
-
                         textColor: theme.textColor,
                         onTapUpExact: (tapRatio) {
                           if (widget.onVerseTap == null ||
@@ -175,11 +178,10 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
 
                           PageVerseData? target;
 
-                          // 1. Precise hit test against exact verse bounds
                           for (final verse in versesOnLine) {
-                            final hList = verse.highlights1441.where(
-                              (h) => h.line == line,
-                            );
+                            final hList = verse
+                                .getHighlights(mushafType)
+                                .where((h) => h.line == line);
                             for (final h in hList) {
                               if (tapRatio >= h.left && tapRatio <= h.right) {
                                 target = verse;
@@ -189,7 +191,6 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
                             if (target != null) break;
                           }
 
-                          // 2. Fallback if tapped on empty space or gap between verses
                           target ??= markers.isNotEmpty
                               ? markers.last
                               : versesOnLine.last;
@@ -241,7 +242,6 @@ class _PageHeader extends StatelessWidget {
         textDirection: TextDirection.rtl,
         child: Row(
           children: [
-            // Juz (right side in RTL)
             Text(
               'جزء ${QuranDataProvider.toArabicNumerals(juzNumber)}',
               style: TextStyle(
@@ -250,8 +250,6 @@ class _PageHeader extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               ),
             ),
-
-            // Chapter name (center)
             Expanded(
               child: Text(
                 chapterName,
@@ -264,8 +262,6 @@ class _PageHeader extends StatelessWidget {
                 ),
               ),
             ),
-
-            // Page number (left side in RTL)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(

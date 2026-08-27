@@ -36,6 +36,7 @@ export 'src/domain/models/chapter.dart';
 export 'src/domain/models/chapter_filter.dart';
 export 'src/domain/models/chapter_group.dart';
 export 'src/domain/models/last_read_position.dart';
+export 'src/domain/models/mushaf_config.dart';
 export 'src/domain/models/mushaf_type.dart';
 export 'src/domain/models/page.dart';
 export 'src/domain/models/page_header_info.dart';
@@ -115,6 +116,7 @@ export 'src/ui/theme/theme_picker_widget.dart';
 export 'src/ui/theme/mushaf_theme_scope.dart';
 
 // Quran Data
+export 'src/data/quran/mushaf_asset_provider.dart';
 export 'src/data/quran/quran_data_provider.dart';
 export 'src/data/quran/quran_metadata.dart';
 export 'src/data/quran/verse_data_provider.dart';

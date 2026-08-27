@@ -204,6 +204,90 @@ MushafLibrary.initialize(
 );
 ```
 
+### 🧩 Bringing Your Own Mushaf (MushafConfigRegistry)
+
+The library ships with the **Hafs 1441** Mushaf built in — it is the default, requires **zero configuration**, and existing apps keep working without any changes.
+
+If you want to support another Mushaf layout (for example **1405 Hafs**, or a future **Warsh** / **Shammarly** variant), you plug in its images through `MushafConfigRegistry` — the UI never hard-codes Mushaf logic. Every widget asks the registry for a `MushafConfig`, which resolves line images through a `MushafAssetProvider`. Register a provider once and the whole UI picks the variant up automatically.
+
+#### 1. Provide the line images
+
+Each Mushaf variant needs one PNG per line, named `<root>/<page>/<line>.png`, where `page` is 1-indexed (`1`–`604`) and `line` is 1-indexed (`1`–`15`):
+
+```
+<root>/1/1.png
+<root>/1/2.png
+...
+<root>/604/15.png
+```
+
+Depending on where the images live, pick one of the two built-in providers:
+
+```dart
+import 'package:imad_flutter/imad_flutter.dart';
+
+// Images bundled into your app/package's assets/ directory:
+// assets/quran-images-1405/1/1.png, etc.
+const bundled = FlutterAssetProvider(
+  package: 'your_app',
+  assetDirectory: 'quran-images-1405',
+);
+
+// Images downloaded from a release (e.g. GitHub Releases) and extracted
+// to a local directory: /storage/quran-images-1405/1/1.png, etc.
+final downloaded = FileAssetProvider(
+  rootDirectory: '/storage/quran-images-1405',
+);
+```
+
+#### 2. Register the provider
+
+Call this **once**, before the Mushaf is displayed (e.g. in `main()` before `MushafLibrary.initialize()`):
+
+```dart
+MushafLibrary.registerMushafAssetProvider(
+  MushafType.hafs1405,
+  FileAssetProvider(rootDirectory: '/storage/quran-images-1405'),
+);
+
+// Or directly on the registry:
+// MushafConfigRegistry.registerAssetProvider(
+//   MushafType.hafs1405,
+//   FileAssetProvider(rootDirectory: '/storage/quran-images-1405'),
+// );
+```
+
+> The default `hafs1441` is always available and **cannot be overridden** — registering a provider for it is rejected with an assertion error in debug mode.
+
+#### 3. Select the Mushaf
+
+Once registered, pass the variant to the page view:
+
+```dart
+MushafPageView(
+  initialPage: 1,
+  mushafType: MushafType.hafs1405,
+)
+```
+
+The default is `MushafType.hafs1441`, so existing `MushafPageView` usages are unaffected.
+
+#### 4. Check availability
+
+Before switching, verify the variant is usable:
+
+```dart
+if (MushafConfigRegistry.isAvailable(MushafType.hafs1405)) {
+  // Safe to display hafs1405.
+}
+```
+
+If a variant is used without registration, `MushafConfigRegistry.configFor(...)` throws a `StateError` explaining that `registerAssetProvider` must be called first.
+
+> **Note on markers/highlights:** Verse markers and highlight regions are read from the bundled `quran_verse_data.json` using per-Mushaf fields (e.g. `marker1405`, `highlights1405`). If a variant has no entries in that file, pages still render normally — markers and highlights are simply skipped.
+
+Future Mushaf variants follow the exact same pattern: add a `MushafType`, map its metadata fields in the registry, and register the asset provider in `main()`.
+
 ### 🎧 Streaming Audio via Itqan CMS
 
 The framework allows you to easily plug into the the **Itqan CMS JSON API** (`cms.itqan.dev`) for audio playback and verse-level highlight syncing, removing the need to host MP3s locally.
