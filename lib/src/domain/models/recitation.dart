@@ -39,7 +39,7 @@ class Recitation {
   /// Display name for the UI.
   String getDisplayName({String languageCode = 'ar'}) {
     final reciterName = reciter.getDisplayName(languageCode: languageCode);
-    return '$reciterName';
+    return reciterName;
   }
 
   /// Get audio URL for a chapter (only meaningful for mp3quran.net source).

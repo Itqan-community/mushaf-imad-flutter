@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../../domain/models/mushaf_config.dart';
@@ -150,6 +151,12 @@ class VerseDataProvider {
 
   /// Whether verse data has been loaded.
   bool get isLoaded => _pageData != null;
+
+  /// Sets page data directly for testing purposes.
+  @visibleForTesting
+  void setPageDataForTesting(Map<int, List<PageVerseData>> data) {
+    _pageData = data;
+  }
 
   /// Initialize by loading the JSON asset. Safe to call multiple times.
   Future<void> initialize() async {

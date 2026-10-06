@@ -22,6 +22,7 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   double _fontSizeMultiplier = 1.0;
   // ignore: unused_field
   bool _showTranslation = false;
+  LineCompactness _lineCompactness = LineCompactness.normal;
 
   // Audio preferences
   int _selectedRecitationId = 1;
@@ -41,6 +42,8 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   final _lastReadVerseController = StreamController<(int, int)?>.broadcast();
   final _fontSizeController = StreamController<double>.broadcast();
   final _showTranslationController = StreamController<bool>.broadcast();
+  final _lineCompactnessController =
+      StreamController<LineCompactness>.broadcast();
   final _recitationIdController = StreamController<int>.broadcast();
   final _playbackSpeedController = StreamController<double>.broadcast();
   final _repeatModeController = StreamController<bool>.broadcast();
@@ -115,6 +118,19 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   Future<void> setShowTranslation(bool show) async {
     _showTranslation = show;
     _showTranslationController.add(show);
+  }
+
+  @override
+  Stream<LineCompactness> getLineCompactnessStream() =>
+      _lineCompactnessController.stream;
+
+  @override
+  Future<LineCompactness> getLineCompactness() async => _lineCompactness;
+
+  @override
+  Future<void> setLineCompactness(LineCompactness compactness) async {
+    _lineCompactness = compactness;
+    _lineCompactnessController.add(compactness);
   }
 
   // ========== Audio Preferences ==========
@@ -254,5 +270,6 @@ class DefaultPreferencesRepository implements PreferencesRepository {
     _lastAudioVerse = null;
     _lastAudioPositionMs = 0;
     _themeConfig = const ThemeConfig();
+    _lineCompactness = LineCompactness.normal;
   }
 }
