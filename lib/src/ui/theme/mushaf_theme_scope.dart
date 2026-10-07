@@ -16,8 +16,8 @@ class MushafThemeNotifier extends ChangeNotifier {
   MushafThemeNotifier({
     ReadingTheme initialTheme = ReadingTheme.light,
     LineCompactness initialCompactness = LineCompactness.normal,
-  })  : _readingTheme = initialTheme,
-        _lineCompactness = initialCompactness;
+  }) : _readingTheme = initialTheme,
+       _lineCompactness = initialCompactness;
 
   /// The currently selected reading theme.
   ReadingTheme get readingTheme => _readingTheme;

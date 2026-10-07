@@ -400,6 +400,7 @@ class _MushafViewPageState extends State<MushafViewPage> {
       body: MushafPageView(
         key: _mushafKey,
         initialPage: 1,
+        lineCompactness: LineCompactness.tight,
         onPageChanged: (page) {
           setState(() => _currentPage = page);
         },
