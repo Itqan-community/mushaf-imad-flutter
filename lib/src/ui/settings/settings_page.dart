@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../di/core_module.dart';
+import '../../domain/models/line_compactness.dart';
 import '../../domain/repository/data_export_repository.dart';
 import '../../domain/repository/preferences_repository.dart';
 import '../theme/theme_picker_widget.dart';
@@ -95,6 +96,13 @@ class _SettingsPageState extends State<SettingsPage> {
                       icon: Icons.brightness_6_rounded,
                       label: 'Theme Mode',
                       value: _viewModel.themeConfig.mode.name,
+                    ),
+                    const Divider(height: 1, indent: 56),
+                    _PreferenceTile(
+                      icon: Icons.format_line_spacing_rounded,
+                      label: 'Line Compactness',
+                      value: _viewModel.lineCompactness.displayName,
+                      onTap: () => _selectCompactness(context),
                     ),
                   ],
                 ),
@@ -207,8 +215,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _handleExport(BuildContext context) async {
     try {
-      if (!mounted || !context.mounted) return;
       final outputPath = await _viewModel.exportData();
+      if (!mounted || !context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Data exported to: $outputPath'),
@@ -308,6 +316,164 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     );
   }
+
+  void _selectCompactness(BuildContext context) {
+    var selectedFactor = _viewModel.lineCompactness.factor;
+    var isExpanded = _viewModel.lineCompactness.isExpanded;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final theme = Theme.of(context);
+            final overlapPct = isExpanded
+                ? 0
+                : ((1.0 - selectedFactor) * 100).round().clamp(0, 80);
+            final spacingPct = (selectedFactor * 100).round();
+
+            return AlertDialog(
+              title: const Text('Line Compactness'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer.withValues(
+                          alpha: 0.35,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            isExpanded
+                                ? 'Expanded (full page stretch)'
+                                : 'Spacing: $spacingPct%  |  Overlap: $overlapPct%',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            isExpanded
+                                ? 'Lines stretch equally to fill viewport height.'
+                                : overlapPct > 0
+                                ? 'Adjacent line pictures overlap by $overlapPct% to reduce margins.'
+                                : 'Lines touch edge-to-edge without overlapping pictures.',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Compactness Scale',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Slider(
+                      value: selectedFactor.clamp(0.30, 1.10),
+                      min: 0.30,
+                      max: 1.10,
+                      divisions: 16,
+                      label: '$spacingPct%',
+                      onChanged: (val) {
+                        setDialogState(() {
+                          selectedFactor = double.parse(val.toStringAsFixed(2));
+                          isExpanded = false;
+                        });
+                      },
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'More Compact\n(30% / 70% overlap)',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 10,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        Text(
+                          'Loose\n(110% / 0% overlap)',
+                          textAlign: TextAlign.end,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 10,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Presets',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final preset in LineCompactness.values)
+                          ChoiceChip(
+                            label: Text(preset.displayName),
+                            selected: preset.isExpanded
+                                ? isExpanded
+                                : (!isExpanded &&
+                                      (selectedFactor - preset.factor).abs() <
+                                          0.01),
+                            onSelected: (_) {
+                              setDialogState(() {
+                                if (preset.isExpanded) {
+                                  isExpanded = true;
+                                } else {
+                                  isExpanded = false;
+                                  selectedFactor = preset.factor;
+                                }
+                              });
+                            },
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final chosen = isExpanded
+                        ? LineCompactness.expanded
+                        : LineCompactness(selectedFactor);
+                    _viewModel.setLineCompactness(chosen);
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Apply'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -350,11 +516,13 @@ class _PreferenceTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
+  final VoidCallback? onTap;
 
   const _PreferenceTile({
     required this.icon,
     required this.label,
     required this.value,
+    this.onTap,
   });
 
   @override
@@ -363,12 +531,26 @@ class _PreferenceTile extends StatelessWidget {
     return ListTile(
       leading: Icon(icon),
       title: Text(label),
-      trailing: Text(
-        value,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
+      onTap: onTap,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          if (onTap != null) ...[
+            const SizedBox(width: 4),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ],
+        ],
       ),
     );
   }

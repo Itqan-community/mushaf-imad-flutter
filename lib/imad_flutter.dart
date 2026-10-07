@@ -36,6 +36,7 @@ export 'src/domain/models/chapter.dart';
 export 'src/domain/models/chapter_filter.dart';
 export 'src/domain/models/chapter_group.dart';
 export 'src/domain/models/last_read_position.dart';
+export 'src/domain/models/line_compactness.dart';
 export 'src/domain/models/mushaf_config.dart';
 export 'src/domain/models/mushaf_type.dart';
 export 'src/domain/models/page.dart';

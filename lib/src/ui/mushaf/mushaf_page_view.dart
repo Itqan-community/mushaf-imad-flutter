@@ -17,6 +17,13 @@ class MushafPageView extends StatefulWidget {
 
   final void Function(PageVerseData verse)? onSelectVerse;
 
+  /// Defines line spacing and compactness across the pages.
+  /// If null, reads from [MushafThemeScope] or defaults to [LineCompactness.normal].
+  final LineCompactness? lineCompactness;
+
+  /// Custom padding around the page lines.
+  final EdgeInsetsGeometry? pagePadding;
+
   const MushafPageView({
     super.key,
     this.initialPage,
@@ -29,6 +36,8 @@ class MushafPageView extends StatefulWidget {
     this.audioHighlightsColor,
     this.mushafType = MushafType.hafs1441,
     this.onSelectVerse,
+    this.lineCompactness,
+    this.pagePadding,
   });
 
   @override
@@ -210,6 +219,10 @@ class MushafPageViewState extends State<MushafPageView> {
     final scopeNotifier = MushafThemeScope.maybeOf(context);
     final effectiveTheme = scopeNotifier?.readingTheme ?? widget.readingTheme;
     final effectiveThemeData = ReadingThemeData.fromTheme(effectiveTheme);
+    final effectiveCompactness =
+        widget.lineCompactness ??
+        scopeNotifier?.lineCompactness ??
+        LineCompactness.normal;
 
     return Scaffold(
       backgroundColor: effectiveThemeData.backgroundColor,
@@ -231,6 +244,8 @@ class MushafPageViewState extends State<MushafPageView> {
                         pageNumber: pageNumber,
                         mushafType: widget.mushafType,
                         themeData: effectiveThemeData,
+                        lineCompactness: effectiveCompactness,
+                        pagePadding: widget.pagePadding,
                         selectedVerseKey: pageNumber == _currentPage
                             ? _selectedVerseKey
                             : null,
@@ -327,10 +342,10 @@ class MushafPageViewState extends State<MushafPageView> {
             AudioPlayerBar(
               chapterNumber: audioChapterNumber,
               chapterName: audioChapterName,
-              // ✅ Pass current page so AudioPlayerBar can resolve the first
-              //    verse on the page when no explicit verse is tapped.
+              // Pass current page so AudioPlayerBar can resolve the first
+              // verse on the page when no explicit verse is tapped.
               currentPage: _currentPage,
-              // ✅ Pass explicit tapped verse — null means "use page context".
+              // Pass explicit tapped verse — null means "use page context".
               startVerseNumber: _tappedVerseNumber,
             ),
         ],

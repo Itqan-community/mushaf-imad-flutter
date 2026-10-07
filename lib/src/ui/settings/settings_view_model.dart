@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../domain/models/line_compactness.dart';
 import '../../domain/models/mushaf_type.dart';
 import '../../domain/models/theme.dart';
 import '../../domain/repository/data_export_repository.dart';
@@ -34,6 +35,7 @@ class SettingsViewModel extends ChangeNotifier {
   double _playbackSpeed = 1.0;
   bool _repeatMode = false;
   ThemeConfig _themeConfig = const ThemeConfig();
+  LineCompactness _lineCompactness = LineCompactness.normal;
 
   MushafType get mushafType => _mushafType;
   int get currentPage => _currentPage;
@@ -41,6 +43,7 @@ class SettingsViewModel extends ChangeNotifier {
   double get playbackSpeed => _playbackSpeed;
   bool get repeatMode => _repeatMode;
   ThemeConfig get themeConfig => _themeConfig;
+  LineCompactness get lineCompactness => _lineCompactness;
 
   /// Load current preference values.
   Future<void> _loadPreferences() async {
@@ -51,6 +54,14 @@ class SettingsViewModel extends ChangeNotifier {
     _playbackSpeed = await _preferencesRepository.getPlaybackSpeed();
     _repeatMode = await _preferencesRepository.getRepeatMode();
     _themeConfig = await _preferencesRepository.getThemeConfig();
+    _lineCompactness = await _preferencesRepository.getLineCompactness();
+    notifyListeners();
+  }
+
+  /// Update line compactness preference.
+  Future<void> setLineCompactness(LineCompactness compactness) async {
+    _lineCompactness = compactness;
+    await _preferencesRepository.setLineCompactness(compactness);
     notifyListeners();
   }
 

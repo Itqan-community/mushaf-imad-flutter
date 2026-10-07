@@ -1,3 +1,4 @@
+import '../models/line_compactness.dart';
 import '../models/mushaf_type.dart';
 import '../models/theme.dart';
 
@@ -49,6 +50,15 @@ abstract class PreferencesRepository {
 
   /// Set whether to show translation.
   Future<void> setShowTranslation(bool show);
+
+  /// Get the line compactness as a Stream.
+  Stream<LineCompactness> getLineCompactnessStream();
+
+  /// Get the current line compactness.
+  Future<LineCompactness> getLineCompactness();
+
+  /// Set the line compactness.
+  Future<void> setLineCompactness(LineCompactness compactness);
 
   // ========== Audio Preferences ==========
 

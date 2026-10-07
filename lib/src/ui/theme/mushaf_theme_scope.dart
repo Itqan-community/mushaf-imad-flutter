@@ -1,20 +1,29 @@
 import 'package:flutter/material.dart';
 
+import '../../domain/models/line_compactness.dart';
 import 'reading_theme.dart';
 
-/// A [ChangeNotifier] that holds the current [ReadingTheme] for the Mushaf.
+/// A [ChangeNotifier] that holds the current [ReadingTheme] and [LineCompactness]
+/// for the Mushaf.
 ///
 /// Place a [MushafThemeScope] at the top of your widget tree, and all
 /// child widgets (e.g. [MushafPageView], [ThemePickerWidget]) will
-/// automatically share and react to theme changes.
+/// automatically share and react to theme and layout changes.
 class MushafThemeNotifier extends ChangeNotifier {
   ReadingTheme _readingTheme;
+  LineCompactness _lineCompactness;
 
-  MushafThemeNotifier({ReadingTheme initialTheme = ReadingTheme.light})
-    : _readingTheme = initialTheme;
+  MushafThemeNotifier({
+    ReadingTheme initialTheme = ReadingTheme.light,
+    LineCompactness initialCompactness = LineCompactness.normal,
+  }) : _readingTheme = initialTheme,
+       _lineCompactness = initialCompactness;
 
   /// The currently selected reading theme.
   ReadingTheme get readingTheme => _readingTheme;
+
+  /// The currently selected line compactness.
+  LineCompactness get lineCompactness => _lineCompactness;
 
   /// Convenience getter for the resolved theme data.
   ReadingThemeData get themeData => ReadingThemeData.fromTheme(_readingTheme);
@@ -23,6 +32,14 @@ class MushafThemeNotifier extends ChangeNotifier {
   void setTheme(ReadingTheme theme) {
     if (_readingTheme != theme) {
       _readingTheme = theme;
+      notifyListeners();
+    }
+  }
+
+  /// Update the line compactness. Notifies all listeners.
+  void setCompactness(LineCompactness compactness) {
+    if (_lineCompactness != compactness) {
+      _lineCompactness = compactness;
       notifyListeners();
     }
   }
