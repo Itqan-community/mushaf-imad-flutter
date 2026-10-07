@@ -111,7 +111,8 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
             child: Directionality(
               textDirection: TextDirection.rtl,
               child: Padding(
-                padding: widget.pagePadding ??
+                padding:
+                    widget.pagePadding ??
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: widget.lineCompactness.isExpanded
                     ? _buildExpandedLines(
@@ -163,10 +164,7 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
       builder: (context, constraints) {
         const lineCount = 15;
         const lineAspectRatio = 1440.0 / 232.0;
-        final factor = (compactness.spacingFactor ?? 0.85).clamp(
-          0.20,
-          2.0,
-        );
+        final factor = (compactness.spacingFactor ?? 0.85).clamp(0.20, 2.0);
         final effectiveLineCount = (lineCount - 1) * factor + 1.0;
 
         final availWidth = constraints.maxWidth;
@@ -185,6 +183,15 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
         final step = lineHeight * factor;
         final totalContentHeight = (lineCount - 1) * step + lineHeight;
 
+        // Each line "owns" the band of its image that excludes half of the
+        // overlap with the line above and half with the line below. Adjacent
+        // bands tile exactly: line N's band ends where line N+1's begins.
+        // The same band is used for hit-testing and for trimming selection
+        // highlights, so highlights never stack (which would darken the
+        // overlap) and taps always resolve to the line under the finger.
+        final bandInsetFraction = ((1.0 - factor) / 2).clamp(0.0, 0.5);
+        final bandInsetPx = lineHeight * bandInsetFraction;
+
         return Center(
           child: SizedBox(
             width: lineWidth,
@@ -193,13 +200,10 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
               clipBehavior: Clip.none,
               children: List.generate(lineCount, (index) {
                 final line = index + 1;
-                // When line images overlap (factor < 1.0), transparent borders of later lines
-                // would intercept taps intended for earlier lines in the Z-order.
-                // _LineHitTestScope ignores hits on the upper overlapping half of later lines,
-                // allowing taps to cleanly fall through to the preceding line.
-                final topCutoff = index == 0
-                    ? 0.0
-                    : ((lineHeight - step) / 2).clamp(0.0, lineHeight);
+                // Later lines sit higher in the Stack's Z-order. Dropping hits
+                // above the band lets taps in the upper half of the overlap
+                // fall through to the preceding line.
+                final topCutoff = index == 0 ? 0.0 : bandInsetPx;
 
                 return Positioned(
                   top: index * step,
@@ -213,6 +217,7 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
                       pageVerses: pageVerses,
                       mushafType: mushafType,
                       theme: theme,
+                      highlightVerticalInset: bandInsetFraction,
                     ),
                   ),
                 );
@@ -229,6 +234,7 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
     required List<PageVerseData> pageVerses,
     required MushafType mushafType,
     required ReadingThemeData theme,
+    double highlightVerticalInset = 0.0,
   }) {
     final markers = pageVerses.where((v) {
       final m = v.getMarker(mushafType);
@@ -243,18 +249,12 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
 
     if (widget.selectedVerseKey != null) {
       final selectedVerse = versesOnLine
-          .where(
-            (v) =>
-                v.chapter * 1000 + v.number ==
-                widget.selectedVerseKey,
-          )
+          .where((v) => v.chapter * 1000 + v.number == widget.selectedVerseKey)
           .firstOrNull;
 
       if (selectedVerse != null) {
         selectionHighlights.addAll(
-          selectedVerse
-              .getHighlights(mushafType)
-              .where((h) => h.line == line),
+          selectedVerse.getHighlights(mushafType).where((h) => h.line == line),
         );
       }
     }
@@ -263,18 +263,12 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
 
     if (widget.audioVerseKey != null) {
       final audioVerse = versesOnLine
-          .where(
-            (v) =>
-                v.chapter * 1000 + v.number ==
-                widget.audioVerseKey,
-          )
+          .where((v) => v.chapter * 1000 + v.number == widget.audioVerseKey)
           .firstOrNull;
 
       if (audioVerse != null) {
         audioHighlights.addAll(
-          audioVerse
-              .getHighlights(mushafType)
-              .where((h) => h.line == line),
+          audioVerse.getHighlights(mushafType).where((h) => h.line == line),
         );
       }
     }
@@ -283,16 +277,14 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
       page: widget.pageNumber,
       line: line,
       mushafType: mushafType,
-      imageProvider: _mushafConfig.lineImageProvider(
-        widget.pageNumber,
-        line,
-      ),
+      imageProvider: _mushafConfig.lineImageProvider(widget.pageNumber, line),
       audioHighlights: audioHighlights,
       audioHighlightsColor: widget.audioHighlightsColor,
       selectionHighlights: selectionHighlights,
       markers: markers,
       highlightColor: theme.highlightColor,
       textColor: theme.textColor,
+      highlightVerticalInset: highlightVerticalInset,
       onTapUpExact: (tapRatio) {
         _handleVerseTapAt(
           line: line,
@@ -338,9 +330,7 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
       if (target != null) break;
     }
 
-    target ??= markers.isNotEmpty
-        ? markers.last
-        : versesOnLine.last;
+    target ??= markers.isNotEmpty ? markers.last : versesOnLine.last;
 
     if (kDebugMode) {
       print(
@@ -432,10 +422,7 @@ class _PageHeader extends StatelessWidget {
 class _LineHitTestScope extends SingleChildRenderObjectWidget {
   final double topCutoff;
 
-  const _LineHitTestScope({
-    required this.topCutoff,
-    required super.child,
-  });
+  const _LineHitTestScope({required this.topCutoff, required super.child});
 
   @override
   RenderObject createRenderObject(BuildContext context) =>

@@ -30,6 +30,16 @@ class QuranLineImage extends StatelessWidget {
   /// from [PageVerseData] when rendering verse separators.
   final MushafType mushafType;
 
+  /// Fraction of the line height (0.0 to 0.5) trimmed from both the top and
+  /// the bottom of selection highlights.
+  ///
+  /// When adjacent lines overlap, each line image shares part of its
+  /// transparent padding with its neighbours. Trimming the highlight to the
+  /// line's own band keeps highlights on consecutive lines from stacking on
+  /// top of each other (which would darken the overlap) and from tinting the
+  /// neighbouring line's glyphs. Defaults to 0.0 (full line height).
+  final double highlightVerticalInset;
+
   // Original image aspect ratio: 1440 x 232
   static const double _aspectRatio = 1440.0 / 232.0;
 
@@ -47,6 +57,7 @@ class QuranLineImage extends StatelessWidget {
     this.textColor,
     this.imageProvider,
     this.mushafType = MushafType.hafs1441,
+    this.highlightVerticalInset = 0.0,
   });
 
   @override
@@ -84,7 +95,7 @@ class QuranLineImage extends StatelessWidget {
             return Stack(
               fit: StackFit.expand,
               children: [
-                ..._buildSelectionHighlights(lineWidth),
+                ..._buildSelectionHighlights(lineWidth, lineHeight),
                 ..._buildAudioHighlights(provider),
                 if (markers.isNotEmpty) _buildMarkers(lineWidth, lineHeight),
               ],
@@ -152,8 +163,10 @@ class QuranLineImage extends StatelessWidget {
     }).toList();
   }
 
-  List<Widget> _buildSelectionHighlights(double lineWidth) {
+  List<Widget> _buildSelectionHighlights(double lineWidth, double lineHeight) {
     if (selectionHighlights.isEmpty) return [];
+
+    final verticalInset = lineHeight * highlightVerticalInset.clamp(0.0, 0.5);
 
     return selectionHighlights.map((h) {
       final leftPos = lineWidth * h.left;
@@ -162,8 +175,8 @@ class QuranLineImage extends StatelessWidget {
       return Positioned(
         left: leftPos,
         width: width,
-        top: 0,
-        bottom: 0,
+        top: verticalInset,
+        bottom: verticalInset,
         child: Container(
           decoration: BoxDecoration(
             color: (highlightColor ?? const Color(0xFFD4A574)).withValues(

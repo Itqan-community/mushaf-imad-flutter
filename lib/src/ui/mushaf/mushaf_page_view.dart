@@ -219,7 +219,8 @@ class MushafPageViewState extends State<MushafPageView> {
     final scopeNotifier = MushafThemeScope.maybeOf(context);
     final effectiveTheme = scopeNotifier?.readingTheme ?? widget.readingTheme;
     final effectiveThemeData = ReadingThemeData.fromTheme(effectiveTheme);
-    final effectiveCompactness = widget.lineCompactness ??
+    final effectiveCompactness =
+        widget.lineCompactness ??
         scopeNotifier?.lineCompactness ??
         LineCompactness.normal;
 

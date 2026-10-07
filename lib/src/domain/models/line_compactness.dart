@@ -21,16 +21,16 @@ class LineCompactness {
   /// For example, `0.65` means each line step is 65% of line height, creating
   /// a 35% picture overlap between adjacent lines.
   const LineCompactness(double factor)
-      : spacingFactor = factor,
-        isExpanded = false;
+    : spacingFactor = factor,
+      isExpanded = false;
 
   /// Creates a compactness configuration specifying the picture [overlap] fraction.
   ///
   /// For example, `LineCompactness.withOverlap(0.40)` specifies that adjacent
   /// line pictures overlap by 40% of their height.
   const LineCompactness.withOverlap(double overlap)
-      : spacingFactor = 1.0 - overlap,
-        isExpanded = false;
+    : spacingFactor = 1.0 - overlap,
+      isExpanded = false;
 
   /// Creates a compactness setting from a 0.0 to 2.0 normalized compactness scale:
   /// - `0.0`: loose / no overlap (`spacingFactor = 1.0`)
@@ -43,21 +43,19 @@ class LineCompactness {
     return LineCompactness(factor);
   }
 
-  const LineCompactness._expanded()
-      : spacingFactor = null,
-        isExpanded = true;
+  const LineCompactness._expanded() : spacingFactor = null, isExpanded = true;
 
-  /// Ultra compact lines — 45% picture overlap, minimum margins between calligraphy.
+  /// Ultra compact lines — 60% picture overlap, minimum margins between calligraphy.
+  /// Spacing factor: 0.40.
+  static const LineCompactness ultraCompact = LineCompactness(0.40);
+
+  /// Tight compactness — 45% picture overlap between adjacent lines.
   /// Spacing factor: 0.55.
-  static const LineCompactness ultraCompact = LineCompactness(0.55);
+  static const LineCompactness tight = LineCompactness(0.55);
 
-  /// Tight compactness — 35% picture overlap between adjacent lines.
-  /// Spacing factor: 0.65.
-  static const LineCompactness tight = LineCompactness(0.65);
-
-  /// Compact lines — 25% picture overlap, authentic Mushaf feel.
-  /// Spacing factor: 0.75.
-  static const LineCompactness compact = LineCompactness(0.75);
+  /// Compact lines — 30% picture overlap, authentic Mushaf feel.
+  /// Spacing factor: 0.70.
+  static const LineCompactness compact = LineCompactness(0.70);
 
   /// Normal compactness — 15% picture overlap, well-balanced default spacing.
   /// Spacing factor: 0.85.
@@ -73,8 +71,8 @@ class LineCompactness {
 
   /// Create a custom compactness with a specific spacing factor.
   const LineCompactness.custom(double factor)
-      : spacingFactor = factor,
-        isExpanded = false;
+    : spacingFactor = factor,
+      isExpanded = false;
 
   /// Effective spacing factor as a non-null double (defaults to 1.0 when expanded).
   double get factor => spacingFactor ?? 1.0;
@@ -83,8 +81,9 @@ class LineCompactness {
   ///
   /// - `0.0`: 0% overlap (lines touch edge-to-edge).
   /// - `0.15`: 15% overlap (normal default).
-  /// - `0.35`: 35% overlap (tight).
-  /// - `0.45`: 45% overlap (ultra-compact).
+  /// - `0.30`: 30% overlap (compact).
+  /// - `0.45`: 45% overlap (tight).
+  /// - `0.60`: 60% overlap (ultra-compact).
   double get overlap => isExpanded ? 0.0 : (1.0 - factor).clamp(0.0, 0.80);
 
   /// All standard preset values.
@@ -100,10 +99,10 @@ class LineCompactness {
   /// Human-readable identifier for this compactness setting.
   String get name {
     if (isExpanded) return 'expanded';
-    if (spacingFactor == 0.55) return 'ultraCompact';
-    if (spacingFactor == 0.65 || spacingFactor == 0.70) return 'tight';
-    if (spacingFactor == 0.75 || spacingFactor == 0.78) return 'compact';
-    if (spacingFactor == 0.85 || spacingFactor == 0.86) return 'normal';
+    if (spacingFactor == 0.40) return 'ultraCompact';
+    if (spacingFactor == 0.55) return 'tight';
+    if (spacingFactor == 0.70) return 'compact';
+    if (spacingFactor == 0.85) return 'normal';
     if (spacingFactor == 1.0) return 'loose';
     return 'custom';
   }
@@ -111,9 +110,9 @@ class LineCompactness {
   /// User-friendly label with percentage.
   String get displayName {
     if (isExpanded) return 'Expanded';
-    if (spacingFactor == 0.55) return 'Ultra Compact (55%)';
-    if (spacingFactor == 0.65) return 'Tight (65%)';
-    if (spacingFactor == 0.75) return 'Compact (75%)';
+    if (spacingFactor == 0.40) return 'Ultra Compact (40%)';
+    if (spacingFactor == 0.55) return 'Tight (55%)';
+    if (spacingFactor == 0.70) return 'Compact (70%)';
     if (spacingFactor == 0.85) return 'Normal (85%)';
     if (spacingFactor == 1.0) return 'Loose (100%)';
     return 'Custom (${(factor * 100).toInt()}%)';
@@ -122,7 +121,7 @@ class LineCompactness {
   /// Parses a [LineCompactness] from a name or number string.
   ///
   /// Supports names ('tight', 'compact', 'ultracompact', etc.) as well
-  /// as numbers ('0.65', '65', '65%').
+  /// as numbers ('0.70', '70', '70%').
   static LineCompactness fromName(String name) {
     final trimmed = name.trim().toLowerCase().replaceAll('%', '');
     final parsed = double.tryParse(trimmed);

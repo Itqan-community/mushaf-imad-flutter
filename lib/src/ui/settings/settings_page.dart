@@ -366,8 +366,8 @@ class _SettingsPageState extends State<SettingsPage> {
                             isExpanded
                                 ? 'Lines stretch equally to fill viewport height.'
                                 : overlapPct > 0
-                                    ? 'Adjacent line pictures overlap by $overlapPct% to reduce margins.'
-                                    : 'Lines touch edge-to-edge without overlapping pictures.',
+                                ? 'Adjacent line pictures overlap by $overlapPct% to reduce margins.'
+                                : 'Lines touch edge-to-edge without overlapping pictures.',
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
@@ -430,16 +430,12 @@ class _SettingsPageState extends State<SettingsPage> {
                       children: [
                         for (final preset in LineCompactness.values)
                           ChoiceChip(
-                            label: Text(
-                              preset.isExpanded
-                                  ? 'Expanded'
-                                  : '${preset.name} (${(preset.factor * 100).toInt()}%)',
-                            ),
+                            label: Text(preset.displayName),
                             selected: preset.isExpanded
                                 ? isExpanded
                                 : (!isExpanded &&
-                                    (selectedFactor - preset.factor).abs() <
-                                        0.01),
+                                      (selectedFactor - preset.factor).abs() <
+                                          0.01),
                             onSelected: (_) {
                               setDialogState(() {
                                 if (preset.isExpanded) {

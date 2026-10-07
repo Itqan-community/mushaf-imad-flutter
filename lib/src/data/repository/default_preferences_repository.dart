@@ -125,12 +125,23 @@ class DefaultPreferencesRepository implements PreferencesRepository {
       _lineCompactnessController.stream;
 
   @override
-  Future<LineCompactness> getLineCompactness() async => _lineCompactness;
+  Future<LineCompactness> getLineCompactness() async {
+    final box = await Hive.openBox('settings');
+    final rawValue = box.get(
+      'line_compactness',
+      defaultValue: LineCompactness.normal.factor,
+    );
+    _lineCompactness = LineCompactness((rawValue as num).toDouble());
+    return _lineCompactness;
+  }
 
   @override
   Future<void> setLineCompactness(LineCompactness compactness) async {
     _lineCompactness = compactness;
     _lineCompactnessController.add(compactness);
+
+    final box = await Hive.openBox('settings');
+    await box.put('line_compactness', compactness.factor);
   }
 
   // ========== Audio Preferences ==========
