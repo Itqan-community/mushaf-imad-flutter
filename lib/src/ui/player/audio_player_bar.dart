@@ -81,7 +81,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
         );
         await mushafGetIt<AudioRepository>().loadChapter(
           widget.chapterNumber,
-          _viewModel.selectedRecitation!.id,
+          _viewModel.selectedRecitation!,
           autoPlay: widget.autoPlay,
           startVerseNumber: startVerse,
         );
@@ -114,7 +114,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
 
     mushafGetIt<AudioRepository>().loadChapter(
       widget.chapterNumber,
-      _viewModel.selectedRecitation!.id,
+      _viewModel.selectedRecitation!,
       autoPlay: widget.autoPlay,
       startVerseNumber: startVerse,
     );
@@ -406,8 +406,8 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
                   itemCount: _viewModel.recitations.length,
                   itemBuilder: (context, index) {
                     final isSelected =
-                        _viewModel.selectedRecitation?.id ==
-                        _viewModel.recitations[index].id;
+                        _viewModel.selectedRecitation?.persistenceKey ==
+                        _viewModel.recitations[index].persistenceKey;
                     return ListTile(
                       trailing: Text(
                         _viewModel.recitations[index].audioSource.name,

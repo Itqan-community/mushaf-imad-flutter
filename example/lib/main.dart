@@ -400,7 +400,7 @@ class _MushafViewPageState extends State<MushafViewPage> {
       body: MushafPageView(
         key: _mushafKey,
         initialPage: 1,
-        lineCompactness: LineCompactness.tight,
+        lineCompactness: LineCompactness(.70),
         onPageChanged: (page) {
           setState(() => _currentPage = page);
         },
@@ -1083,7 +1083,7 @@ class _QuranComDemoPageState extends State<QuranComDemoPage> {
         if (needsLoad) {
           _audioRepo.loadChapter(
             _selectedChapter,
-            _selectedRecitation!.id,
+            _selectedRecitation!,
             autoPlay: true,
           );
         } else {

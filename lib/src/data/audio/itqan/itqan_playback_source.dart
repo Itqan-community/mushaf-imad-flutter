@@ -53,10 +53,11 @@ class ItqanPlaybackSource implements AudioPlaybackSource {
   @override
   Future<void> loadChapter(
     int chapterNumber,
-    int recitationId, {
+    Recitation recitation, {
     bool autoPlay = false,
     int startVerseNumber = 1,
   }) async {
+    final recitationId = recitation.id;
     try {
       List<ItqanRecitationSurahTrack> tracks;
 

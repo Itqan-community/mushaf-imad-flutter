@@ -1,11 +1,12 @@
 import '../../../domain/models/audio_source.dart';
 import '../../../domain/models/reciter_timing.dart';
+import '../../../domain/models/recitation.dart';
 import '../../../logging/mushaf_logger.dart';
 import '../ayah_timing_service.dart';
 import '../base/audio_playback_source.dart';
 import '../flutter_audio_player.dart';
 import 'qurancom_data_source.dart';
-import 'qurancom_recitation_provider.dart';
+
 
 /// [AudioPlaybackSource] implementation for the Quran.com (Quran.Foundation)
 /// streaming API.
@@ -13,7 +14,6 @@ import 'qurancom_recitation_provider.dart';
 /// Fetches chapter audio URLs and verse-level timing segments from
 /// [QurancomDataSource], then drives playback via the shared [FlutterAudioPlayer].
 class QuranComPlaybackSource implements AudioPlaybackSource {
-  final QuranComRecitationProvider _recitationProvider;
   final AyahTimingService _timingService;
   final QurancomDataSource _dataSource;
   final FlutterAudioPlayer _audioPlayer;
@@ -24,13 +24,11 @@ class QuranComPlaybackSource implements AudioPlaybackSource {
   int? _loadedReciterId;
 
   QuranComPlaybackSource({
-    required QuranComRecitationProvider recitationProvider,
     required AyahTimingService timingService,
     required QurancomDataSource dataSource,
     required FlutterAudioPlayer audioPlayer,
     MushafLogger? logger,
-  }) : _recitationProvider = recitationProvider,
-       _timingService = timingService,
+  }) : _timingService = timingService,
        _dataSource = dataSource,
        _audioPlayer = audioPlayer,
        _logger = logger;
@@ -41,14 +39,12 @@ class QuranComPlaybackSource implements AudioPlaybackSource {
   @override
   Future<void> loadChapter(
     int chapterNumber,
-    int recitationId, {
+    Recitation recitation, {
     bool autoPlay = false,
     int startVerseNumber = 1,
   }) async {
-    final recitation = await _recitationProvider.getRecitationById(
-      recitationId,
-    );
-    if (recitation == null) return;
+    final recitationId = recitation.id;
+
 
     try {
       final needsLoad =

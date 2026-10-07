@@ -9,6 +9,8 @@ import '../audio/base/audio_playback_source.dart';
 import '../audio/base/audio_recitation_provider.dart';
 import '../audio/flutter_audio_player.dart';
 
+import '../../mushaf_library.dart';
+
 /// An [AudioRepository] that aggregates one or more audio source backends
 /// simultaneously.
 ///
@@ -55,7 +57,13 @@ class CompositeAudioRepository implements AudioRepository {
   Future<List<Recitation>> getAllRecitations() async {
     final results = <Recitation>[];
     for (final provider in _recitationProviders) {
-      results.addAll(await provider.getAllRecitations());
+      try {
+        results.addAll(await provider.getAllRecitations());
+      } catch (e) {
+        MushafLibrary.logger.error(
+          '[CompositeAudioRepository] Error fetching recitations from ${provider.source.name}: $e',
+        );
+      }
     }
     // Sort alphabetically by English name.
     results.sort(
@@ -66,11 +74,15 @@ class CompositeAudioRepository implements AudioRepository {
 
   @override
   Future<Recitation?> getRecitationById(int recitationId) async {
-    // The caller must use the full list to distinguish same-id recitations from
-    // different sources. This method returns the first match found.
     for (final provider in _recitationProviders) {
-      final recitation = await provider.getRecitationById(recitationId);
-      if (recitation != null) return recitation;
+      try {
+        final recitation = await provider.getRecitationById(recitationId);
+        if (recitation != null) return recitation;
+      } catch (e) {
+        MushafLibrary.logger.error(
+          '[CompositeAudioRepository] Error finding recitation by ID from ${provider.source.name}: $e',
+        );
+      }
     }
     return null;
   }
@@ -82,9 +94,15 @@ class CompositeAudioRepository implements AudioRepository {
   }) async {
     final results = <Recitation>[];
     for (final provider in _recitationProviders) {
-      results.addAll(
-        await provider.searchRecitations(query, languageCode: languageCode),
-      );
+      try {
+        results.addAll(
+          await provider.searchRecitations(query, languageCode: languageCode),
+        );
+      } catch (e) {
+        MushafLibrary.logger.error(
+          '[CompositeAudioRepository] Error searching recitations in ${provider.source.name}: $e',
+        );
+      }
     }
     results.sort(
       (a, b) => a.reciter.nameEnglish.compareTo(b.reciter.nameEnglish),
@@ -120,20 +138,11 @@ class CompositeAudioRepository implements AudioRepository {
   @override
   Future<void> loadChapter(
     int chapterNumber,
-    int recitationId, {
+    Recitation recitation, {
     bool autoPlay = false,
     int startVerseNumber = 1,
   }) async {
-    MushafAudioSource? targetSource;
-    for (final provider in _recitationProviders) {
-      final recitation = await provider.getRecitationById(recitationId);
-      if (recitation != null) {
-        targetSource = recitation.audioSource;
-        break;
-      }
-    }
-
-    if (targetSource == null) return;
+    final targetSource = recitation.audioSource;
 
     final playbackSource = _playbackSources[targetSource];
     if (playbackSource == null) return;
@@ -141,7 +150,7 @@ class CompositeAudioRepository implements AudioRepository {
     _activeSource = targetSource;
     await playbackSource.loadChapter(
       chapterNumber,
-      recitationId,
+      recitation,
       autoPlay: autoPlay,
       startVerseNumber: startVerseNumber,
     );
@@ -154,11 +163,17 @@ class CompositeAudioRepository implements AudioRepository {
       if (_activeSource != null &&
           state.currentRecitationId != null &&
           state.currentChapter != null) {
-        verse = await _playbackSources[_activeSource]?.getCurrentVerse(
-          state.currentRecitationId!,
-          state.currentChapter!,
-          state.currentPositionMs,
-        );
+        try {
+          verse = await _playbackSources[_activeSource]?.getCurrentVerse(
+            state.currentRecitationId!,
+            state.currentChapter!,
+            state.currentPositionMs,
+          );
+        } catch (e) {
+          MushafLibrary.logger.debug(
+            '[CompositeAudioRepository] Error getting current verse: $e',
+          );
+        }
       }
       yield state.copyWith(currentVerse: verse);
     }

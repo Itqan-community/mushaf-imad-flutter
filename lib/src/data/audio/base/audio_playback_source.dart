@@ -1,5 +1,6 @@
 import '../../../domain/models/audio_source.dart';
 import '../../../domain/models/reciter_timing.dart';
+import '../../../domain/models/recitation.dart';
 
 /// Common interface for any class that performs audio-data fetching and
 /// verse-timing queries for a specific backend source.
@@ -24,7 +25,7 @@ abstract class AudioPlaybackSource {
   /// [startVerseNumber] Seek to this verse upon loading.
   Future<void> loadChapter(
     int chapterNumber,
-    int recitationId, {
+    Recitation recitation, {
     bool autoPlay = false,
     int startVerseNumber = 1,
   });

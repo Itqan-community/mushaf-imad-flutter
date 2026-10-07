@@ -32,7 +32,7 @@ abstract class AudioRepository {
   /// Load and optionally play a chapter.
   Future<void> loadChapter(
     int chapterNumber,
-    int recitationId, {
+    Recitation recitation, {
     bool autoPlay = false,
     int startVerseNumber = 1,
   });

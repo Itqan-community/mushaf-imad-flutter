@@ -65,25 +65,17 @@ class DefaultAudioRepository implements AudioRepository {
   @override
   Future<void> loadChapter(
     int chapterNumber,
-    int recitationId, {
+    Recitation recitation, {
     bool autoPlay = false,
     int startVerseNumber = 1,
   }) async {
     MushafLibrary.logger.debug(
-      '[DefaultAudioRepository] loadChapter → chapter=$chapterNumber, recitation=$recitationId, startVerse=$startVerseNumber, autoPlay=$autoPlay',
+      '[DefaultAudioRepository] loadChapter → chapter=$chapterNumber, recitation=${recitation.id}, startVerse=$startVerseNumber, autoPlay=$autoPlay',
     );
-
-    final recitation = _recitationService.getRecitationById(recitationId);
-    if (recitation == null) {
-      MushafLibrary.logger.debug(
-        '[DefaultAudioRepository] loadChapter → recitation NOT FOUND for id=$recitationId',
-      );
-      return;
-    }
 
     // Only reload audio if chapter or recitation changed.
     final needsLoad =
-        _loadedChapter != chapterNumber || _loadedRecitationId != recitationId;
+        _loadedChapter != chapterNumber || _loadedRecitationId != recitation.id;
 
     if (needsLoad) {
       await _audioPlayer.loadChapter(
@@ -92,7 +84,7 @@ class DefaultAudioRepository implements AudioRepository {
         autoPlay: false,
       );
       _loadedChapter = chapterNumber;
-      _loadedRecitationId = recitationId;
+      _loadedRecitationId = recitation.id;
       MushafLibrary.logger.debug(
         '[DefaultAudioRepository] loadChapter → audio loaded for chapter=$chapterNumber',
       );
@@ -105,7 +97,7 @@ class DefaultAudioRepository implements AudioRepository {
     // Always seek — even for verse 1 (seek to zero) so position is deterministic
     if (startVerseNumber > 1) {
       final timing = await _ayahTimingService.getAyahTiming(
-        recitationId,
+        recitation.id,
         chapterNumber,
         startVerseNumber,
       );

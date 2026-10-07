@@ -60,6 +60,8 @@ class QuranPlayerViewModel extends ChangeNotifier {
         _selectedRecitation = recitation;
         notifyListeners();
       });
+    } catch (e) {
+      debugPrint('[QuranPlayerViewModel] Error initializing audio player: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -74,7 +76,7 @@ class QuranPlayerViewModel extends ChangeNotifier {
     if (_selectedRecitation == null) return;
     _audioRepository.loadChapter(
       chapterNumber,
-      _selectedRecitation!.id,
+      _selectedRecitation!,
       autoPlay: true,
       startVerseNumber: startVerseNumber,
     );
@@ -100,6 +102,19 @@ class QuranPlayerViewModel extends ChangeNotifier {
     _selectedRecitation = recitation;
     _audioRepository.saveSelectedRecitation(recitation);
     await _preferencesRepository.setSelectedRecitationId(recitation.id);
+    
+    // If audio is active, seamlessly switch the reciter at the current verse.
+    if (_playerState.currentChapter != null &&
+        (_playerState.isPlaying || _playerState.playbackState == PlaybackState.paused)) {
+      final startVerse = _playerState.currentVerse ?? 1;
+      _audioRepository.loadChapter(
+        _playerState.currentChapter!,
+        recitation,
+        autoPlay: _playerState.isPlaying,
+        startVerseNumber: startVerse,
+      );
+    }
+    
     notifyListeners();
   }
 
