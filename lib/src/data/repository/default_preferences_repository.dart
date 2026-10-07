@@ -127,11 +127,17 @@ class DefaultPreferencesRepository implements PreferencesRepository {
   @override
   Future<LineCompactness> getLineCompactness() async {
     final box = await Hive.openBox('settings');
-    final rawValue = box.get(
-      'line_compactness',
-      defaultValue: LineCompactness.normal.factor,
-    );
-    _lineCompactness = LineCompactness((rawValue as num).toDouble());
+    final isExpanded =
+        box.get('line_compactness_expanded', defaultValue: false) as bool;
+    if (isExpanded) {
+      _lineCompactness = LineCompactness.expanded;
+    } else {
+      final rawValue = box.get(
+        'line_compactness',
+        defaultValue: LineCompactness.normal.factor,
+      );
+      _lineCompactness = LineCompactness((rawValue as num).toDouble());
+    }
     return _lineCompactness;
   }
 
@@ -141,7 +147,10 @@ class DefaultPreferencesRepository implements PreferencesRepository {
     _lineCompactnessController.add(compactness);
 
     final box = await Hive.openBox('settings');
-    await box.put('line_compactness', compactness.factor);
+    await box.put('line_compactness_expanded', compactness.isExpanded);
+    if (!compactness.isExpanded) {
+      await box.put('line_compactness', compactness.factor);
+    }
   }
 
   // ========== Audio Preferences ==========

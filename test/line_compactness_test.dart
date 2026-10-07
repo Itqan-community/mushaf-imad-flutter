@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:imad_flutter/imad_flutter.dart';
+import 'dart:io';
+import 'package:hive/hive.dart';
 import 'package:imad_flutter/src/data/repository/default_preferences_repository.dart';
 
 void main() {
   group('LineCompactness model tests', () {
     test('preset values have expected spacing factors and overlap', () {
-      expect(LineCompactness.ultraCompact.spacingFactor, equals(0.55));
-      expect(LineCompactness.ultraCompact.overlap, closeTo(0.45, 0.001));
+      expect(LineCompactness.ultraCompact.spacingFactor, equals(0.40));
+      expect(LineCompactness.ultraCompact.overlap, closeTo(0.60, 0.001));
       expect(LineCompactness.ultraCompact.isExpanded, isFalse);
 
-      expect(LineCompactness.tight.spacingFactor, equals(0.65));
-      expect(LineCompactness.tight.overlap, closeTo(0.35, 0.001));
+      expect(LineCompactness.tight.spacingFactor, equals(0.55));
+      expect(LineCompactness.tight.overlap, closeTo(0.45, 0.001));
       expect(LineCompactness.tight.isExpanded, isFalse);
 
-      expect(LineCompactness.compact.spacingFactor, equals(0.75));
-      expect(LineCompactness.compact.overlap, closeTo(0.25, 0.001));
+      expect(LineCompactness.compact.spacingFactor, equals(0.70));
+      expect(LineCompactness.compact.overlap, closeTo(0.30, 0.001));
       expect(LineCompactness.compact.isExpanded, isFalse);
 
       expect(LineCompactness.normal.spacingFactor, equals(0.85));
@@ -102,20 +104,20 @@ void main() {
     test('displayName formats preset and custom values', () {
       expect(
         LineCompactness.ultraCompact.displayName,
-        equals('Ultra Compact (55%)'),
+        equals('Ultra Compact (40%)'),
       );
-      expect(LineCompactness.tight.displayName, equals('Tight (65%)'));
-      expect(LineCompactness.compact.displayName, equals('Compact (75%)'));
+      expect(LineCompactness.tight.displayName, equals('Tight (55%)'));
+      expect(LineCompactness.compact.displayName, equals('Compact (70%)'));
       expect(LineCompactness.normal.displayName, equals('Normal (85%)'));
       expect(LineCompactness.loose.displayName, equals('Loose (100%)'));
       expect(LineCompactness.expanded.displayName, equals('Expanded'));
-      expect(const LineCompactness(0.40).displayName, equals('Custom (40%)'));
+      expect(const LineCompactness(0.42).displayName, equals('Custom (42%)'));
     });
 
     test('equality and hashCode work as expected', () {
-      expect(const LineCompactness(0.75), equals(LineCompactness.compact));
+      expect(const LineCompactness(0.70), equals(LineCompactness.compact));
       expect(
-        const LineCompactness(0.75).hashCode,
+        const LineCompactness(0.70).hashCode,
         equals(LineCompactness.compact.hashCode),
       );
       expect(LineCompactness.compact, isNot(equals(LineCompactness.normal)));
@@ -123,8 +125,8 @@ void main() {
     });
 
     test('toString formats meaningfully', () {
-      expect(LineCompactness.compact.toString(), contains('0.75'));
-      expect(LineCompactness.compact.toString(), contains('25%'));
+      expect(LineCompactness.compact.toString(), contains('0.7'));
+      expect(LineCompactness.compact.toString(), contains('30%'));
       expect(
         LineCompactness.expanded.toString(),
         equals('LineCompactness.expanded'),
@@ -150,6 +152,10 @@ void main() {
     test(
       'DefaultPreferencesRepository stores and streams line compactness',
       () async {
+        Hive.init(Directory.current.path);
+        final box = await Hive.openBox('settings');
+        await box.clear();
+
         final repo = DefaultPreferencesRepository();
 
         expect(await repo.getLineCompactness(), equals(LineCompactness.normal));
