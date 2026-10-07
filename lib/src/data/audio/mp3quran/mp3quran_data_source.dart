@@ -9,7 +9,7 @@ class Mp3QuranDataSource implements MushafAudioDataSource {
   final Mp3QuranApiClient _apiClient;
 
   Mp3QuranDataSource({Mp3QuranApiClient? apiClient})
-      : _apiClient = apiClient ?? Mp3QuranApiClient();
+    : _apiClient = apiClient ?? Mp3QuranApiClient();
 
   @override
   Future<List<Recitation>> fetchAllRecitations() async {
@@ -17,8 +17,13 @@ class Mp3QuranDataSource implements MushafAudioDataSource {
   }
 
   @override
-  Future<String> fetchChapterAudioUrl(int recitationId, int chapterNumber) async {
-    final recitation = await RecitationDataProvider.getRecitationByIdAsync(recitationId);
+  Future<String> fetchChapterAudioUrl(
+    int recitationId,
+    int chapterNumber,
+  ) async {
+    final recitation = await RecitationDataProvider.getRecitationByIdAsync(
+      recitationId,
+    );
     if (recitation != null) {
       return recitation.getAudioUrl(chapterNumber);
     }

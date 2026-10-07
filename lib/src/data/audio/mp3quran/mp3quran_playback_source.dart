@@ -6,7 +6,6 @@ import '../ayah_timing_service.dart';
 import '../base/audio_playback_source.dart';
 import '../flutter_audio_player.dart';
 
-
 /// [AudioPlaybackSource] implementation for the mp3quran.net static files.
 ///
 /// Delegates timing queries to [AyahTimingService] (which loads pre-computed

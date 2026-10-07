@@ -76,7 +76,7 @@ class RecitationDataProvider {
 
   // --- Synchronous versions for backward compatibility in places that need them immediately.
   // Note: These will return empty/null if ensureLoaded() hasn't completed yet.
-  
+
   static List<Recitation> get allRecitations => _allRecitations;
 
   static Recitation? getRecitationById(int recitationId) {
@@ -110,8 +110,12 @@ class RecitationDataProvider {
     if (_allRecitations.isEmpty) {
       // Return a dummy to prevent crashes before load
       return const Recitation(
-        id: 51, 
-        reciter: Reciter(id: 51, nameArabic: 'جاري التحميل...', nameEnglish: 'Loading...'), 
+        id: 51,
+        reciter: Reciter(
+          id: 51,
+          nameArabic: 'جاري التحميل...',
+          nameEnglish: 'Loading...',
+        ),
         riwayah: Riwayah(id: 1, nameArabic: '', nameEnglish: ''),
       );
     }

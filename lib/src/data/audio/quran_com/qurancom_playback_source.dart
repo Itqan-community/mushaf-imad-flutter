@@ -7,7 +7,6 @@ import '../base/audio_playback_source.dart';
 import '../flutter_audio_player.dart';
 import 'qurancom_data_source.dart';
 
-
 /// [AudioPlaybackSource] implementation for the Quran.com (Quran.Foundation)
 /// streaming API.
 ///
@@ -44,7 +43,6 @@ class QuranComPlaybackSource implements AudioPlaybackSource {
     int startVerseNumber = 1,
   }) async {
     final recitationId = recitation.id;
-
 
     try {
       final needsLoad =

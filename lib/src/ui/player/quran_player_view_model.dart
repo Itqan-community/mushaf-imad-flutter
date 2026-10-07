@@ -24,6 +24,7 @@ class QuranPlayerViewModel extends ChangeNotifier {
   Recitation? _selectedRecitation;
   double _playbackSpeed = 1.0;
   bool _isLoading = false;
+  String? _errorMessage;
 
   // Getters
   AudioPlayerState get playerState => _playerState;
@@ -32,6 +33,7 @@ class QuranPlayerViewModel extends ChangeNotifier {
   double get playbackSpeed => _playbackSpeed;
   bool get isLoading => _isLoading;
   bool get isPlaying => _playerState.isPlaying;
+  String? get errorMessage => _errorMessage;
 
   /// Initialize the player ViewModel.
   Future<void> initialize() async {
@@ -62,6 +64,7 @@ class QuranPlayerViewModel extends ChangeNotifier {
       });
     } catch (e) {
       debugPrint('[QuranPlayerViewModel] Error initializing audio player: $e');
+      _errorMessage = 'Failed to load audio player.';
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -102,10 +105,11 @@ class QuranPlayerViewModel extends ChangeNotifier {
     _selectedRecitation = recitation;
     _audioRepository.saveSelectedRecitation(recitation);
     await _preferencesRepository.setSelectedRecitationId(recitation.id);
-    
+
     // If audio is active, seamlessly switch the reciter at the current verse.
     if (_playerState.currentChapter != null &&
-        (_playerState.isPlaying || _playerState.playbackState == PlaybackState.paused)) {
+        (_playerState.isPlaying ||
+            _playerState.playbackState == PlaybackState.paused)) {
       final startVerse = _playerState.currentVerse ?? 1;
       _audioRepository.loadChapter(
         _playerState.currentChapter!,
@@ -114,7 +118,7 @@ class QuranPlayerViewModel extends ChangeNotifier {
         startVerseNumber: startVerse,
       );
     }
-    
+
     notifyListeners();
   }
 

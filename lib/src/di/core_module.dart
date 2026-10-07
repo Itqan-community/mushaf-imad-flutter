@@ -199,7 +199,7 @@ Future<void> setupMushafDependencies({
     mushafGetIt.unregister<AyahTimingService>();
     final timingService = AyahTimingService(dataSource: dataSource);
     mushafGetIt.registerSingleton<AyahTimingService>(timingService);
-    
+
     recitationProviders.add(Mp3QuranRecitationProvider());
     playbackSources[MushafAudioSource.mp3quran] = Mp3QuranPlaybackSource(
       timingService: timingService,

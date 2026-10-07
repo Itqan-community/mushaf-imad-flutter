@@ -13,7 +13,8 @@ class RecitationService {
   RecitationService();
 
   /// Get all available recitations.
-  Future<List<Recitation>> getAllRecitations() => RecitationDataProvider.getAllRecitationsAsync();
+  Future<List<Recitation>> getAllRecitations() =>
+      RecitationDataProvider.getAllRecitationsAsync();
 
   /// Get recitation by ID.
   Future<Recitation?> getRecitationById(int recitationId) =>

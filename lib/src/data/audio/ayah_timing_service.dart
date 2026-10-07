@@ -25,7 +25,7 @@ class AyahTimingService {
   ) async {
     final timings = await getChapterTimings(recitationId, chapterNumber);
     if (timings.isEmpty) return null;
-    
+
     return timings.firstWhereOrNull((a) => a.ayah == ayahNumber);
   }
 
@@ -75,6 +75,9 @@ class AyahTimingService {
           return remoteTimings;
         }
       } catch (e) {
+        MushafLibrary.logger.debug(
+          '[AyahTimingService] Error fetching timing dynamically: $e',
+        );
         // Fallback to empty list gracefully so the audio player doesn't crash
         return [];
       }

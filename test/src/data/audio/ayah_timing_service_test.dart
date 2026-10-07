@@ -176,8 +176,6 @@ void main() {
       },
     );
 
-
-
     test(
       'getChapterTimings handles dataSource throwing an exception gracefully',
       () async {

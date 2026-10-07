@@ -20,7 +20,7 @@ abstract class AudioPlaybackSource {
   /// Loads (and optionally begins auto-playing) the specified chapter.
   ///
   /// [chapterNumber] 1-114
-  /// [recitationId] The internal ID of the recitation in this specific source backend.
+  /// [recitation] The full recitation object for this specific source backend.
   /// [autoPlay] Immediately start playback after loading.
   /// [startVerseNumber] Seek to this verse upon loading.
   Future<void> loadChapter(

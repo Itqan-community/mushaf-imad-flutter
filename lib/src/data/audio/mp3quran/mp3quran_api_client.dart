@@ -16,8 +16,8 @@ class Mp3QuranApiClient {
   final bool _internalHttpClient;
 
   Mp3QuranApiClient({http.Client? httpClient})
-      : _httpClient = httpClient ?? http.Client(),
-        _internalHttpClient = httpClient == null;
+    : _httpClient = httpClient ?? http.Client(),
+      _internalHttpClient = httpClient == null;
 
   void dispose() {
     if (_internalHttpClient) {
@@ -36,21 +36,29 @@ class Mp3QuranApiClient {
       try {
         final content = await cachedFile.readAsString();
         final data = jsonDecode(content) as List;
-        return data.map((e) => _mapToRecitation(e as Map<String, dynamic>)).toList();
+        return data
+            .map((e) => _mapToRecitation(e as Map<String, dynamic>))
+            .toList();
       } catch (e) {
         // Fallback to fetch if cache is corrupted
       }
     }
 
     // Fetch from API
-    final response = await _httpClient.get(Uri.parse(url)).timeout(const Duration(seconds: 15));
+    final response = await _httpClient
+        .get(Uri.parse(url))
+        .timeout(const Duration(seconds: 15));
     if (response.statusCode == 200) {
       // Save to cache
       await cachedFile.writeAsString(response.body);
       final data = jsonDecode(response.body) as List;
-      return data.map((e) => _mapToRecitation(e as Map<String, dynamic>)).toList();
+      return data
+          .map((e) => _mapToRecitation(e as Map<String, dynamic>))
+          .toList();
     } else {
-      throw Exception('Failed to fetch MP3Quran reciters: ${response.statusCode}');
+      throw Exception(
+        'Failed to fetch MP3Quran reciters: ${response.statusCode}',
+      );
     }
   }
 
@@ -59,27 +67,38 @@ class Mp3QuranApiClient {
     required int reciterId,
     required int chapterNumber,
   }) async {
-    final url = 'https://www.mp3quran.net/api/v3/ayat_timing?surah=$chapterNumber&read=$reciterId';
-    final cachedFile = await _getCacheFile('mp3quran_timing_${reciterId}_$chapterNumber.json');
+    final url =
+        'https://www.mp3quran.net/api/v3/ayat_timing?surah=$chapterNumber&read=$reciterId';
+    final cachedFile = await _getCacheFile(
+      'mp3quran_timing_${reciterId}_$chapterNumber.json',
+    );
 
     // Try cache first
     if (await cachedFile.exists()) {
       try {
         final content = await cachedFile.readAsString();
         final data = jsonDecode(content) as List;
-        return data.map((e) => AyahTiming.fromJson(e as Map<String, dynamic>)).toList();
+        return data
+            .map((e) => AyahTiming.fromJson(e as Map<String, dynamic>))
+            .toList();
       } catch (e) {
         // Fallback
       }
     }
 
-    final response = await _httpClient.get(Uri.parse(url)).timeout(const Duration(seconds: 15));
+    final response = await _httpClient
+        .get(Uri.parse(url))
+        .timeout(const Duration(seconds: 15));
     if (response.statusCode == 200) {
       await cachedFile.writeAsString(response.body);
       final data = jsonDecode(response.body) as List;
-      return data.map((e) => AyahTiming.fromJson(e as Map<String, dynamic>)).toList();
+      return data
+          .map((e) => AyahTiming.fromJson(e as Map<String, dynamic>))
+          .toList();
     } else {
-      throw Exception('Failed to fetch timings for chapter $chapterNumber from mp3quran');
+      throw Exception(
+        'Failed to fetch timings for chapter $chapterNumber from mp3quran',
+      );
     }
   }
 
@@ -105,11 +124,7 @@ class Mp3QuranApiClient {
         nameArabic: name,
         nameEnglish: name, // The API mostly gives Arabic names
       ),
-      riwayah: Riwayah(
-        id: id, 
-        nameArabic: rewayaName,
-        nameEnglish: rewayaName,
-      ),
+      riwayah: Riwayah(id: id, nameArabic: rewayaName, nameEnglish: rewayaName),
       folderUrl: folderUrl,
       audioSource: MushafAudioSource.mp3quran,
     );

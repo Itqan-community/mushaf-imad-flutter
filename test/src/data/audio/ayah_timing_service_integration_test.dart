@@ -172,6 +172,5 @@ void main() {
         expect(timings, isEmpty);
       },
     );
-
   });
 }
