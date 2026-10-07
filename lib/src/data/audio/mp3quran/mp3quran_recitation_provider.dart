@@ -10,22 +10,22 @@ class Mp3QuranRecitationProvider implements AudioRecitationProvider {
 
   @override
   Future<List<Recitation>> getAllRecitations() async =>
-      RecitationDataProvider.allRecitations;
+      RecitationDataProvider.getAllRecitationsAsync();
 
   @override
   Future<Recitation?> getRecitationById(int recitationId) async =>
-      RecitationDataProvider.getRecitationById(recitationId);
+      RecitationDataProvider.getRecitationByIdAsync(recitationId);
 
   @override
   Future<List<Recitation>> searchRecitations(
     String query, {
     String languageCode = 'ar',
-  }) async => RecitationDataProvider.searchRecitations(
+  }) async => RecitationDataProvider.searchRecitationsAsync(
     query,
     languageCode: languageCode,
   );
 
   @override
   Future<Recitation> getDefaultRecitation() async =>
-      RecitationDataProvider.getDefaultRecitation();
+      RecitationDataProvider.getDefaultRecitationAsync();
 }

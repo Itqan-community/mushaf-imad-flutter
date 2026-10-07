@@ -9,7 +9,7 @@ automatically.
 
 | Source | Enum Value | Credentials Required |
 |--------|-----------|---------------------|
-| mp3quran.net (static MP3 + JSON timing) | `MushafAudioSource.mp3quran` | None (default) |
+| mp3quran.net (dynamic API fetching for reciters & timings) | `MushafAudioSource.mp3quran` | None (default) |
 | Quran.Foundation (Quran.com) streaming API | `MushafAudioSource.quranCom` | OAuth2 client ID + secret |
 | Itqan CMS API | `MushafAudioSource.itqan` | CMS base URL |
 
