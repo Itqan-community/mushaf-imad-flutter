@@ -100,12 +100,12 @@ routing is needed.
 
 ```dart
 final repo = MushafLibrary.getAudioRepository();
-final reciters = await repo.getAllReciters(); // merged list from all sources
+final recitations = await repo.getAllRecitations(); // merged list from all sources
 
-final selected = reciters.first;
+final selected = recitations.first;
 // selected.audioSource tells you which backend it came from
 
-await repo.loadChapter(1, selected.id); // automatically routed
+await repo.loadChapter(1, selected); // automatically routed
 ```
 
 ## Architecture

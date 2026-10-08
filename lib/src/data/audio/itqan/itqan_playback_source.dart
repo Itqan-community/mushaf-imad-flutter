@@ -9,7 +9,6 @@ import '../base/audio_playback_source.dart';
 import '../flutter_audio_player.dart';
 import 'itqan_audio_config.dart';
 import 'itqan_audio_models.dart';
-import 'itqan_recitation_provider.dart';
 
 /// [AudioPlaybackSource] implementation for the Itqan CMS API.
 ///
@@ -18,7 +17,6 @@ import 'itqan_recitation_provider.dart';
 /// [FlutterAudioPlayer].
 class ItqanPlaybackSource implements AudioPlaybackSource {
   final ItqanAudioConfig _config;
-  final ItqanRecitationProvider _recitationProvider;
   final FlutterAudioPlayer _audioPlayer;
   final http.Client? _client;
 
@@ -30,11 +28,9 @@ class ItqanPlaybackSource implements AudioPlaybackSource {
 
   ItqanPlaybackSource({
     required ItqanAudioConfig config,
-    required ItqanRecitationProvider recitationProvider,
     required FlutterAudioPlayer audioPlayer,
     http.Client? client,
   }) : _config = config,
-       _recitationProvider = recitationProvider,
        _audioPlayer = audioPlayer,
        _client = client;
 
@@ -94,10 +90,6 @@ class ItqanPlaybackSource implements AudioPlaybackSource {
       _currentChapterTimings = surahTrack.ayahsTimings
           .map((t) => t.toAyahTiming())
           .toList();
-
-      final Recitation recitation =
-          await _recitationProvider.getRecitationById(recitationId) ??
-          await _recitationProvider.getDefaultRecitation();
 
       await _audioPlayer.loadFromUrl(
         surahTrack.audioUrl,

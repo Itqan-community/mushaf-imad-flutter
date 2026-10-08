@@ -60,7 +60,7 @@ class DefaultAudioRepository implements AudioRepository {
 
   // Tracks what is currently loaded to avoid race conditions from double loads
   int? _loadedChapter;
-  int? _loadedRecitationId;
+  String? _loadedRecitationKey;
 
   @override
   Future<void> loadChapter(
@@ -70,12 +70,13 @@ class DefaultAudioRepository implements AudioRepository {
     int startVerseNumber = 1,
   }) async {
     MushafLibrary.logger.debug(
-      '[DefaultAudioRepository] loadChapter → chapter=$chapterNumber, recitation=${recitation.id}, startVerse=$startVerseNumber, autoPlay=$autoPlay',
+      '[DefaultAudioRepository] loadChapter → chapter=$chapterNumber, recitation=${recitation.persistenceKey}, startVerse=$startVerseNumber, autoPlay=$autoPlay',
     );
 
-    // Only reload audio if chapter or recitation changed.
+    // Only reload audio if chapter or recitation (source + id) changed.
     final needsLoad =
-        _loadedChapter != chapterNumber || _loadedRecitationId != recitation.id;
+        _loadedChapter != chapterNumber ||
+        _loadedRecitationKey != recitation.persistenceKey;
 
     if (needsLoad) {
       await _audioPlayer.loadChapter(
@@ -84,7 +85,7 @@ class DefaultAudioRepository implements AudioRepository {
         autoPlay: false,
       );
       _loadedChapter = chapterNumber;
-      _loadedRecitationId = recitation.id;
+      _loadedRecitationKey = recitation.persistenceKey;
       MushafLibrary.logger.debug(
         '[DefaultAudioRepository] loadChapter → audio loaded for chapter=$chapterNumber',
       );

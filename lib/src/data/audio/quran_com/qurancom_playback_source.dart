@@ -18,10 +18,6 @@ class QuranComPlaybackSource implements AudioPlaybackSource {
   final FlutterAudioPlayer _audioPlayer;
   final MushafLogger? _logger;
 
-  // Tracks what is currently loaded to avoid redundant reloads.
-  int? _loadedChapter;
-  int? _loadedReciterId;
-
   QuranComPlaybackSource({
     required AyahTimingService timingService,
     required QurancomDataSource dataSource,
@@ -45,8 +41,8 @@ class QuranComPlaybackSource implements AudioPlaybackSource {
     final recitationId = recitation.id;
 
     try {
-      final needsLoad =
-          _loadedChapter != chapterNumber || _loadedReciterId != recitationId;
+      // The player is shared across sources, so ask it directly.
+      final needsLoad = !_audioPlayer.isLoaded(chapterNumber, recitation);
 
       if (needsLoad) {
         final audioUrl = await _dataSource.fetchChapterAudioUrl(
@@ -59,8 +55,6 @@ class QuranComPlaybackSource implements AudioPlaybackSource {
           autoPlay: autoPlay,
           audioUrl: audioUrl,
         );
-        _loadedChapter = chapterNumber;
-        _loadedReciterId = recitationId;
       }
 
       if (startVerseNumber > 1) {

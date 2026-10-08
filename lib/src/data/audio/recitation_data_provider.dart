@@ -1,25 +1,38 @@
 import '../../domain/models/recitation.dart';
-import '../../domain/models/reciter.dart';
-import '../../domain/models/riwayah.dart';
 import 'mp3quran/mp3quran_api_client.dart';
 
 /// Provider for all available Quran recitations from mp3quran.net.
+///
+/// Recitations are fetched dynamically from the mp3quran API (with an
+/// on-disk cache handled by [Mp3QuranApiClient]). Prefer the `*Async`
+/// methods, which guarantee the list has been loaded before answering.
 class RecitationDataProvider {
   RecitationDataProvider._();
 
   static List<Recitation> _allRecitations = [];
   static bool _isLoaded = false;
+  static Future<void>? _loadingFuture;
   static final _apiClient = Mp3QuranApiClient();
 
-  /// Ensure recitations are loaded
-  static Future<void> ensureLoaded() async {
-    if (_isLoaded) return;
+  /// Default reciter ID (Abdul Basit Abdul Samad, Mujawwad) when available.
+  static const int defaultRecitationId = 51;
+
+  /// Ensures recitations are loaded.
+  ///
+  /// Concurrent callers share a single in-flight request. If the request
+  /// fails, the error is rethrown and the in-flight future is cleared so the
+  /// next call can retry.
+  static Future<void> ensureLoaded() {
+    if (_isLoaded) return Future.value();
+    return _loadingFuture ??= _load();
+  }
+
+  static Future<void> _load() async {
     try {
       _allRecitations = await _apiClient.fetchRecitations();
       _isLoaded = true;
-    } catch (e) {
-      // Fallback to empty or simple list if network fails and cache is empty
-      _allRecitations = [];
+    } finally {
+      _loadingFuture = null;
     }
   }
 
@@ -32,11 +45,7 @@ class RecitationDataProvider {
   /// Get recitation by ID.
   static Future<Recitation?> getRecitationByIdAsync(int recitationId) async {
     await ensureLoaded();
-    try {
-      return _allRecitations.firstWhere((r) => r.id == recitationId);
-    } catch (_) {
-      return null;
-    }
+    return getRecitationById(recitationId);
   }
 
   /// Search recitations by name (Arabic or English).
@@ -45,48 +54,41 @@ class RecitationDataProvider {
     String languageCode = 'ar',
   }) async {
     await ensureLoaded();
-    final normalizedQuery = query.trim().toLowerCase();
-    return _allRecitations.where((recitation) {
-      if (languageCode == 'ar') {
-        return recitation.reciter.nameArabic.contains(normalizedQuery) ||
-            recitation.riwayah.nameArabic.contains(normalizedQuery);
-      }
-      return recitation.reciter.nameEnglish.toLowerCase().contains(
-            normalizedQuery,
-          ) ||
-          (recitation.riwayah.nameEnglish.toLowerCase().contains(
-            normalizedQuery,
-          ));
-    }).toList();
+    return searchRecitations(query, languageCode: languageCode);
   }
 
-  /// Get default recitation (e.g. Abdul Basit Mujawwad ID 51, or first available).
+  /// Get default recitation ([defaultRecitationId], or first available).
+  ///
+  /// Throws a [StateError] if the API returned no recitations.
   static Future<Recitation> getDefaultRecitationAsync() async {
     await ensureLoaded();
-    if (_allRecitations.isEmpty) {
-      throw Exception('No recitations loaded from MP3Quran');
+    final recitation = getDefaultRecitation();
+    if (recitation == null) {
+      throw StateError('No recitations available from MP3Quran');
     }
-    // Try to find Abdul Basit Mujawwad (51) as default, otherwise pick first
-    try {
-      return _allRecitations.firstWhere((r) => r.id == 51);
-    } catch (_) {
-      return _allRecitations.first;
-    }
+    return recitation;
   }
 
-  // --- Synchronous versions for backward compatibility in places that need them immediately.
-  // Note: These will return empty/null if ensureLoaded() hasn't completed yet.
+  // --- Synchronous accessors.
+  // These only read the in-memory cache and do NOT trigger a load. They
+  // return empty/null until [ensureLoaded] has completed successfully.
 
-  static List<Recitation> get allRecitations => _allRecitations;
+  /// Whether recitations have been loaded into memory.
+  static bool get isLoaded => _isLoaded;
 
+  /// Cached recitations (empty until [ensureLoaded] completes).
+  static List<Recitation> get allRecitations =>
+      List.unmodifiable(_allRecitations);
+
+  /// Cached lookup by ID (null until [ensureLoaded] completes).
   static Recitation? getRecitationById(int recitationId) {
-    try {
-      return _allRecitations.firstWhere((r) => r.id == recitationId);
-    } catch (_) {
-      return null;
+    for (final r in _allRecitations) {
+      if (r.id == recitationId) return r;
     }
+    return null;
   }
 
+  /// Cached search (empty until [ensureLoaded] completes).
   static List<Recitation> searchRecitations(
     String query, {
     String languageCode = 'ar',
@@ -100,29 +102,15 @@ class RecitationDataProvider {
       return recitation.reciter.nameEnglish.toLowerCase().contains(
             normalizedQuery,
           ) ||
-          (recitation.riwayah.nameEnglish.toLowerCase().contains(
+          recitation.riwayah.nameEnglish.toLowerCase().contains(
             normalizedQuery,
-          ));
+          );
     }).toList();
   }
 
-  static Recitation getDefaultRecitation() {
-    if (_allRecitations.isEmpty) {
-      // Return a dummy to prevent crashes before load
-      return const Recitation(
-        id: 51,
-        reciter: Reciter(
-          id: 51,
-          nameArabic: 'جاري التحميل...',
-          nameEnglish: 'Loading...',
-        ),
-        riwayah: Riwayah(id: 1, nameArabic: '', nameEnglish: ''),
-      );
-    }
-    try {
-      return _allRecitations.firstWhere((r) => r.id == 51);
-    } catch (_) {
-      return _allRecitations.first;
-    }
+  /// Cached default recitation, or null if nothing has been loaded yet.
+  static Recitation? getDefaultRecitation() {
+    if (_allRecitations.isEmpty) return null;
+    return getRecitationById(defaultRecitationId) ?? _allRecitations.first;
   }
 }

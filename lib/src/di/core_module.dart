@@ -242,7 +242,6 @@ Future<void> setupMushafDependencies({
     final recitationProvider = ItqanRecitationProvider(config: config);
     final playbackSource = ItqanPlaybackSource(
       config: config,
-      recitationProvider: recitationProvider,
       audioPlayer: resolvedPlayer,
     );
     recitationProviders.add(recitationProvider);

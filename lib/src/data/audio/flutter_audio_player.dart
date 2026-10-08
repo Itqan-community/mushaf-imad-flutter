@@ -12,6 +12,13 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
 
   int? _currentChapter;
   int? _currentRecitationId;
+  String? _currentRecitationKey;
+
+  /// Whether the shared player currently holds audio for [chapterNumber]
+  /// recited by [recitation] (compared by source + id).
+  bool isLoaded(int chapterNumber, Recitation recitation) =>
+      _currentChapter == chapterNumber &&
+      _currentRecitationKey == recitation.persistenceKey;
 
   /// Expose the underlying just_audio player state as our domain state
   final _domainStateController =
@@ -117,6 +124,7 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
   }) async {
     _currentChapter = chapterNumber;
     _currentRecitationId = recitation.id;
+    _currentRecitationKey = recitation.persistenceKey;
 
     // Use provided URL, or derive from recitation for local/static sources.
     // Apply CORS proxy on web for static URLs to bypass restrictive headers.
@@ -138,6 +146,7 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
   }) async {
     _currentChapter = chapterNumber;
     _currentRecitationId = recitation.id;
+    _currentRecitationKey = recitation.persistenceKey;
 
     final title = 'Surah ${chapterNumber.toString().padLeft(3, "0")}';
     await _loadUrlInternal(url, title, recitation.getDisplayName(), autoPlay);

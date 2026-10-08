@@ -14,10 +14,6 @@ class Mp3QuranPlaybackSource implements AudioPlaybackSource {
   final AyahTimingService _timingService;
   final FlutterAudioPlayer _audioPlayer;
 
-  // Tracks what is currently loaded to avoid redundant reloads.
-  int? _loadedChapter;
-  int? _loadedRecitationId;
-
   Mp3QuranPlaybackSource({
     required AyahTimingService timingService,
     required FlutterAudioPlayer audioPlayer,
@@ -40,8 +36,9 @@ class Mp3QuranPlaybackSource implements AudioPlaybackSource {
       'recitation=$recitationId, startVerse=$startVerseNumber, autoPlay=$autoPlay',
     );
 
-    final needsLoad =
-        _loadedChapter != chapterNumber || _loadedRecitationId != recitationId;
+    // The player is shared across sources, so ask it directly instead of
+    // keeping a local cache that goes stale when another source plays.
+    final needsLoad = !_audioPlayer.isLoaded(chapterNumber, recitation);
 
     if (needsLoad) {
       await _audioPlayer.loadChapter(
@@ -50,8 +47,6 @@ class Mp3QuranPlaybackSource implements AudioPlaybackSource {
         autoPlay: false,
         audioUrl: recitation.getAudioUrl(chapterNumber),
       );
-      _loadedChapter = chapterNumber;
-      _loadedRecitationId = recitationId;
       MushafLibrary.logger.debug(
         '[Mp3QuranPlaybackSource] audio loaded for chapter=$chapterNumber',
       );

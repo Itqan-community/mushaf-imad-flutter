@@ -26,6 +26,9 @@ class QuranPlayerViewModel extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
+  int? _lastKnownVerseChapter;
+  int? _lastKnownVerse;
+
   // Getters
   AudioPlayerState get playerState => _playerState;
   List<Recitation> get recitations => _recitations;
@@ -52,6 +55,10 @@ class QuranPlayerViewModel extends ChangeNotifier {
       // Observe player state
       _playerStateSub = _audioRepository.getPlayerStateStream().listen((state) {
         _playerState = state;
+        if (state.currentChapter != null && state.currentVerse != null) {
+          _lastKnownVerseChapter = state.currentChapter;
+          _lastKnownVerse = state.currentVerse;
+        }
         notifyListeners();
       });
 
@@ -101,25 +108,42 @@ class QuranPlayerViewModel extends ChangeNotifier {
   void seekTo(int positionMs) => _audioRepository.seekTo(positionMs);
 
   /// Select a recitation.
+  ///
+  /// If audio is playing or paused, the new reciter is loaded immediately at
+  /// the current verse.
   Future<void> selectRecitation(Recitation recitation) async {
+    // Snapshot playback state before any await so later stream ticks
+    // (e.g. a stop triggered by the switch) cannot change the decision.
+    final state = _playerState;
+    final chapter = state.currentChapter;
+    final wasPlaying = state.isPlaying;
+    final isActive =
+        chapter != null &&
+        (wasPlaying || state.playbackState == PlaybackState.paused);
+    final startVerse =
+        state.currentVerse ??
+        (_lastKnownVerseChapter == chapter ? _lastKnownVerse : null) ??
+        1;
+
     _selectedRecitation = recitation;
     _audioRepository.saveSelectedRecitation(recitation);
+    notifyListeners();
     await _preferencesRepository.setSelectedRecitationId(recitation.id);
 
-    // If audio is active, seamlessly switch the reciter at the current verse.
-    if (_playerState.currentChapter != null &&
-        (_playerState.isPlaying ||
-            _playerState.playbackState == PlaybackState.paused)) {
-      final startVerse = _playerState.currentVerse ?? 1;
-      _audioRepository.loadChapter(
-        _playerState.currentChapter!,
-        recitation,
-        autoPlay: _playerState.isPlaying,
-        startVerseNumber: startVerse,
-      );
+    if (isActive) {
+      try {
+        await _audioRepository.loadChapter(
+          chapter,
+          recitation,
+          autoPlay: wasPlaying,
+          startVerseNumber: startVerse,
+        );
+      } catch (e) {
+        debugPrint('[QuranPlayerViewModel] Error switching recitation: $e');
+        _errorMessage = 'Failed to switch reciter.';
+        notifyListeners();
+      }
     }
-
-    notifyListeners();
   }
 
   /// Set playback speed.

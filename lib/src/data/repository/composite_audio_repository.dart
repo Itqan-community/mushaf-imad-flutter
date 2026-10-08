@@ -37,6 +37,7 @@ class CompositeAudioRepository implements AudioRepository {
 
   /// Tracks which source is currently active, set on [loadChapter].
   MushafAudioSource? _activeSource;
+  Recitation? _lastSelectedRecitation;
 
   final StreamController<Recitation?> _selectedRecitationController =
       StreamController<Recitation?>.broadcast();
@@ -124,6 +125,7 @@ class CompositeAudioRepository implements AudioRepository {
 
   @override
   void saveSelectedRecitation(Recitation recitation) {
+    _lastSelectedRecitation = recitation;
     _selectedRecitationController.add(recitation);
   }
 
@@ -277,13 +279,31 @@ class CompositeAudioRepository implements AudioRepository {
   // Internal helpers
   // ---------------------------------------------------------------------------
 
+  /// Resolves the playback source for [recitationId].
+  ///
+  /// Numeric IDs collide across providers, so the source of the selected
+  /// recitation is preferred when its ID matches, followed by the source that
+  /// is currently playing. Scanning providers by ID is a last-resort fallback.
   Future<AudioPlaybackSource?> _resolveSourceForRecitation(
     int recitationId,
   ) async {
+    final selected = _lastSelectedRecitation;
+    if (selected != null && selected.id == recitationId) {
+      return _playbackSources[selected.audioSource];
+    }
+
+    if (_activeSource != null) return _playbackSources[_activeSource];
+
     for (final provider in _recitationProviders) {
-      final recitation = await provider.getRecitationById(recitationId);
-      if (recitation != null) {
-        return _playbackSources[recitation.audioSource];
+      try {
+        final recitation = await provider.getRecitationById(recitationId);
+        if (recitation != null) {
+          return _playbackSources[recitation.audioSource];
+        }
+      } catch (e) {
+        MushafLibrary.logger.debug(
+          '[CompositeAudioRepository] Provider lookup failed: $e',
+        );
       }
     }
     return null;
