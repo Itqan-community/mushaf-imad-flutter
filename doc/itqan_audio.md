@@ -17,6 +17,8 @@ import 'package:imad_flutter/imad_flutter.dart';
 const itqanConfig = ItqanAudioConfig(
   baseUrl: 'https://api.cms.itqan.dev',
   defaultReciterId: 1,
+  // Add your API key here (recommended for higher rate limits & account-aware features)
+  apiKey: 'YOUR_API_KEY_HERE', 
 );
 ```
 
@@ -41,6 +43,7 @@ void main() async {
   const itqanConfig = ItqanAudioConfig(
     baseUrl: 'https://api.cms.itqan.dev',
     defaultReciterId: 1,
+    apiKey: 'YOUR_API_KEY_HERE',
   );
 
   await MushafLibrary.initialize(
