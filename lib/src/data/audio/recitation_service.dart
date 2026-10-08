@@ -13,24 +13,25 @@ class RecitationService {
   RecitationService();
 
   /// Get all available recitations.
-  List<Recitation> getAllRecitations() => RecitationDataProvider.allRecitations;
+  Future<List<Recitation>> getAllRecitations() =>
+      RecitationDataProvider.getAllRecitationsAsync();
 
   /// Get recitation by ID.
-  Recitation? getRecitationById(int recitationId) =>
-      RecitationDataProvider.getRecitationById(recitationId);
+  Future<Recitation?> getRecitationById(int recitationId) =>
+      RecitationDataProvider.getRecitationByIdAsync(recitationId);
 
   /// Search recitations.
-  List<Recitation> searchRecitations(
+  Future<List<Recitation>> searchRecitations(
     String query, {
     String languageCode = 'ar',
-  }) => RecitationDataProvider.searchRecitations(
+  }) => RecitationDataProvider.searchRecitationsAsync(
     query,
     languageCode: languageCode,
   );
 
   /// Get default recitation.
-  Recitation getDefaultRecitation() =>
-      RecitationDataProvider.getDefaultRecitation();
+  Future<Recitation> getDefaultRecitation() =>
+      RecitationDataProvider.getDefaultRecitationAsync();
 
   /// Get selected recitation.
   Recitation? get selectedRecitation => _selectedRecitation;

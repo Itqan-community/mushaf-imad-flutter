@@ -177,25 +177,6 @@ void main() {
     );
 
     test(
-      'getChapterTimings reads from local assets if available and does NOT call API',
-      () async {
-        // Arrange - Reciter 1 has local assets in the project (from legacy bulk timing files).
-        const reciterId = 1;
-        const chapterNumber = 1;
-
-        // Act
-        final timings = await timingService.getChapterTimings(
-          reciterId,
-          chapterNumber,
-        );
-
-        // Assert
-        expect(timings, isNotEmpty, reason: 'Should load from local assets');
-        verifyNever(() => mockDataSource.fetchChapterTiming(any(), any()));
-      },
-    );
-
-    test(
       'getChapterTimings handles dataSource throwing an exception gracefully',
       () async {
         // Arrange

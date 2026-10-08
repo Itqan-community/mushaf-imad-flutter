@@ -1,10 +1,10 @@
 import '../../../domain/models/audio_source.dart';
 import '../../../domain/models/reciter_timing.dart';
+import '../../../domain/models/recitation.dart';
 import '../../../mushaf_library.dart';
 import '../ayah_timing_service.dart';
 import '../base/audio_playback_source.dart';
 import '../flutter_audio_player.dart';
-import '../recitation_data_provider.dart';
 
 /// [AudioPlaybackSource] implementation for the mp3quran.net static files.
 ///
@@ -13,10 +13,6 @@ import '../recitation_data_provider.dart';
 class Mp3QuranPlaybackSource implements AudioPlaybackSource {
   final AyahTimingService _timingService;
   final FlutterAudioPlayer _audioPlayer;
-
-  // Tracks what is currently loaded to avoid redundant reloads.
-  int? _loadedChapter;
-  int? _loadedRecitationId;
 
   Mp3QuranPlaybackSource({
     required AyahTimingService timingService,
@@ -30,25 +26,19 @@ class Mp3QuranPlaybackSource implements AudioPlaybackSource {
   @override
   Future<void> loadChapter(
     int chapterNumber,
-    int recitationId, {
+    Recitation recitation, {
     bool autoPlay = false,
     int startVerseNumber = 1,
   }) async {
+    final recitationId = recitation.id;
     MushafLibrary.logger.debug(
       '[Mp3QuranPlaybackSource] loadChapter → chapter=$chapterNumber, '
       'recitation=$recitationId, startVerse=$startVerseNumber, autoPlay=$autoPlay',
     );
 
-    final recitation = RecitationDataProvider.getRecitationById(recitationId);
-    if (recitation == null) {
-      MushafLibrary.logger.debug(
-        '[Mp3QuranPlaybackSource] recitation NOT FOUND for id=$recitationId',
-      );
-      return;
-    }
-
-    final needsLoad =
-        _loadedChapter != chapterNumber || _loadedRecitationId != recitationId;
+    // The player is shared across sources, so ask it directly instead of
+    // keeping a local cache that goes stale when another source plays.
+    final needsLoad = !_audioPlayer.isLoaded(chapterNumber, recitation);
 
     if (needsLoad) {
       await _audioPlayer.loadChapter(
@@ -57,8 +47,6 @@ class Mp3QuranPlaybackSource implements AudioPlaybackSource {
         autoPlay: false,
         audioUrl: recitation.getAudioUrl(chapterNumber),
       );
-      _loadedChapter = chapterNumber;
-      _loadedRecitationId = recitationId;
       MushafLibrary.logger.debug(
         '[Mp3QuranPlaybackSource] audio loaded for chapter=$chapterNumber',
       );

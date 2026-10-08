@@ -9,7 +9,7 @@ automatically.
 
 | Source | Enum Value | Credentials Required |
 |--------|-----------|---------------------|
-| mp3quran.net (static MP3 + JSON timing) | `MushafAudioSource.mp3quran` | None (default) |
+| mp3quran.net (dynamic API fetching for reciters & timings) | `MushafAudioSource.mp3quran` | None (default) |
 | Quran.Foundation (Quran.com) streaming API | `MushafAudioSource.quranCom` | OAuth2 client ID + secret |
 | Itqan CMS API | `MushafAudioSource.itqan` | CMS base URL |
 
@@ -100,12 +100,12 @@ routing is needed.
 
 ```dart
 final repo = MushafLibrary.getAudioRepository();
-final reciters = await repo.getAllReciters(); // merged list from all sources
+final recitations = await repo.getAllRecitations(); // merged list from all sources
 
-final selected = reciters.first;
+final selected = recitations.first;
 // selected.audioSource tells you which backend it came from
 
-await repo.loadChapter(1, selected.id); // automatically routed
+await repo.loadChapter(1, selected); // automatically routed
 ```
 
 ## Architecture

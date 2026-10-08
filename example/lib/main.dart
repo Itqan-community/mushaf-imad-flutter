@@ -1083,7 +1083,7 @@ class _QuranComDemoPageState extends State<QuranComDemoPage> {
         if (needsLoad) {
           _audioRepo.loadChapter(
             _selectedChapter,
-            _selectedRecitation!.id,
+            _selectedRecitation!,
             autoPlay: true,
           );
         } else {

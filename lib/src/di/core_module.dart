@@ -8,6 +8,7 @@ import '../data/audio/itqan/itqan_playback_source.dart';
 import '../data/audio/itqan/itqan_recitation_provider.dart';
 import '../data/audio/mp3quran/mp3quran_playback_source.dart';
 import '../data/audio/mp3quran/mp3quran_recitation_provider.dart';
+import '../data/audio/mp3quran/mp3quran_data_source.dart';
 import '../data/audio/quran_com/qurancom_api_client.dart';
 import '../data/audio/quran_com/qurancom_audio_source_config.dart';
 import '../data/audio/quran_com/qurancom_data_source.dart';
@@ -194,7 +195,11 @@ Future<void> setupMushafDependencies({
   final playbackSources = <MushafAudioSource, AudioPlaybackSource>{};
 
   if (audioSources.contains(MushafAudioSource.mp3quran)) {
-    final timingService = mushafGetIt<AyahTimingService>();
+    final dataSource = Mp3QuranDataSource();
+    mushafGetIt.unregister<AyahTimingService>();
+    final timingService = AyahTimingService(dataSource: dataSource);
+    mushafGetIt.registerSingleton<AyahTimingService>(timingService);
+
     recitationProviders.add(Mp3QuranRecitationProvider());
     playbackSources[MushafAudioSource.mp3quran] = Mp3QuranPlaybackSource(
       timingService: timingService,
@@ -225,7 +230,6 @@ Future<void> setupMushafDependencies({
 
     recitationProviders.add(recitationProvider);
     playbackSources[MushafAudioSource.quranCom] = QuranComPlaybackSource(
-      recitationProvider: recitationProvider,
       timingService: timingService,
       dataSource: dataSource,
       audioPlayer: resolvedPlayer,
@@ -238,7 +242,6 @@ Future<void> setupMushafDependencies({
     final recitationProvider = ItqanRecitationProvider(config: config);
     final playbackSource = ItqanPlaybackSource(
       config: config,
-      recitationProvider: recitationProvider,
       audioPlayer: resolvedPlayer,
     );
     recitationProviders.add(recitationProvider);

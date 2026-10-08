@@ -48,4 +48,12 @@ class Recitation {
     final paddedChapter = chapterNumber.toString().padLeft(3, '0');
     return '$folderUrl$paddedChapter.mp3';
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Recitation && persistenceKey == other.persistenceKey;
+
+  @override
+  int get hashCode => persistenceKey.hashCode;
 }

@@ -60,30 +60,23 @@ class DefaultAudioRepository implements AudioRepository {
 
   // Tracks what is currently loaded to avoid race conditions from double loads
   int? _loadedChapter;
-  int? _loadedRecitationId;
+  String? _loadedRecitationKey;
 
   @override
   Future<void> loadChapter(
     int chapterNumber,
-    int recitationId, {
+    Recitation recitation, {
     bool autoPlay = false,
     int startVerseNumber = 1,
   }) async {
     MushafLibrary.logger.debug(
-      '[DefaultAudioRepository] loadChapter → chapter=$chapterNumber, recitation=$recitationId, startVerse=$startVerseNumber, autoPlay=$autoPlay',
+      '[DefaultAudioRepository] loadChapter → chapter=$chapterNumber, recitation=${recitation.persistenceKey}, startVerse=$startVerseNumber, autoPlay=$autoPlay',
     );
 
-    final recitation = _recitationService.getRecitationById(recitationId);
-    if (recitation == null) {
-      MushafLibrary.logger.debug(
-        '[DefaultAudioRepository] loadChapter → recitation NOT FOUND for id=$recitationId',
-      );
-      return;
-    }
-
-    // Only reload audio if chapter or recitation changed.
+    // Only reload audio if chapter or recitation (source + id) changed.
     final needsLoad =
-        _loadedChapter != chapterNumber || _loadedRecitationId != recitationId;
+        _loadedChapter != chapterNumber ||
+        _loadedRecitationKey != recitation.persistenceKey;
 
     if (needsLoad) {
       await _audioPlayer.loadChapter(
@@ -92,7 +85,7 @@ class DefaultAudioRepository implements AudioRepository {
         autoPlay: false,
       );
       _loadedChapter = chapterNumber;
-      _loadedRecitationId = recitationId;
+      _loadedRecitationKey = recitation.persistenceKey;
       MushafLibrary.logger.debug(
         '[DefaultAudioRepository] loadChapter → audio loaded for chapter=$chapterNumber',
       );
@@ -105,7 +98,7 @@ class DefaultAudioRepository implements AudioRepository {
     // Always seek — even for verse 1 (seek to zero) so position is deterministic
     if (startVerseNumber > 1) {
       final timing = await _ayahTimingService.getAyahTiming(
-        recitationId,
+        recitation.id,
         chapterNumber,
         startVerseNumber,
       );

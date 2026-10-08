@@ -1,3 +1,11 @@
+## 1.1.0
+* **Breaking**: `AudioRepository.loadChapter` now takes a `Recitation` object instead of an `int recitationId`.
+* **Breaking**: `RecitationService` lookup and default methods now return `Future`s instead of resolving synchronously.
+* **Feature**: Migrated `Mp3Quran` audio backend to use the dynamic MP3Quran API (`v3/ayat_timing`).
+* **Feature**: Removed hardcoded `assets/ayah_timing` JSON files, drastically reducing the package size.
+* **Feature**: Ayah timings and Reciters for `Mp3Quran` are now dynamically fetched and cached locally.
+* **Refactor**: Changed `RecitationDataProvider` to use async fetching methods.
+
 ## 1.0.1
 * **Chore**: Remove sqflite_common_ffi from dev_dependencies as it is no longer required
 
