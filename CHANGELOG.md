@@ -1,5 +1,7 @@
 ## 1.1.1
 * **Feature**: Added `apiKey` parameter to `ItqanAudioConfig` to authenticate with the Itqan CMS API.
+* **Chore**: Configured automated GitHub Actions publishing to pub.dev using OpenID Connect (OIDC).
+* **Fix**: Cleaned up package ignore rules for pub.dev packaging compliance.
 
 ## 1.1.0
 * **Breaking**: `AudioRepository.loadChapter` now takes a `Recitation` object instead of an `int recitationId`.
