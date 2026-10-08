@@ -64,7 +64,7 @@ class ItqanPlaybackSource implements AudioPlaybackSource {
             '${_config.baseUrl}/recitations/$recitationId/?page_size=114';
         final response = await _get(
           Uri.parse(endpoint),
-          headers: _config.headers,
+          headers: _config.resolvedHeaders,
         );
 
         if (response.statusCode == 200) {

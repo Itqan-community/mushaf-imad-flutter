@@ -42,7 +42,7 @@ class ItqanRecitationProvider implements AudioRecitationProvider {
     try {
       final response = await _get(
         Uri.parse('${_config.baseUrl}/recitations/'),
-        headers: _config.headers,
+        headers: _config.resolvedHeaders,
       );
 
       if (response.statusCode == 200) {

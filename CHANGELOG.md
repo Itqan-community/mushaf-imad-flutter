@@ -1,3 +1,6 @@
+## 1.1.1
+* **Feature**: Added `apiKey` parameter to `ItqanAudioConfig` to authenticate with the Itqan CMS API.
+
 ## 1.1.0
 * **Breaking**: `AudioRepository.loadChapter` now takes a `Recitation` object instead of an `int recitationId`.
 * **Breaking**: `RecitationService` lookup and default methods now return `Future`s instead of resolving synchronously.
