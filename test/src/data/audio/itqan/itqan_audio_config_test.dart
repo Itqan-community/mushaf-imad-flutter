@@ -25,21 +25,13 @@ void main() {
       );
       expect(
         config.resolvedHeaders,
-        equals({
-          'Accept-Language': 'ar',
-          'X-API-Key': 'test-api-key',
-        }),
+        equals({'Accept-Language': 'ar', 'X-API-Key': 'test-api-key'}),
       );
     });
 
     test('resolvedHeaders retains original headers when apiKey is null', () {
-      const config = ItqanAudioConfig(
-        headers: {'Accept-Language': 'ar'},
-      );
-      expect(
-        config.resolvedHeaders,
-        equals({'Accept-Language': 'ar'}),
-      );
+      const config = ItqanAudioConfig(headers: {'Accept-Language': 'ar'});
+      expect(config.resolvedHeaders, equals({'Accept-Language': 'ar'}));
     });
   });
 }
